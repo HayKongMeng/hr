@@ -1,4 +1,3 @@
-// src/app/dashboard/leaves/page.tsx (or your path to LeaveManagementPage)
 
 "use client";
 
@@ -256,6 +255,8 @@ const LeaveManagementPage = () => {
     const [dropdownLoading, setDropdownLoading] = useState(false);
     const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
     const [activeTabKey, setActiveTabKey] = useState('team');
+    const [employeeId, setEmployeeId] = useState<string | null>(null);
+    const [companyId, setCompanyId] = useState<string | null>(null);
     
     useEffect(() => { setIsClient(true); }, []);
     
@@ -310,16 +311,17 @@ const LeaveManagementPage = () => {
             fetchData();
         }
     }, [isClient, role, teamPagination.current]);
+    useEffect(() => {
+                setEmployeeId(localStorage.getItem('employee_id'));
+            setCompanyId(localStorage.getItem('company_id'));
 
+            }, []);
     const handleAddLeave = () => {
         setSelectedLeave(null);
         form.resetFields();
         if (role === 'Employee') {
-            const [employeeId, setEmployeeId] = useState<string | null>(null);
             
-            useEffect(() => {
-                setEmployeeId(localStorage.getItem('employee_id'));
-            }, []);
+            
 
             if (employeeId) {
                 form.setFieldsValue({ employee_id: Number(employeeId) });
@@ -376,11 +378,8 @@ const LeaveManagementPage = () => {
 
     const handleFormSubmit = async (values: any) => {
         setIsSubmitting(true);
-        const [companyId, setCompanyId] = useState<string | null>(null);
 
-        useEffect(() => {
-            setCompanyId(localStorage.getItem('company_id'));
-        }, []);
+        
         if (!companyId) {
             message.error("Company ID not found. Please log in again.");
             setIsSubmitting(false);
@@ -404,19 +403,17 @@ const LeaveManagementPage = () => {
                 await updateLeave({ ...payload, id: selectedLeave.id, status_id: selectedLeave.status.id });
                 message.success("Leave updated!");
             } else {
-                await createLeave({ ...payload, status_id: 2 }); // Default to Pending
+                await createLeave({ ...payload, status_id: 1 }); // Default to Pending
                 message.success("Leave created!");
             }
             handleModalCancel();
-            fetchData(); // CHANGE: Just call fetchData without a key.
+            fetchData(); 
         } catch (error: any) { message.error(error?.response?.data?.message || "Operation failed."); }
         finally { setIsSubmitting(false); }
     };
     
     const handleApprovalAction = async (status: string) => {
         if (!selectedLeave) return;
-        
-        const companyId = localStorage.getItem('company_id');
 
         if (!companyId) {
             message.error("Company ID not found. Please log in again.");
