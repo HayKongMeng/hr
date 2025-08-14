@@ -140,7 +140,7 @@ const MobileView = () => {
             const ipData = await ipRes.json();
             const type = todayAttendance.checkIn === "--:--" ? "checkin" : "checkout";
             
-            await checkInAndOut({ employee_id, type, scan_code, ip: ipData.ip });
+            // await checkInAndOut({ employee_id, type, scan_code, ip: ipData.ip });
             message.success(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`);
             setIsQrModalOpen(false);
             fetchMyAttendance();
