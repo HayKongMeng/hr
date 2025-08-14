@@ -130,7 +130,7 @@ const getStatusTag = (statusName: string) => {
 };
 
 // --- View for Team Leave Requests (Corrected) ---
-const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onTableChange, onEdit, onManage }: { isMobile: boolean, leaves: Leave[], loading: boolean, pagination: any, employeeMap: { [id: number]: Employee }, onTableChange: (p: any) => void, onEdit: (r: Leave) => void, onManage: (r: Leave) => void }) => {
+const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onTableChange, onEdit, onManage, onDelete  }: { isMobile: boolean, leaves: Leave[], loading: boolean, pagination: any, employeeMap: { [id: number]: Employee }, onTableChange: (p: any) => void, onEdit: (r: Leave) => void, onManage: (r: Leave) => void, onDelete: (id: number) => void; }) => {
     
     const columns: TableProps<Leave>['columns'] = [
         { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
@@ -138,12 +138,20 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
         { title: 'Dates', key: 'dates', render: (_, r) => `${moment(r.start_date).format("DD MMM")} - ${moment(r.end_date).format("DD MMM YYYY")}` },
         { title: 'Days', key: 'days', render: (_, r) => `${moment(r.end_date).diff(moment(r.start_date), 'days') + 1}d` },
         { title: 'Status', dataIndex: ['status', 'status_name'], key: 'status', render: getStatusTag },
-        { title: 'Actions', key: 'actions', render: (_, record) => (
-        <Space>
-            <Button onClick={() => onManage(record)} disabled={record.status.status_name !== 'Pending'}>Manage</Button>
-            <Button icon={<MdEdit />} onClick={() => onEdit(record)}>Edit</Button>
-        </Space>
-    )}
+        { 
+            title: 'Actions', 
+            key: 'actions', 
+            render: (_, record) => {
+                const isActionable = record.status.status_name === 'Pending';
+                
+                return (
+                    <Space>
+                        <Button onClick={() => onManage(record)} disabled={!isActionable}>Manage</Button>
+                        <Button icon={<MdEdit />} onClick={() => onEdit(record)} disabled={!isActionable}>Edit</Button>
+                    </Space>
+                )
+            }
+        },
     ];
 
     if (isMobile) {
@@ -177,12 +185,12 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
 };
 
 // --- View for My Leave Requests ---
-const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onDelete }: { 
+const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel }: { 
     isMobile: boolean; 
     myLeaves: Leave[]; 
     loading: boolean;
     onEdit: (record: Leave) => void;
-    onDelete: (id: number) => void;
+    onCancel: (id: number) => void;
 }) => {
     const columns: TableProps<Leave>['columns'] = [
         { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
@@ -199,7 +207,7 @@ const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onDelete }: {
                 return (
                     <Space>
                         <Button icon={<MdEdit />} onClick={() => onEdit(record)} disabled={!isActionable}>Edit</Button>
-                        <Button icon={<MdDelete />} danger onClick={() => onDelete(record.id)} disabled={!isActionable}>Delete</Button>
+                        <Button icon={<MdDelete />} danger onClick={() => onCancel(record.id)} disabled={!isActionable}>Cancel</Button>
                     </Space>
                 );
             }
@@ -345,6 +353,14 @@ const LeaveManagementPage = () => {
         setIsModalOpen(true);
     };
 
+    const handleCancel = async (leaveRequest: Leave) => {
+        const payload = {
+        ...leaveRequest,
+        status_id: 4, 
+    };
+    return updateLeave(payload);
+    };
+    
     const handleDelete = (id: number) => {
         Modal.confirm({
             title: 'Delete Leave Request?',
@@ -442,7 +458,7 @@ const LeaveManagementPage = () => {
                 myLeaves={myLeaves} 
                 loading={loading} 
                 onEdit={handleEditLeave} 
-                onDelete={handleDelete} 
+                onCancel={handleCancel} 
             /> 
         };
 
