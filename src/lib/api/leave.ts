@@ -34,6 +34,11 @@ export const fetchAllLeaveTypes = async (): Promise<LeaveType[]> => {
     return response.data.result.data;
 };
 
+export const getLeaveTypeById = async (id: number) => {
+    const response = await api.get(`/leave/leave-types/${id}`);
+    return response.data.result; 
+};
+
 export const createLeave = async (payload: {
     employee_id: number,
     company_id: number,
@@ -87,6 +92,11 @@ export const updateLeave = async (payload: {
         console.error('Error creating leave:', error);
         throw error;
     }
+};
+
+export const deleteLeave = async (id: number) => {
+    const response = await api.delete(`/leave/leaves/${id}`);
+    return response.data;
 };
 
 export const createApprove = async (payload: {
@@ -187,7 +197,12 @@ export const deleteLeaveType = async (id: number) => {
 
 export const fetchEntitlements = async () => {
     const response = await api.get(`leave/entitlements`);
-    return response.data.result;
+    return response.data;
+}
+
+export const fetchEmployeesEntitlements = async (employeeId: number) => {
+    const response = await api.get(`leave/employee/${employeeId}/entitlements/`);
+    return response.data;
 }
 
 export const createEntitlement = async (payload: {

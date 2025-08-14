@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // --- Ant Design Components ---
-import { Button, Card, Form, Input, InputNumber, List, message, Modal, Space, Spin, Table } from "antd";
-import type { TableProps } from 'antd';
+import { Button, Card, Descriptions, Form, Input, InputNumber, List, message, Modal, Space, Spin, Table } from "antd";
+import type { DescriptionsProps, TableProps } from 'antd';
 
 // --- Icons ---
-import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdAdd, MdDelete, MdEdit, MdKeyboardArrowRight, MdRemoveRedEye } from "react-icons/md";
 
 // --- API & Data ---
 import {
@@ -17,16 +17,31 @@ import {
     updateLeaveType,
     deleteLeaveType,
 } from "@/lib/api/leave";
+import moment from "moment";
+import { FiDatabase } from "react-icons/fi";
 
-// Corrected Type Definition matching the API payload and response data
 type LeaveType = {
     id: number;
     prefix: string;
     type_name: string;
     max_days: number;
     description?: string;
+    created_at?: string;
 };
 
+const LeaveTypeDetail = ({ leaveType }: { leaveType: LeaveType | null }) => {
+    if (!leaveType) return null;
+
+    const items: DescriptionsProps['items'] = [
+        { key: '1', label: 'Type Name', children: leaveType.type_name },
+        { key: '2', label: 'Prefix', children: leaveType.prefix },
+        { key: '3', label: 'Max Days / Year', children: `${leaveType.max_days} days` },
+        { key: '4', label: 'Description', children: leaveType.description || 'N/A', span: 3 },
+        { key: '5', label: 'Date Created', children: moment(leaveType.created_at).format("DD MMMM, YYYY") },
+    ];
+
+    return <Descriptions bordered column={1} items={items} />;
+};
 
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
@@ -59,6 +74,22 @@ const LeaveTypeForm = ({ form, onFinish }: { form: any, onFinish: (values: any) 
     </Form>
 );
 
+const SetupView = ({ onSetup, loading }: { onSetup: () => void; loading: boolean }) => (
+    <Card>
+        <div className="text-center p-8">
+            <FiDatabase className="mx-auto text-4xl text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Setup Required</h2>
+            <p className="text-gray-600 mb-6">
+                It looks like there are no leave types configured yet. <br />
+                You can add them manually or create some sample data to get started.
+            </p>
+            <Button type="primary" size="large" onClick={onSetup} loading={loading}>
+                Auto-Setup Sample Data
+            </Button>
+        </div>
+    </Card>
+);
+
 // --- Main Combined Component ---
 const LeaveTypeManagementPage = () => {
     // --- Hooks ---
@@ -66,12 +97,18 @@ const LeaveTypeManagementPage = () => {
     const [isClient, setIsClient] = useState(false);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
     const [loading, setLoading] = useState(true);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedLeaveType, setSelectedLeaveType] = useState<LeaveType | null>(null);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [form] = Form.useForm();
     const router = useRouter();
+
+    // State to track if setup is needed
+    const [needsSetup, setNeedsSetup] = useState(false);
 
     // --- Effects ---
     useEffect(() => {
@@ -85,18 +122,26 @@ const LeaveTypeManagementPage = () => {
     }, [isClient]);
 
     // --- Data Functions ---
-    const fetchData = async (page = 1, pageSize = 10) => {
+    const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
             const res = await fetchLeaveTypes(page, pageSize);
-            setLeaveTypes(res.data || []);
+            const data = res.data || [];
+            
+            if (page === 1 && data.length === 0) {
+                setNeedsSetup(true);
+            } else {
+                setNeedsSetup(false);
+            }
+
+            setLeaveTypes(data);
             setPagination({ current: page, pageSize, total: res.total_items });
         } catch (error) {
             message.error("Failed to fetch leave types.");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // --- Conditional Return ---
     if (!isClient) {
@@ -117,6 +162,19 @@ const LeaveTypeManagementPage = () => {
     const handleModalCancel = () => {
         setIsModalOpen(false);
         form.resetFields();
+        setSelectedLeaveType(null);
+    };
+
+    //view leave type by id
+    const handleViewModalOpen = (record: LeaveType) => {
+        setSelectedLeaveType(record);
+        setIsViewModalOpen(true);
+    };
+
+    //modal view cancel
+    const handleViewModalCancel = () => {
+        setIsViewModalOpen(false);
+        setSelectedLeaveType(null); 
     };
 
     const handleFormSubmit = async (values: Omit<LeaveType, 'id'>) => {
@@ -156,12 +214,38 @@ const LeaveTypeManagementPage = () => {
         });
     };
 
+    const handleSetup = async () => {
+        setIsSubmitting(true);
+        message.loading({ content: 'Creating sample data...', key: 'setup' });
+        try {
+            const sampleData = [
+                { prefix: 'AL', type_name: 'Annual Leave', max_days: 18 },
+                { prefix: 'SL', type_name: 'Sick Leave', max_days: 7 },
+                { prefix: 'ML', type_name: 'Maternity Leave', max_days: 90 },
+                { prefix: 'PL', type_name: 'Paternity Leave', max_days: 7 },
+                { prefix: 'UL', type_name: 'Unpaid Leave', max_days: 30 },
+            ];
+            
+            await Promise.all(sampleData.map(item => createLeaveType(item)));
+            
+            message.success({ content: 'Sample data created successfully!', key: 'setup', duration: 2 });
+            
+            // Refresh the data to show the new items and exit setup mode
+            await fetchData();
+        } catch (error) {
+            message.error({ content: 'Failed to create sample data.', key: 'setup', duration: 3 });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const commonProps = {
         leaveTypes,
         loading,
         pagination,
         fetchData,
         handleModalOpen,
+        handleViewModalOpen,
         handleDelete,
     };
 
@@ -172,25 +256,28 @@ const LeaveTypeManagementPage = () => {
                     <h1 className="text-lg font-semibold">Manage Leave Types</h1>
                     <div className="text-sm text-gray-500 flex items-center gap-2">
                         <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
-                        <MdKeyboardArrowRight />
-                        <span>Leave Types</span>
+                        <MdKeyboardArrowRight /><span>Leave Types</span>
                     </div>
                 </div>
-                <Button type="primary" onClick={() => handleModalOpen(null)}>
-                    Add Type
-                </Button>
+                {/* Hide 'Add' button in setup mode */}
+                {!needsSetup && (
+                    <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>
+                        Add Type
+                    </Button>
+                )}
             </div>
 
-            {isMobile ? <MobileView {...commonProps} /> : <DesktopView {...commonProps} />}
+             {needsSetup ? (
+                <SetupView onSetup={handleSetup} loading={isSubmitting} />
+            ) : (
+                isMobile ? <MobileView {...commonProps} /> : <DesktopView {...commonProps} />
+            )}
 
-            <Modal
-                title={selectedLeaveType ? "Edit Leave Type" : "Add New Leave Type"}
-                open={isModalOpen}
-                onCancel={handleModalCancel}
-                onOk={form.submit}
-                confirmLoading={isSubmitting}
-            >
+            <Modal title={selectedLeaveType ? "Edit Leave Type" : "Add New Leave Type"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
                 <LeaveTypeForm form={form} onFinish={handleFormSubmit} />
+            </Modal>
+            <Modal title="Leave Type Details" open={isViewModalOpen} onCancel={handleViewModalCancel} footer={[ <Button key="close" onClick={handleViewModalCancel}>Close</Button> ]}>
+                <LeaveTypeDetail leaveType={selectedLeaveType} />
             </Modal>
         </div>
     );
@@ -198,7 +285,7 @@ const LeaveTypeManagementPage = () => {
 
 
 // --- Desktop View ---
-const DesktopView = ({ leaveTypes, loading, pagination, fetchData, handleModalOpen, handleDelete }: any) => {
+const DesktopView = ({ leaveTypes, loading, pagination, fetchData, handleModalOpen, handleViewModalOpen, handleDelete }: any) => {
     
     const handleTableChange: TableProps<LeaveType>['onChange'] = (newPagination) => {
         fetchData(newPagination.current, newPagination.pageSize);
@@ -211,6 +298,7 @@ const DesktopView = ({ leaveTypes, loading, pagination, fetchData, handleModalOp
         {
             title: 'Action', key: 'action', align: 'right', render: (_, record: LeaveType) => (
                 <Space size="middle">
+                    <Button icon={<MdRemoveRedEye />} onClick={() => handleViewModalOpen(record)}>View</Button>
                     <Button onClick={() => handleModalOpen(record)}>Edit</Button>
                     <Button danger onClick={() => handleDelete(record.id)}>Delete</Button>
                 </Space>
@@ -233,15 +321,16 @@ const DesktopView = ({ leaveTypes, loading, pagination, fetchData, handleModalOp
 };
 
 // --- Mobile View ---
-const MobileView = ({ leaveTypes, loading, pagination, fetchData, handleModalOpen, handleDelete }: any) => (
+const MobileView = ({ leaveTypes, loading, pagination, fetchData, handleModalOpen, handleViewModalOpen, handleDelete }: any) => (
     <Spin spinning={loading}>
         <List
             dataSource={leaveTypes}
             renderItem={(item: LeaveType) => (
                 <List.Item
                     actions={[
-                        <Button type="text" shape="circle"  onClick={() => handleModalOpen(item)} />,
-                        <Button type="text" shape="circle" danger  onClick={() => handleDelete(item.id)} />,
+                        <Button key="view" type="text" shape="circle" icon={<MdRemoveRedEye />} onClick={() => handleViewModalOpen(item)} />,
+                        <Button key="edit" type="text" shape="circle" icon={<MdEdit />} onClick={() => handleModalOpen(item)} />,
+                        <Button key="delete" type="text" shape="circle" danger icon={<MdDelete />} onClick={() => handleDelete(item.id)} />,
                     ]}
                 >
                     <List.Item.Meta

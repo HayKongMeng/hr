@@ -8,7 +8,7 @@ import Button from "../../components/ui/Button";
 import Loading from "../../components/ui/Loading";
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { fetchAllEmployees } from '@/lib/api/employee';
+import { useAuth } from '@/lib/AuthContext';
 
 type LoginFormData = {
     email: string;
@@ -20,6 +20,8 @@ const LoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
 
+    const { setRole } = useAuth(); 
+
     const handleLogin = async (data: LoginFormData) => {
         setIsLoading(true);
       
@@ -27,11 +29,12 @@ const LoginPage = () => {
             const response = await api.post('/auth/login', data);
            
             const { user,employee, token } = response.data.result;
-            localStorage.setItem('access_token', token);
-            console.log(token);
             
+            localStorage.setItem('access_token', token);
+            localStorage.setItem('user_role', user.roles);
             localStorage.setItem('user_id', user.id);
             localStorage.setItem('user_name', user.name);
+            setRole(user.role); 
 
             // Fetch all employees
             // const employees = await fetchAllEmployees();

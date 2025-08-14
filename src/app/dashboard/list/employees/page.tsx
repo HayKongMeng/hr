@@ -23,7 +23,7 @@ import { FaUpload } from "react-icons/fa";
 type Position = { id: number; title: string };
 type Department = { id: number; name: string };
 type WorkStation = { id: number; name: string };
-type EmploymentType = { id: number; name: string };
+type EmploymentType = { id: number; status_name: string };
 type Employee = { id: number; user_id: number; employee_code: string; name: string; first_name: string; last_name: string; username: string; email: string; phone: string; address: string; date_of_birth: string; hire_date: string; gender: 'Male' | 'Female' | 'Other'; image?: string; position?: Position; department?: Department; work_station?: WorkStation; employment_type?: EmploymentType; created_at: string; };
 
 // --- Responsive Hook ---
@@ -52,7 +52,6 @@ const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { f
                 <Col xs={24} md={8}><Form.Item name="hire_date" label="Joining Date" rules={[{ required: true }]}><DatePicker className="w-full" /></Form.Item></Col>
                 <Col xs={24} md={8}><Form.Item name="phone" label="Phone Number" rules={[{ required: true }]}><Input /></Form.Item></Col>
                 <Col xs={24}><Form.Item name="gender" label="Gender"><Radio.Group><Radio value="Male">Male</Radio><Radio value="Female">Female</Radio><Radio value="Other">Other</Radio></Radio.Group></Form.Item></Col>
-                {/* CORRECTED: valuePropName and getValueFromEvent for proper form handling */}
                  <Col xs={24}><Form.Item name="image" label="Profile Image" valuePropName="fileList" getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList}><Upload listType="picture" maxCount={1} beforeUpload={() => false}><Button icon={<FaUpload />}>Select Image</Button></Upload></Form.Item></Col>
             </Row>
 
@@ -71,11 +70,32 @@ const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { f
 
             <h3 className="text-lg font-semibold border-b pb-2 my-4">Work & Role Information</h3>
             <Row gutter={16}>
-                <Col xs={24} md={12}><Form.Item name="department_id" label="Department"><Select placeholder="Select..." options={dropdownData.departments.map((d: Department) => ({ value: d.id, label: d.name }))} /></Form.Item></Col>
-                <Col xs={24} md={12}><Form.Item name="position_id" label="Designation"><Select placeholder="Select..." options={dropdownData.positions.map((p: Position) => ({ value: p.id, label: p.title }))} /></Form.Item></Col>
-                <Col xs={24} md={12}><Form.Item name="work_station_id" label="Work Station"><Select placeholder="Select..." options={dropdownData.workStations.map((ws: WorkStation) => ({ value: ws.id, label: ws.name }))} /></Form.Item></Col>
-                <Col xs={24} md={12}><Form.Item name="employment_type_id" label="Employment Status"><Select placeholder="Select..." options={dropdownData.employmentTypes.map((et: EmploymentType) => ({ value: et.id, label: et.name }))} /></Form.Item></Col>
-                <Col xs={24}><Form.Item name="address" label="Address"><Input.TextArea rows={3} /></Form.Item></Col>
+                <Col xs={24} md={12}>
+                    <Form.Item name="department_id" label="Department" rules={[{ required: true }]}>
+                        <Select placeholder="Select department..." options={dropdownData.departments.map((d: Department) => ({ value: d.id, label: d.name }))} />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item name="position_id" label="Designation" rules={[{ required: true }]}>
+                        <Select placeholder="Select designation..." options={dropdownData.positions.map((p: Position) => ({ value: p.id, label: p.title }))} />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item name="work_station_id" label="Work Station" rules={[{ required: true }]}>
+                        <Select placeholder="Select work station..." options={dropdownData.workStations.map((ws: WorkStation) => ({ value: ws.id, label: ws.name }))} />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item name="employment_type_id" label="Employment Status" rules={[{ required: true }]}>
+                        <Select placeholder="Select status..." options={dropdownData.employmentTypes.map((et: EmploymentType) => ({ value: et.id, label: et.status_name }))} />
+                    </Form.Item>
+                </Col>
+                 {/* Address is usually not required, so we leave it as is */}
+                <Col xs={24}>
+                    <Form.Item name="address" label="Address">
+                        <Input.TextArea rows={3} />
+                    </Form.Item>
+                </Col>
             </Row>
         </Spin>
     </Form>
@@ -196,7 +216,8 @@ const EmployeeManagementPage = () => {
                 );
                 message.success({ content: "Employee updated successfully!", key, duration: 2 });
             } else {
-                await createEmployee(payload);
+                const test = await createEmployee(payload);
+                console.log("Created Employee:", test);
                 message.success({ content: "Employee created successfully!", key, duration: 2 });
             }
 

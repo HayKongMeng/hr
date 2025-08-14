@@ -6,8 +6,8 @@ import moment from "moment";
 import dayjs from 'dayjs';
 
 // --- Ant Design Components ---
-import { Button, Card, Form, InputNumber, List, message, Modal, Select, Space, Spin, Table, DatePicker, Progress, Tag, Row, Col } from "antd";
-import type { TableProps } from 'antd';
+import { Button, Card, Form, InputNumber, List, message, Modal, Select, Space, Spin, Table, DatePicker, Progress, Tag, Row, Col, Collapse, Tabs } from "antd";
+import type { CollapseProps, TableProps } from 'antd';
 
 // --- Icons (from react-icons) ---
 import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
@@ -15,23 +15,35 @@ import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
 // --- API & Data ---
 import {
     fetchEntitlements,
-    createEntitlement, // Enabled
-    // updateEntitlement, // Placeholder
-    deleteEntitlement, // Enabled
+    createEntitlement, 
+    // updateEntitlement, 
+    deleteEntitlement,
+    fetchEmployeesEntitlements,
 } from "@/lib/api/leave";
 import { fetchEmployees, Employee } from "@/lib/api/employee";
 import { fetchAllLeaveTypes, LeaveType } from "@/lib/api/leave";
+import { useAuth } from "@/lib/AuthContext";
+import { role } from '@/lib/data';
 
 // --- Type Definitions ---
 type LeaveEntitlement = {
     id: number;
     employee_id: number;
     leave_type_id: number;
-    total_days: number;
+    available_days: number; 
     used_days: number;
     remain_days: number;
     start_period: string;
     end_period: string;
+    leave_type: { 
+        id: number;
+        type_name: string;
+    };
+};
+
+type GroupedEntitlementFromApi = {
+    employee_id: number;
+    entitlements: LeaveEntitlement[];
 };
 
 // --- Responsive Hook ---
@@ -76,16 +88,21 @@ const EntitlementForm = ({ form, onFinish, employees, leaveTypes }: { form: any;
 
 // --- Main Page Component ---
 const LeaveEntitlementPage = () => {
+    const role = localStorage.getItem('user_role');
+    const isAuthLoading = !role; 
+    
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
     const [form] = Form.useForm();
     const router = useRouter();
 
-    const [entitlements, setEntitlements] = useState<LeaveEntitlement[]>([]);
+    const [allEntitlements, setAllEntitlements] = useState<GroupedEntitlementFromApi[]>([]);
+    const [myEntitlements, setMyEntitlements] = useState<LeaveEntitlement[]>([]);
+
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-    const [employeeMap, setEmployeeMap] = useState<{ [id: number]: string }>({});
-    const [leaveTypeMap, setLeaveTypeMap] = useState<{ [id: number]: string }>({});
+
+    const [groupedEntitlements, setGroupedEntitlements] = useState<{ [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } }>({});
 
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
@@ -93,44 +110,59 @@ const LeaveEntitlementPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedEntitlement, setSelectedEntitlement] = useState<LeaveEntitlement | null>(null);
 
-    const fetchData = useCallback(async (page = 1, pageSize = 10) => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [entRes, empRes, ltRes] = await Promise.all([
-                fetchEntitlements(page, pageSize),
-                employees.length ? Promise.resolve({ data: employees }) : fetchEmployees(1, 1000),
-                leaveTypes.length ? Promise.resolve(leaveTypes) : fetchAllLeaveTypes(), // Corrected promise resolve
-            ]);
+            const employeeId = localStorage.getItem('employee_id');
 
-            setEntitlements(entRes.data || []);
-            setPagination({ current: page, pageSize, total: entRes.total_items || (entRes.data || []).length });
+            if (role === 'Employee') {
+                if (employeeId) {
+                    const res = await fetchEmployeesEntitlements(Number(employeeId));
+                    setMyEntitlements(res.result.data || []);
+                }
+            } else { // For Admin/Manager
+                let employeeList = employees;
+                if (employees.length === 0) {
+                    const [empRes, ltRes] = await Promise.all([fetchEmployees(1, 1000), fetchAllLeaveTypes()]);
+                    employeeList = empRes.data || [];
+                    setEmployees(employeeList);
+                    setLeaveTypes(ltRes || []);
+                }
+                
+                const [allRes, myRes] = await Promise.all([
+                    fetchEntitlements(pagination.current, pagination.pageSize),
+                    employeeId ? fetchEmployeesEntitlements(Number(employeeId)) : Promise.resolve({ result: { data: [] } }) // Ensure consistent promise shape
+                ]);
+                
+                const groupedDataFromApi = allRes.result.data || [];
+                setPagination(prev => ({ ...prev, total: allRes.result.total_items || groupedDataFromApi.length }));
+                
+                const uiReadyGroupedData = groupedDataFromApi.reduce((acc, group) => {
+                    const empId = group.employee_id.toString();
+                    const empName = employeeList.find(e => e.id === group.employee_id)?.name || `Employee ID: ${empId}`;
+                    acc[empId] = { employeeName: empName, entitlements: group.entitlements };
+                    return acc;
+                }, {} as { [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } });
+                setGroupedEntitlements(uiReadyGroupedData);
 
-            if (employees.length === 0) {
-                const allEmployees = empRes.data || [];
-                setEmployees(allEmployees);
-                const newEmpMap: { [id: number]: string } = {};
-                allEmployees.forEach((emp: Employee) => { newEmpMap[emp.id] = emp.name; });
-                setEmployeeMap(newEmpMap);
+                setMyEntitlements(myRes.result.data || []);
             }
-            if (leaveTypes.length === 0) {
-                // CORRECTED: Use ltRes directly as it's already the array
-                const allLeaveTypes = ltRes || []; 
-                setLeaveTypes(allLeaveTypes);
-                const newLtMap: { [id: number]: string } = {};
-                allLeaveTypes.forEach((lt: LeaveType) => { newLtMap[lt.id] = lt.type_name; });
-                setLeaveTypeMap(newLtMap);
-            }
-        } catch (error) {
-            message.error("Failed to fetch entitlement data.");
+        } catch (error: any) {
+            console.error("Error fetching entitlement data:", error);
+            message.error(error?.response?.data?.message || "Failed to fetch entitlement data.");
         } finally {
             setLoading(false);
         }
-    }, [employees.length, leaveTypes.length]);
+    }, [role, employees, pagination.current, pagination.pageSize]);
 
     useEffect(() => { setIsClient(true); }, []);
-    useEffect(() => { if (isClient) fetchData(pagination.current, pagination.pageSize); }, [isClient, pagination.current, pagination.pageSize]);
+    useEffect(() => {
+        if (isClient && !isAuthLoading) {
+            fetchData();
+        }
+    }, [isClient, isAuthLoading, role, pagination.current, pagination.pageSize]);
 
-    if (!isClient) {
+    if (!isClient || isAuthLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
@@ -138,7 +170,10 @@ const LeaveEntitlementPage = () => {
         setSelectedEntitlement(record);
         if (record) {
             form.setFieldsValue({
-                ...record,
+                employee_id: record.employee_id,
+                leave_type_id: record.leave_type_id,
+                total_days: record.available_days, 
+                used_days: record.used_days,
                 period: [dayjs(record.start_period), dayjs(record.end_period)],
             });
         } else {
@@ -169,7 +204,7 @@ const LeaveEntitlementPage = () => {
                 message.success("Entitlement assigned successfully!");
             }
             handleModalCancel();
-            fetchData(pagination.current, pagination.pageSize);
+            fetchData();
         } catch (error: any) {
             message.error(error?.response?.data?.message || "Operation failed.");
         } finally {
@@ -186,17 +221,47 @@ const LeaveEntitlementPage = () => {
                 try {
                     await deleteEntitlement(id);
                     message.success("Entitlement deleted.");
-                    fetchData(pagination.current, pagination.pageSize);
+                    fetchData();
                 } catch { message.error("Failed to delete entitlement."); }
             },
         });
     };
-    
-    const handleTableChange: TableProps<LeaveEntitlement>['onChange'] = (p) => {
-        setPagination(prev => ({ ...prev, current: p.current!, pageSize: p.pageSize! }));
-    };
 
-    const viewProps = { entitlements, loading, pagination, handleTableChange, handleModalOpen, handleDelete, employeeMap, leaveTypeMap };
+    // This function will now decide whether to render tabs or a single view
+    const renderContent = () => {
+        if (loading) {
+            return <div className="text-center p-10"><Spin /></div>;
+        }
+
+        if (role === 'Employee') {
+            // Employees see a simple, direct view of their entitlements
+            return <EmployeeEntitlementView entitlements={myEntitlements} isMobile={isMobile} />;
+        }
+
+        // Admins and Managers see a tabbed interface
+        const tabItems = [
+            {
+                key: 'all',
+                label: 'All Employees',
+                children: <AdminEntitlementView
+                    groupedData={groupedEntitlements}
+                    onEdit={handleModalOpen}
+                    onDelete={handleDelete}
+                    isMobile={isMobile}
+                />,
+            },
+            {
+                key: 'my',
+                label: 'My Entitlements',
+                children: <EmployeeEntitlementView
+                    entitlements={myEntitlements}
+                    isMobile={isMobile}
+                />,
+            },
+        ];
+
+        return <Tabs defaultActiveKey="all" items={tabItems} />;
+    };
 
     return (
         <div className="p-4">
@@ -208,63 +273,129 @@ const LeaveEntitlementPage = () => {
                         <MdKeyboardArrowRight /><span>Entitlements</span>
                     </div>
                 </div>
-                <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Assign Entitlement</Button>
+                {role !== 'Employee' && (
+                    <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Assign Entitlement</Button>
+                )}
             </div>
             <Card>
-                {isMobile ? <MobileView {...viewProps} /> : <DesktopView {...viewProps} />}
+                {renderContent()}
             </Card>
-            <Modal title={selectedEntitlement ? "Edit Entitlement" : "Assign New Entitlement"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
-                <EntitlementForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} />
-            </Modal>
+            {role !== 'Employee' && (
+                <Modal title={selectedEntitlement ? "Edit Entitlement" : "Assign New Entitlement"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
+                    <EntitlementForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} />
+                </Modal>
+            )}
         </div>
     );
 };
-// --- Desktop View Sub-Component ---
-const DesktopView = ({ entitlements, loading, pagination, handleTableChange, handleModalOpen, handleDelete, employeeMap, leaveTypeMap }: any) => {
-    const columns: TableProps<LeaveEntitlement>['columns'] = [
-        { title: 'Employee', dataIndex: 'employee_id', key: 'employee', render: (id) => employeeMap[id] || `ID: ${id}` },
-        { title: 'Leave Type', dataIndex: 'leave_type_id', key: 'leave_type', render: (id) => leaveTypeMap[id] || `ID: ${id}` },
-        { title: 'Period', key: 'period', render: (_, r) => `${moment(r.start_period).format("DD MMM YY")} - ${moment(r.end_period).format("DD MMM YY")}` },
-        { title: 'Total', dataIndex: 'total_days', key: 'total', align: 'center' },
+
+const AdminEntitlementView = ({ groupedData, onEdit, onDelete, isMobile }: { 
+    groupedData: { [key: string]: { employeeName: string; entitlements: LeaveEntitlement[] } };
+    onEdit: (record: LeaveEntitlement) => void;
+    onDelete: (id: number) => void;
+    isMobile: boolean; // Accept isMobile prop
+}) => {
+    
+    // Convert the groupedData object into an array for easier mapping
+    const employeeDataArray = Object.keys(groupedData).map(employeeId => ({
+        id: employeeId,
+        ...groupedData[employeeId]
+    }));
+
+    if (isMobile) {
+        return (
+            <List
+                dataSource={employeeDataArray}
+                renderItem={(employeeData) => (
+                    <List.Item>
+                        <List.Item.Meta
+                            title={<strong>{employeeData.employeeName}</strong>}
+                            description={
+                                <Collapse ghost size="small">
+                                    <Collapse.Panel header={`${employeeData.entitlements.length} Entitlement Types`} key={employeeData.id}>
+                                        <List
+                                            size="small"
+                                            dataSource={employeeData.entitlements}
+                                            renderItem={(entitlement) => (
+                                                 <List.Item>
+                                                    <List.Item.Meta 
+                                                        title={entitlement.leave_type.type_name}
+                                                        description={`Remaining: ${entitlement.remain_days} / ${entitlement.available_days}`}
+                                                    />
+                                                 </List.Item>
+                                            )}
+                                        />
+                                    </Collapse.Panel>
+                                </Collapse>
+                            }
+                        />
+                    </List.Item>
+                )}
+            />
+        );
+    }
+
+    // Desktop view with Collapse and nested Table
+    const detailColumns: TableProps<LeaveEntitlement>['columns'] = [
+        { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
+        { title: 'Total', dataIndex: 'available_days', key: 'total', align: 'center' },
         { title: 'Used', dataIndex: 'used_days', key: 'used', align: 'center' },
         { title: 'Remaining', dataIndex: 'remain_days', key: 'remain', align: 'center', render: (days) => <Tag color={days > 0 ? 'green' : 'red'}>{days}</Tag> },
-        { title: 'Actions', key: 'actions', align: 'right', render: (_, record: LeaveEntitlement) => (
-            <Space>
-                <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)}>Edit</Button>
-                <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)}>Delete</Button>
-            </Space>
-        )}
+        { title: 'Period', key: 'period', render: (_, r) => `${moment(r.start_period).format("DD MMM YY")} - ${moment(r.end_period).format("DD MMM YY")}` },
+        { 
+            title: 'Actions', 
+            key: 'actions', 
+            align: 'right', 
+            render: (_, record: LeaveEntitlement) => (
+                <Space>
+                    <Button size="small" icon={<MdEdit />} onClick={() => onEdit(record)}>Edit</Button>
+                    <Button size="small" danger icon={<MdDelete />} onClick={() => onDelete(record.id)}>Delete</Button>
+                </Space>
+            )
+        }
     ];
-    return <Table columns={columns} dataSource={entitlements} rowKey="id" loading={loading} pagination={pagination} onChange={handleTableChange} />;
+
+    const items: CollapseProps['items'] = employeeDataArray.map(employeeData => ({
+        key: employeeData.id,
+        label: <strong>{employeeData.employeeName}</strong>,
+        children: <Table columns={detailColumns} dataSource={employeeData.entitlements} rowKey="id" pagination={false} size="small" />
+    }));
+
+    return <Collapse items={items} accordion />;
 };
 
-// --- Mobile View Sub-Component ---
-const MobileView = ({ entitlements, loading, handleModalOpen, handleDelete, employeeMap, leaveTypeMap }: any) => (
-    <List
-        loading={loading}
-        dataSource={entitlements}
-        renderItem={(item: LeaveEntitlement) => (
-            <List.Item
-                actions={[
-                    <Button type="text" shape="circle" icon={<MdEdit />} onClick={() => handleModalOpen(item)} />,
-                    <Button type="text" shape="circle" danger icon={<MdDelete />} onClick={() => handleDelete(item.id)} />,
-                ]}
-            >
-                <List.Item.Meta
-                    title={employeeMap[item.employee_id] || `Employee ID: ${item.employee_id}`}
-                    description={
-                        <div>
-                            <p>{leaveTypeMap[item.leave_type_id] || `Leave Type ID: ${item.leave_type_id}`}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Progress percent={item.total_days > 0 ? Math.round((item.used_days / item.total_days) * 100) : 0} size="small" showInfo={false} />
-                                <span>{item.remain_days} / {item.total_days} days left</span>
-                            </div>
-                        </div>
-                    }
-                />
-            </List.Item>
-        )}
-    />
-);
+// --- NEW: Employee-specific View ---
+const EmployeeEntitlementView = ({ entitlements, isMobile }: { entitlements: LeaveEntitlement[], isMobile: boolean }) => {
+    if (isMobile) {
+        return (
+            <List
+                dataSource={entitlements}
+                renderItem={(item: LeaveEntitlement) => (
+                    <List.Item>
+                        <List.Item.Meta
+                            title={item.leave_type.type_name}
+                            description={
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Progress percent={item.available_days > 0 ? Math.round((item.used_days / item.available_days) * 100) : 0} size="small" showInfo={false} />
+                                    <span>{item.remain_days} / {item.available_days} days left</span>
+                                </div>
+                            }
+                        />
+                    </List.Item>
+                )}
+            />
+        );
+    }
+
+    const columns: TableProps<LeaveEntitlement>['columns'] = [
+        { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
+        { title: 'Total Days', dataIndex: 'available_days', key: 'total', align: 'center' },
+        { title: 'Days Used', dataIndex: 'used_days', key: 'used', align: 'center' },
+        { title: 'Days Remaining', dataIndex: 'remain_days', key: 'remain', align: 'center', render: (days) => <Tag color={days > 0 ? 'green' : 'red'}>{days}</Tag> },
+        { title: 'Current Period', key: 'period', render: (_, r) => `${moment(r.start_period).format("DD MMM, YYYY")} - ${moment(r.end_period).format("DD MMM, YYYY")}` },
+    ];
+    
+    return <Table columns={columns} dataSource={entitlements} rowKey="id" pagination={false} />;
+};
 
 export default LeaveEntitlementPage;

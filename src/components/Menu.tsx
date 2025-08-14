@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -11,7 +11,6 @@ import { RiArrowDropDownLine } from "react-icons/ri";
 import { LuServerCog } from "react-icons/lu";
 import { LuUserCog } from "react-icons/lu";
 import { FiUserPlus } from "react-icons/fi";
-import { TbUserSquareRounded } from "react-icons/tb";
 import {
   MdAccessTime,
   MdLogout,
@@ -19,8 +18,8 @@ import {
 } from 'react-icons/md';
 
 import type { IconType } from 'react-icons';
+import { Spin } from 'antd';
 
-const role = 'admin';
 
 const api = {
     post: async (url: string) => {
@@ -57,35 +56,35 @@ const menuItems: MenuSection[] = [
             {
                 iconComponent: RxDashboard,
                 label: "Dashboard",
-                visible: ["admin", "teacher", "student", "parent"],
+                visible: ["Admin", "Super Admin","Employee"],
                 children: [
                     {
                         iconComponent: TbPoint,
                         label: "Overview",
                         href: "/dashboard/admin",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin","Employee"],
                     },
                     {
                         iconComponent: TbPoint,
                         label: "Report",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin"],
                         children: [
                             {
                                 iconComponent: TbPoint,
                                 label: "Monthly Attendance",
                                 href: "/dashboard/list/report/monthly/attendance",
-                                visible: ["admin", "teacher"],
+                                visible: ["Admin", "Super Admin"],
                             },
                             {
                                 iconComponent: TbPoint,
                                 label: "Leave",
                                 href: "/dashboard/list/report/leave",
-                                visible: ["admin", "teacher"],
+                                visible: ["Admin", "Super Admin"],
                             },
                             {
                                 iconComponent: TbPoint,
                                 label: "Timesheet",
-                                visible: ["admin", "teacher"],
+                                visible: ["Admin", "Super Admin"],
                             },
                         ],
                     },
@@ -95,85 +94,60 @@ const menuItems: MenuSection[] = [
                 iconComponent: RxDashboard,
                 label: "Dashboards",
                 href: "/dashboard/dash",
-                visible: ["admin", "teacher", "student", "parent"],
-            },
-            {
-                iconComponent: LuServerCog,
-                label: "Super Admin",
-                visible: ["admin", "teacher"],
-                children: [
-                    {
-                        iconComponent: TbPoint,
-                        label: "Companies",
-                        href: "/dashboard/list/companies",
-                        visible: ["admin", "teacher", "student", "parent"],
-                    }
-                ],
+                visible: ["Admin", "Super Admin"],
             },
             {
                 iconComponent: LuUsers,
                 label: "Staff",
-                visible: ["admin", "teacher"],
+                visible: ["Admin", "Super Admin"],
                 children: [
                     {
                         iconComponent: TbPoint,
                         label: "User",
                         href: "/dashboard/list/users",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin"],
                     },
                     {
                         iconComponent: TbPoint,
                         label: "Role",
                         href: "/dashboard/list/roles",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin"],
                     },
-                    // {
-                    //     iconComponent: TbPoint,
-                    //     label: "Employee Profile",
-                    //     href: "/dashboard/list/roles",
-                    //     visible: ["admin", "teacher"],
-                    // },
                 ],
             },
             {
                 iconComponent: FiUserPlus,
                 label: "Employee",
                 href: "/dashboard/list/employees",
-                visible: ["admin", "teacher"],
+                visible: ["Admin", "Super Admin"],
             },
             {
                 iconComponent: FiUserPlus,
                 label: "Entitlements",
                 href: "/dashboard/list/entitlements",
-                visible: ["admin", "teacher"],
+                visible: ["Admin", "Super Admin","Employee"],
             },
             {
                 iconComponent: MdAccessTime,
                 label: "Timesheet",
-                visible: ["admin", "teacher"],
+                visible: ["Admin", "Super Admin", "Employee"],
                 children: [
-                    {
-                        iconComponent: TbPoint,
-                        label: "Timesheet",
-                        href: "/dashboard/list/users",
-                        visible: ["admin", "teacher"],
-                    },
                     {
                         iconComponent: TbPoint,
                         label: "Manage Leave",
                         href: "/dashboard/list/leaves",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin", "Employee"],
                     },
                     {
                         iconComponent: TbPoint,
                         label: "Attendance",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin", "Super Admin" , "Employee"],
                         children: [
                             {
                                 iconComponent: TbPoint,
                                 label: "Marked Attendance",
                                 href: "/dashboard/list/attendance/markedattendance",
-                                visible: ["admin", "teacher"],
+                                visible: ["Admin", "Super Admin" , "Employee"],
                             }
                         ],
                     },
@@ -182,38 +156,62 @@ const menuItems: MenuSection[] = [
             {
                 iconComponent: LuUserCog,
                 label: "HR Admin Setup",
-                visible: ["admin", "teacher"],
+                visible: ["Admin" ],
                 children: [
                     {
                         iconComponent: TbPoint,
                         label: "Holidays",
                         href: "/dashboard/list/holidays",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin"],
                     }
                 ],
             },
             {
                 iconComponent: MdOutlineSpaceDashboard,
                 label: "HRM System Setup",
-                visible: ["admin", "teacher"],
+                visible: ["Admin"],
                 children: [
                     {
                         iconComponent: TbPoint,
-                        label: "Department",
-                        href: "/dashboard/list/departments",
-                        visible: ["admin", "teacher"],
+                        label: "Companies",
+                        href: "/dashboard/list/companies",
+                        visible: ["Super Admin", "Admin"],
                     },
                     {
                         iconComponent: TbPoint,
                         label: "Designation",
                         href: "/dashboard/list/designations",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin"],
                     },
                     {
                         iconComponent: TbPoint,
                         label: "Leave Type",
                         href: "/dashboard/list/leave-type",
-                        visible: ["admin", "teacher"],
+                        visible: ["Admin"],
+                    },
+                    {
+                        iconComponent: TbPoint,
+                        label: "Working Station",
+                        href: "/dashboard/list/working-station",
+                        visible: ["Admin"],
+                    },
+                    {
+                        iconComponent: TbPoint,
+                        label: "Employment Type",
+                        href: "/dashboard/list/employment-type",
+                        visible: ["Admin"],
+                    },
+                    {
+                        iconComponent: TbPoint,
+                        label: "Nationalities",
+                        href: "/dashboard/list/nationalities",
+                        visible: ["Admin"],
+                    },
+                    {
+                        iconComponent: TbPoint,
+                        label: "Matrial Status",
+                        href: "/dashboard/list/matrial-status",
+                        visible: ["Admin"],
                     }
                 ],
             },
@@ -221,7 +219,7 @@ const menuItems: MenuSection[] = [
                 iconComponent: LuSettings,
                 label: "System Setting",
                 href: "/settings",
-                visible: ["admin", "teacher", "student", "parent"],
+                visible: ["Admin", "Employee"],
             },
         ],
     },
@@ -231,6 +229,11 @@ const Menu = () => {
     const router = useRouter();
     const pathname = usePathname();
     const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+    const [role, setRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        setRole(localStorage.getItem('user_role'));
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -253,7 +256,9 @@ const Menu = () => {
         parentKey = ''
     ) => {
         return items.map((item) => {
-            if (!item.visible.includes(role)) return null;
+            if (!item.visible.includes(role)) {
+  return null;
+}
 
             const key = parentKey ? `${parentKey} > ${item.label}` : item.label;
             const isDropdown = !!item.children?.length;
@@ -320,6 +325,17 @@ const Menu = () => {
                     </div>
                 ))}
             </nav>
+            {role && (
+                <div className="mt-6 px-3">
+                    <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 px-3 py-3.5 rounded-lg transition text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                        <MdLogout className="w-5 h-5 min-w-[20px] min-h-[20px]" />
+                        <span>Logout</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import CheckInCheckOut from "@/components/mobile/employee/CheckInCheckOut";
 import LeaveStatus from "@/components/mobile/employee/Leavestatus";
 import AttendanceCard from "@/components/mobile/employee/AttendanceCard";
 import OverviewHr from "@/components/mobile/employee/OverviewHr";
@@ -39,7 +38,7 @@ const HomePage = () => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
-  const employee_id = 1;
+  const employee_id = localStorage.getItem('employee_id');
   const checkStatus = getTodayCheckStatus(items);
   // Function to calculate remaining time from check-in timestamp
   const calculateRemainingTime = useCallback((checkInTime: string) => {
@@ -450,7 +449,7 @@ const HomePage = () => {
                   View more
                 </button>
               </div>
-              <LeaveStatus  showActions={false}/>
+              <LeaveStatus showActions={false}/>
             </div>
           </>
         )}

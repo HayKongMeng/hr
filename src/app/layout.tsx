@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import ScrollToTop from "@/components/ScrollToTop";
 import 'antd/dist/reset.css'; // Ant Design v5+
+import { AuthProvider } from "@/lib/AuthContext";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,9 +22,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={inter.className}>
-                <ScrollToTop />
-                <Toaster richColors position='top-center' />
-                {children}
+                <AuthProvider>
+                    <ScrollToTop />
+                    <Toaster richColors position='top-center' />
+                    {children}
+                </AuthProvider>
             </body>
         </html>
     );

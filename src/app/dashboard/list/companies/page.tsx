@@ -9,7 +9,7 @@ import { Button, Card, DatePicker, Form, Input, List, message, Modal, Select, Sp
 import type { TableProps } from 'antd';
 
 // --- Icons (from react-icons) ---
-import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
+import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete, MdRemoveRedEye } from "react-icons/md";
 import { FiEye } from "react-icons/fi";
 
 // --- API & Data ---
@@ -18,6 +18,7 @@ import { fetchDepartments, createDepartment, updateDepartment, deleteDepartment 
 import { Employee, fetchAllEmployees } from "@/lib/api/employee";
 import dayjs from "dayjs";
 import { createCompanyHistory } from "@/lib/api/companyHistory";
+import Link from "next/link";
 
 // --- Type Definitions ---
 type Company = {
@@ -88,16 +89,13 @@ const CompanyForm = ({ form, onFinish, isEditMode, employees }: { form: any; onF
 );
 
 // --- Reusable Form for Department ---
-const DepartmentForm = ({ form, onFinish, companies }: { form: any; onFinish: (values: any) => void; companies: Company[] }) => (
+const DepartmentForm = ({ form, onFinish }: { form: any; onFinish: (values: any) => void; }) => (
     <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item name="name" label="Department Name" rules={[{ required: true }]}>
             <Input />
         </Form.Item>
         <Form.Item name="code" label="Department Code" rules={[{ required: true }]}>
             <Input />
-        </Form.Item>
-        <Form.Item name="company_id" label="Company" rules={[{ required: true }]}>
-            <Select placeholder="Select a company" options={companies.map(c => ({ value: c.id, label: c.name }))} />
         </Form.Item>
         <Form.Item name="description" label="Description">
             <Input.TextArea rows={3} />
@@ -119,15 +117,10 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
-            const [companyRes, employeeRes] = await Promise.all([
-                fetchCompanies(page, pageSize),
-                fetchAllEmployees() 
-            ]);
-            
-            setData(companyRes.data || []);
-            setPagination({ current: page, pageSize, total: companyRes.total_items });
-            setEmployees(employeeRes || []); 
-        } catch (error) { message.error("Failed to fetch data."); }
+            const deptRes = await fetchDepartments(page, pageSize);
+            setData(deptRes.data || []);
+            setPagination({ current: page, pageSize, total: deptRes.total_items });
+        } catch (error) { message.error("Failed to fetch department data."); }
         finally { setLoading(false); }
     }, []);
 
@@ -209,6 +202,7 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
         { title: "Created", dataIndex: "created_at", key: "created_at", render: (date) => moment(date).format("DD MMM YYYY") },
         { title: "Actions", key: "actions", render: (_, record) => (
             <Space>
+                <Link href={`/dashboard/list/companies/${record.id}`}><Button icon={<MdRemoveRedEye />} /></Link>
                 <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)}>Edit</Button>
                 <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)}>Delete</Button>
             </Space>
@@ -291,11 +285,20 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
     const handleFormSubmit = async (values: any) => {
         setIsSubmitting(true);
         try {
+            const companyId = localStorage.getItem('company_id');
+            if (!companyId) {
+                message.error("Company ID not found. Please log in again.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            const payload = { ...values, company_id: Number(companyId) };
+
             if (selected) {
-                await updateDepartment({ ...values, id: selected.id });
+                await updateDepartment({ ...payload, id: selected.id });
                 message.success("Department updated successfully!");
             } else {
-                await createDepartment(values);
+                await createDepartment(payload);
                 message.success("Department created successfully!");
             }
             handleModalCancel();
@@ -361,7 +364,7 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
                 />
             )}
              <Modal title={selected ? "Edit Department" : "Add Department"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting} width={isMobile ? '100%' : 520} style={isMobile ? { top: 0, padding: 0, height: '100vh' } : {}}>
-                <DepartmentForm form={form} onFinish={handleFormSubmit} companies={companies} />
+                <DepartmentForm form={form} onFinish={handleFormSubmit} />
              </Modal>
         </Card>
     );
@@ -372,14 +375,31 @@ const OrganizationSetupPage = () => {
     const router = useRouter();
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
+    const role = localStorage.getItem('user_role') || '';
+    const isAuth = !role;
     useEffect(() => { setIsClient(true); }, []);
 
-    const tabItems = [
-        { key: 'companies', label: 'Companies', children: <CompaniesView isMobile={isMobile} /> },
-        { key: 'departments', label: 'Departments', children: <DepartmentsView isMobile={isMobile} /> },
-    ];
+    const getTabItems = () => {
+        const items = [
+            { 
+                key: 'departments', 
+                label: 'Departments', 
+                children: <DepartmentsView isMobile={isMobile} /> 
+            },
+        ];
 
-    if (!isClient) {
+        if (role === 'Super Admin') {
+            items.unshift({ 
+                key: 'companies', 
+                label: 'Companies', 
+                children: <CompaniesView isMobile={isMobile} /> 
+            });
+        }
+        
+        return items;
+    };
+
+    if (!isClient || isAuth) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
@@ -395,7 +415,11 @@ const OrganizationSetupPage = () => {
                     </div>
                 </div>
             </div>
-            <Tabs defaultActiveKey="companies" items={tabItems} />
+            <Tabs 
+                key={role} 
+                defaultActiveKey={role === 'Super Admin' ? 'companies' : 'departments'} 
+                items={getTabItems()} 
+            />
         </div>
     );
 };

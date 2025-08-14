@@ -152,7 +152,10 @@ const UserManagementPage = () => {
         try {
             const payload = { ...values };
             delete payload.confirm_password;
-
+            if (payload.role_ids && payload.role_ids.length > 0) {
+                payload.role_id = payload.role_ids[0]; 
+            }
+            delete payload.role_ids;
             if (selectedUser) {
                 await updateUser(selectedUser.id, payload);
                 message.success("User updated successfully!");

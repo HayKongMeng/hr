@@ -237,7 +237,7 @@ const ProfilePage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6">
                 <div className="bg-white rounded-xl card-table overflow-hidden relative">
-                    <div className="bg-gradient-to-r h-24 from-orange-500 to-yellow-500 p-4 text-center rounded-b-xl">
+                    <div className="bg-gradient-to-r h-24 from-[#392648] to-[#4A3AFF] p-4 text-center rounded-b-xl">
                         <Image
                             src={imgSrc}
                             alt="Avatar"
@@ -291,7 +291,7 @@ const ProfilePage = () => {
 
                         {/* Buttons with Icons */}
                         <div className="flex gap-2 mt-5">
-                            <button className="w-full bg-orange-500 text-white py-2 rounded-full flex items-center justify-center gap-2">
+                            <button className="w-full bg-orange-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
                                 <FaCommentDots />
                                 Message
                             </button>

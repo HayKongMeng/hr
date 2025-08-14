@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import moment from "moment";
 
 // --- Ant Design Components ---
-import { Table, Tag, Spin, Pagination, Select, Input, Card, Row, Col, Statistic, Calendar, Space, Button, message } from 'antd';
+import { Table, Tag, Spin, Pagination, Select, Input, Card, Row, Col, Statistic, Calendar, Space, Button, message, Tabs, List } from 'antd';
 import type { TableProps } from 'antd';
 
 // --- Icons ---
@@ -15,9 +15,8 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 // --- Custom Components & API ---
 import AttendanceCard from "@/components/mobile/employee/AttendanceCard";
 import LeaveChart from "@/components/mobile/LeaveChart";
-import { fetchAttendances, findEmployees } from "@/lib/api/attendances";
+import { fetchAttendances, findEmployees, findEmployeesById } from "@/lib/api/attendances";
 import { processFullAttendanceData } from "@/lib/dateFormat";
-import { role } from "@/lib/data";
 
 // --- Type Definitions ---
 type Attendance = {
@@ -48,27 +47,45 @@ const useIsMobile = (breakpoint = 768) => {
 
 // --- Main Combined Component ---
 const AttendancePage = () => {
+    const [role, setRole] = useState<string | null>(null);
+
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => { setIsClient(true); }, []);
-
-    if (!isClient) {
+    useEffect(() => {
+        setRole(localStorage.getItem('user_role'));
+    }, []);
+    if (!isClient ) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
-    return isMobile ? <MobileView /> : <DesktopView />;
+     if (role !== 'Employee') {
+        const tabItems = [
+            {
+                key: 'team',
+                label: 'Team Attendance',
+                children: <TeamAttendanceView isMobile={isMobile}/>
+            },
+            {
+                key: 'my',
+                label: 'My Attendance',
+                children: <MyAttendanceView />
+            }
+        ];
+        return <Tabs defaultActiveKey="team" items={tabItems} className="p-4" />;
+    }
+
+    return <MyAttendanceView />; 
 };
 
-
-// --- Desktop View (Refactored with Ant Design) ---
-const DesktopView = () => {
+const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
     const router = useRouter();
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-    const getAttendances = async (page: number, pageSize: number) => {
+    const getAttendances = useCallback(async (page: number, pageSize: number) => {
         setLoading(true);
         try {
             const res = await fetchAttendances(page, pageSize);
@@ -78,30 +95,32 @@ const DesktopView = () => {
                     if (item.attendance_data) parsedData = JSON.parse(item.attendance_data);
                 } catch (e) { parsedData = {}; }
                 
-                const newAttendanceData = {
-                    status: parsedData.checkin?.status || 'Absent',
-                    clock_in: parsedData.checkin?.time,
-                    clock_out: parsedData.checkout?.time,
-                    late_minutes: 0,
+                return { 
+                    ...item, 
+                    attendance_data: {
+                        status: parsedData.checkin?.status || 'Absent',
+                        clock_in: parsedData.checkin?.time,
+                        clock_out: parsedData.checkout?.time,
+                        late_minutes: 0,
+                    } 
                 };
-                return { ...item, attendance_data: newAttendanceData };
             });
 
             setAttendances(transformedData);
             setPagination(prev => ({ ...prev, total: res.total_items, current: page, pageSize }));
         } catch (err: any) {
-             message.error(err.message || "Failed to fetch attendance");
+             message.error(err.message || "Failed to fetch team attendance");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
     
     useEffect(() => {
         getAttendances(pagination.current, pagination.pageSize);
-    }, []);
+    }, [pagination.current, pagination.pageSize, getAttendances]);
 
     const handleTableChange: TableProps<Attendance>['onChange'] = (newPagination) => {
-        getAttendances(newPagination.current!, newPagination.pageSize!);
+        setPagination(prev => ({...prev, current: newPagination.current!, pageSize: newPagination.pageSize!}));
     };
     
     const getStatusTag = (status: string = 'Absent') => {
@@ -111,40 +130,74 @@ const DesktopView = () => {
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
     };
 
+    // --- RENDER MOBILE VIEW ---
+    if (isMobile) {
+        return (
+             <div>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 className="text-lg font-semibold">Team Attendance</h1>
+                    </div>
+                </div>
+                <Card>
+                    <Input.Search placeholder="Search employees..." className="mb-4" />
+                    <List
+                        loading={loading}
+                        dataSource={attendances}
+                        renderItem={(item: Attendance) => (
+                            <List.Item>
+                                <List.Item.Meta
+                                    title={item.employee.name}
+                                    description={
+                                        <div>
+                                            <p>{moment(item.date).format("DD MMM YYYY")}</p>
+                                            <p>
+                                                In: {item.attendance_data.clock_in ? moment(item.attendance_data.clock_in, "HH:mm:ss").format("h:mm A") : '--:--'} | 
+                                                Out: {item.attendance_data.clock_out ? moment(item.attendance_data.clock_out, "HH:mm:ss").format("h:mm A") : '--:--'}
+                                            </p>
+                                        </div>
+                                    }
+                                />
+                                {getStatusTag(item.attendance_data.status)}
+                            </List.Item>
+                        )}
+                    />
+                    <Pagination
+                        simple
+                        className="mt-4 text-center"
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onChange={(page, pageSize) => handleTableChange({ current: page, pageSize })}
+                    />
+                </Card>
+            </div>
+        );
+    }
+    
+    // --- RENDER DESKTOP VIEW ---
     const columns: TableProps<Attendance>['columns'] = [
         { title: "Employee", dataIndex: ['employee', 'name'], key: 'employee' },
         { title: "Date", dataIndex: 'date', key: 'date', render: (date) => moment(date).format("DD MMM YYYY") },
         { title: "Status", dataIndex: ['attendance_data', 'status'], key: 'status', render: getStatusTag },
         { title: "Check In", dataIndex: ['attendance_data', 'clock_in'], key: 'check_in', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
         { title: "Check Out", dataIndex: ['attendance_data', 'clock_out'], key: 'check_out', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
-        { title: "Late By", dataIndex: ['attendance_data', 'late_minutes'], key: 'late', render: (mins = 0) => `${mins} min` },
-        { title: "Actions", key: 'action', render: (_, record) => (
-            <Space size="middle">
-                <Button onClick={() => message.info(`Editing ${record.employee.name}`)}>
-  Edit
-</Button>
-                <Button  danger onClick={() => message.error(`Deleting ${record.employee.name}`)} >Delete</Button>
-            </Space>
-        )}
     ];
 
     return (
-        <div className="p-4">
+        <div>
              <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-lg font-semibold">Manage Attendance</h1>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                     <div className="text-sm text-gray-500 flex items-center gap-2">
                         <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
-                        <MdKeyboardArrowRight />
-                        <span>Attendance</span>
+                        <MdKeyboardArrowRight /><span>Attendance</span>
                     </div>
                 </div>
             </div>
             <Card>
                 <Row justify="end" className="mb-4">
-                    <Col>
-                        <Input.Search placeholder="Search..." style={{ width: 250 }} />
-                    </Col>
+                    <Col><Input.Search placeholder="Search employees..." style={{ width: 250 }} /></Col>
                 </Row>
                 <Table
                     columns={columns}
@@ -160,40 +213,55 @@ const DesktopView = () => {
 };
 
 
-// --- Mobile View (Refactored with Ant Design) ---
-const MobileView = () => {
+// --- My Attendance View (Refactored from MobileView) ---
+const MyAttendanceView = () => {
+    const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [items, setItems] = useState<AttendanceEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [chartData, setChartData] = useState({ presents: 0, absents: 0, leave: 0 });
-    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, claims: 1 });
+    const [chartData, setChartData] = useState({ presents: 0, absents: 0, lates: 0, leave: 0 }); // Added 'lates'
+    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 }); // Renamed 'claims'
 
     useEffect(() => {
+        setEmployeeId(localStorage.getItem('employee_id'));
+        if (!employeeId) return; // Don't fetch if user is not loaded yet
+
         setLoading(true);
-        findEmployees().then((result) => {
-            const { mappedItems, presentsCount, lateCount, leaveCount } = processFullAttendanceData(result.data || []);
-            setChartData({ presents: 20, absents: 0, leave: 40 });
-            setSummaryStats({ workingDays: 20, lateArrivals: lateCount, claims: 1 });
+        findEmployeesById(employeeId).then((result) => {
+            // Use the data processing function you already have
+            const { mappedItems, presentsCount, lateCount } = processFullAttendanceData(result.data || []);
+
+            // Calculate stats for the current month
+            let workingDaysSoFar = 0;
+            const startOfMonth = moment().startOf('month');
+            const today = moment();
+            for (let m = moment(startOfMonth); m.isSameOrBefore(today, 'day'); m.add(1, 'days')) {
+                if (m.isoWeekday() <= 5) workingDaysSoFar++; // Mon-Fri
+            }
+            const absentsCount = workingDaysSoFar - presentsCount;
+            
+            setChartData({ presents: presentsCount, absents: absentsCount > 0 ? absentsCount : 0, lates: lateCount, leave: 0 });
+            setSummaryStats({ workingDays: presentsCount, lateArrivals: lateCount, earlyLeavers: 0 }); // Placeholder for earlyLeavers
             setItems(mappedItems);
         }).catch(err => {
-            message.error("Failed to load employee attendance.");
+            message.error("Failed to load your attendance data.");
         }).finally(() => {
             setLoading(false);
         });
-    }, []);
+    }, [employeeId]); // Re-run when the user object is available
 
     return (
         <div className="p-4">
-            <h1 className="text-xl font-medium mb-4">Attendance</h1>
+            <h1 className="text-xl font-medium mb-4">My Attendance</h1>
             <Space direction="vertical" size="large" className="w-full">
-                <Card title="Overall Performance">
+                <Card title="This Month's Performance">
                     <div style={{ height: 120 }}><LeaveChart data={chartData} /></div>
                 </Card>
                 
                 <Card>
                     <Row gutter={16}>
-                        <Col span={8}><Statistic title="Working Days" value={summaryStats.workingDays} /></Col>
+                        <Col span={8}><Statistic title="Present Days" value={summaryStats.workingDays} /></Col>
                         <Col span={8}><Statistic title="Late Arrivals" value={summaryStats.lateArrivals} /></Col>
-                        <Col span={8}><Statistic title="Leave Early" value={summaryStats.claims} /></Col>
+                        <Col span={8}><Statistic title="Absents" value={chartData.absents} /></Col>
                     </Row>
                 </Card>
                 
@@ -204,7 +272,7 @@ const MobileView = () => {
                         {items.length > 0 ? (
                             <AttendanceCard items={items} />
                         ) : (
-                            <div className="text-center py-10 text-gray-500">No attendance data found.</div>
+                            <div className="text-center py-10 text-gray-500">No attendance data found for this month.</div>
                         )}
                     </Spin>
                 </Card>

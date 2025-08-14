@@ -1,6 +1,12 @@
 import { CiWarning } from "react-icons/ci"
 
-const LogoutModal = ({ onCancel }: { onCancel?: () => void }) => {
+const LogoutModal = ({
+  onCancel,
+  onLogout,
+}: {
+  onCancel?: () => void;
+  onLogout?: () => void;
+}) => {
     return (
         <div className="flex flex-col justify-between items-center gap-4 pt-0 p-4 sm:p-6 w-[90vw] max-w-[400px] h-[260px] sm:h-[300px] bg-white rounded-[16px] sm:rounded-[20px] shadow-lg">
             <div className="h-1 w-full bg-red-500" />
@@ -21,6 +27,7 @@ const LogoutModal = ({ onCancel }: { onCancel?: () => void }) => {
                   h-10 sm:h-12
                 bg-[#FF1515] rounded-full
                 flex-none flex-grow text-white text-sm sm:text-base"
+                onClick={onLogout}
                 >
                     Logout
                 </button>
