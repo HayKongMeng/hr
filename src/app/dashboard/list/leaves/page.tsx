@@ -120,13 +120,15 @@ const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMo
 };
 
 // --- Shared Helper for Status Tags ---
-const getStatusTag = (statusName: string) => {
-    const normalized = statusName?.toLowerCase() || 'pending';
-    let color = 'default';
+const getStatusTag = (statusObject: { id: number; status_name: string } | null) => {
+    const statusName = statusObject?.status_name || 'Pending';
+    const normalized = statusName.toLowerCase();
+    
+    let color = 'warning';
     if (normalized === 'approved') color = 'success';
     else if (normalized === 'rejected') color = 'error';
-    else if (normalized === 'pending') color = 'warning';
-    return <Tag color={color}>{statusName?.toUpperCase() || 'N/A'}</Tag>;
+
+    return <Tag color={color}>{statusName.toUpperCase()}</Tag>;
 };
 
 // --- View for Team Leave Requests (Corrected) ---
@@ -142,12 +144,13 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
             title: 'Actions', 
             key: 'actions', 
             render: (_, record) => {
-                const isActionable = record.status.status_name === 'Pending';
+                const isActionable = record.status?.status_name === 'Pending';
                 
                 return (
                     <Space>
                         <Button onClick={() => onManage(record)} disabled={!isActionable}>Manage</Button>
                         <Button icon={<MdEdit />} onClick={() => onEdit(record)} disabled={!isActionable}>Edit</Button>
+                        <Button icon={<MdDelete />} danger onClick={() => onDelete(record.id)} disabled={!isActionable}>Delete</Button>
                     </Space>
                 )
             }
@@ -172,7 +175,7 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
                             title={employeeMap[item.employee_id]?.name || 'Unknown Employee'}
                             description={`${item.leave_type.type_name} | ${moment(item.start_date).format("DD MMM")} - ${moment(item.end_date).format("DD MMM")}`}
                         />
-                        {getStatusTag(item.status.status_name)}
+                        {getStatusTag(item.status)}
                     </List.Item>
                 )
             }}
@@ -224,7 +227,7 @@ const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel }: {
                         title={item.leave_type.type_name}
                         description={`${moment(item.start_date).format("DD MMM")} - ${moment(item.end_date).format("DD MMM YYYY")}`}
                     />
-                    {getStatusTag(item.status.status_name)}
+                    {getStatusTag(item.status)}
                 </List.Item>
             )}
         />
