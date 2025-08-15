@@ -23,6 +23,7 @@ type LeaveEntry = {
 };
 
 const Leave = () => {
+  const [isClient, setIsClient] = useState(false);
   const [selectedOption, setSelectedOption] = useState("MyLeaveRequest");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLeaveModalOpen, setIsLeavModalOpen] = useState(false);
@@ -36,20 +37,42 @@ const Leave = () => {
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const [reason, setReason] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-    const [leaveEntries, setLeaveEntries] = useState<LeaveEntry[]>([]);
-    const [leaveEmployeeEntries, setLeaveEmployeeEntries] = useState<LeaveEntry[]>([]);
+  const [leaveEntries, setLeaveEntries] = useState<LeaveEntry[]>([]);
+  const [leaveEmployeeEntries, setLeaveEmployeeEntries] = useState<LeaveEntry[]>([]);
+  // const [companyId, setCompanyId] = useState<number | null>(null);
+  // useEffect(() => {
+  //   const storedCompanyId = localStorage.getItem('company_id');
+  //   if (storedCompanyId) {
+  //     setCompanyId(Number(storedCompanyId));
+  //   }
+  // }, []);
 
-    const fetchAllLeave: () => void = () => {
-      fetchLeaves(1, 10).then((result) => {
-        setLeaveEntries(result.data || []);
-      });
-      fetchEmployeesLeave(1).then((result) => {
+   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+    const fetchAllLeave = () => {
+    fetchLeaves(1, 10).then((result) => {
+      setLeaveEntries(result.data || []);
+    });
+    const employeeId = localStorage.getItem('employee_id');
+    if (employeeId) {
+      fetchEmployeesLeave(Number(employeeId)).then((result) => {
         setLeaveEmployeeEntries(result.data || []);
       });
-    };
+    }
+  };
+
     useEffect(() => {
+    // FIX: Guard all data fetching until we are on the client
+    if (isClient) {
       fetchAllLeave();
-    }, []);
+      fetchAllLeaveTypes().then(setLeaveTypes).catch(console.error);
+      fetchEmployees(1, 10).then((response) => {
+        setEmployees(response.data);
+      });
+    }
+  }, [isClient]);
 
   useEffect(() => {
     fetchAllLeaveTypes().then(setLeaveTypes).catch(console.error);
@@ -117,12 +140,17 @@ const Leave = () => {
       message.error("Please provide a reason for leave");
       return;
     }
+    const companyId = localStorage.getItem('company_id');
+    if (companyId === null) {
+      message.error("Company ID is missing");
+      return;
+    }
 
     setIsSubmitting(true);
-
     try {
       const payload = {
         employee_id: selectedEmployee,
+        company_id: Number(companyId),
         leave_type_id: selectedLeaveType,
         status_id: 1, // Assuming 1 is for "Pending" status
         start_date: startDate.format("YYYY-MM-DD"),
@@ -154,7 +182,6 @@ const Leave = () => {
         Leave Management
       </h1>
       <Button
-        label=""
         className="absolute text-white bg-[#392648] !gap-0 bg-shadow right-0 bottom-0 mb-20 mr-4 !p-6 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
         icon={<IoAddCircleOutline className=" text-3xl" />}
         onClick={handleCheckInClick}

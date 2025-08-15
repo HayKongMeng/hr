@@ -256,9 +256,9 @@ const Menu = () => {
         parentKey = ''
     ) => {
         return items.map((item) => {
-            if (!item.visible.includes(role)) {
-  return null;
-}
+            if (!role || !item.visible.includes(role)) {
+                return null;
+            }
 
             const key = parentKey ? `${parentKey} > ${item.label}` : item.label;
             const isDropdown = !!item.children?.length;

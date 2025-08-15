@@ -23,13 +23,23 @@ import Link from "next/link";
 // --- Type Definitions ---
 type Company = {
     id: number;
-    company_code: string;
     name: string;
+    company_code: string;
+    type: string;
     email: string;
+    phone: string;
+    country: string;
+    province: string;
+    city: string;
+    zip_code: string;
+    address: string;
     account_url: string;
+    website: string;
     status: boolean;
+    longitude: number;
+    latitude: number;
+    posted_by: number;
     created_at: string;
-    [key: string]: any; // For other potential fields
 };
 
 type Department = {
@@ -117,14 +127,24 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
-            const deptRes = await fetchDepartments(page, pageSize);
-            setData(deptRes.data || []);
-            setPagination({ current: page, pageSize, total: deptRes.total_items });
-        } catch (error) { message.error("Failed to fetch department data."); }
+            const [companyRes, employeeRes] = await Promise.all([
+                fetchCompanies(page, pageSize), 
+                fetchAllEmployees() 
+            ]);
+            
+            setData(companyRes.data || []); 
+            setPagination({ current: page, pageSize, total: companyRes.total_items });
+            setEmployees(employeeRes || []);
+
+        } catch (error) { 
+            message.error("Failed to fetch company data."); 
+        }
         finally { setLoading(false); }
     }, []);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { 
+        fetchData(pagination.current, pagination.pageSize); 
+    }, [fetchData]);
 
     const handleModalOpen = (record: Company | null) => {
         setSelected(record);
@@ -142,7 +162,7 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
         setIsSubmitting(true);
         try {
             if (selected) {
-                await updateCompany({ ...values, id: selected.id });
+                await updateCompany(selected.id, values); 
                 message.success("Company updated successfully!");
             } else {
                 const companyPayload = {
@@ -253,6 +273,14 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selected, setSelected] = useState<Department | null>(null);
+    const [companyId, setCompanyId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const storedCompanyId = localStorage.getItem('company_id');
+        if (storedCompanyId) {
+            setCompanyId(Number(storedCompanyId));
+        }
+    }, []);
 
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
@@ -285,7 +313,6 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
     const handleFormSubmit = async (values: any) => {
         setIsSubmitting(true);
         try {
-            const companyId = localStorage.getItem('company_id');
             if (!companyId) {
                 message.error("Company ID not found. Please log in again.");
                 setIsSubmitting(false);
@@ -295,7 +322,7 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
             const payload = { ...values, company_id: Number(companyId) };
 
             if (selected) {
-                await updateDepartment({ ...payload, id: selected.id });
+                await updateDepartment( selected.id, payload );
                 message.success("Department updated successfully!");
             } else {
                 await createDepartment(payload);
@@ -375,8 +402,15 @@ const OrganizationSetupPage = () => {
     const router = useRouter();
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
-    const role = localStorage.getItem('user_role') || '';
+    const [role, setRole] = useState("");
     const isAuth = !role;
+    
+    useEffect(() => {
+        const storedRole = localStorage.getItem('user_role');
+        if (storedRole) {
+            setRole(storedRole);
+        }
+    }, []);
     useEffect(() => { setIsClient(true); }, []);
 
     const getTabItems = () => {

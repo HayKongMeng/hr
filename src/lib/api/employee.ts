@@ -107,6 +107,7 @@ export const createEmployee = async (payload: {
 };
 
 export const updateEmployee = async (
+    employeeId: number,
     userId: number,
     authPayload: {
         username: string;
@@ -170,7 +171,7 @@ export const updateEmployee = async (
 
         formData.append('_method', 'PUT');
         // Step 3: Send to employee-service
-        const response = await api.post(`/employee/employees`, formData, {
+        const response = await api.post(`/employee/employees/${employeeId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

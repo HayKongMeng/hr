@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { IoClose } from "react-icons/io5";
 import { LuQrCode, LuZap, LuZapOff } from "react-icons/lu";
-import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 import Button from "./ui/Button";
 import QRScanner from "./QRScanner";
 
@@ -159,6 +158,7 @@ const handleQrResult = (result: string) => {
           {/* Action Buttons */}
           <div className="w-full space-y-4 flex flex-col items-center">
            <Button
+           label=""
   onClick={toggleFlashlight}
   className={`text-center  py-3 px-3 rounded-full font-medium !gap-0 transition-colors ${
     isFlashlightOn

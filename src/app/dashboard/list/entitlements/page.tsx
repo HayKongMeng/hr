@@ -88,7 +88,8 @@ const EntitlementForm = ({ form, onFinish, employees, leaveTypes }: { form: any;
 
 // --- Main Page Component ---
 const LeaveEntitlementPage = () => {
-    const role = localStorage.getItem('user_role');
+    const [role, setRole] = useState("");
+    
     const isAuthLoading = !role; 
     
     const isMobile = useIsMobile();
@@ -110,6 +111,13 @@ const LeaveEntitlementPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedEntitlement, setSelectedEntitlement] = useState<LeaveEntitlement | null>(null);
 
+    useEffect(() => {
+        const storedRole = localStorage.getItem('user_role');
+        if (storedRole) {
+            setRole(storedRole);
+        }
+    },[]);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -130,14 +138,17 @@ const LeaveEntitlementPage = () => {
                 }
                 
                 const [allRes, myRes] = await Promise.all([
-                    fetchEntitlements(pagination.current, pagination.pageSize),
+                    fetchEntitlements(),
                     employeeId ? fetchEmployeesEntitlements(Number(employeeId)) : Promise.resolve({ result: { data: [] } }) // Ensure consistent promise shape
                 ]);
                 
                 const groupedDataFromApi = allRes.result.data || [];
                 setPagination(prev => ({ ...prev, total: allRes.result.total_items || groupedDataFromApi.length }));
                 
-                const uiReadyGroupedData = groupedDataFromApi.reduce((acc, group) => {
+                const uiReadyGroupedData = groupedDataFromApi.reduce((
+                    acc: { [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } }, 
+                    group: GroupedEntitlementFromApi 
+                ) => {
                     const empId = group.employee_id.toString();
                     const empName = employeeList.find(e => e.id === group.employee_id)?.name || `Employee ID: ${empId}`;
                     acc[empId] = { employeeName: empName, entitlements: group.entitlements };

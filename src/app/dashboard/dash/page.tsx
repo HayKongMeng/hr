@@ -26,8 +26,7 @@ import QrCodeModal from "@/components/QrCodeModal"; // For Mobile
 import AnnoucementCard from "@/components/card/AnnoucementCard"; // For Mobile
 import LeaveRequestAdmin from "@/components/LeaveRequestAdmin"; // For Mobile
 import { checkInAndOut, findEmployees, findEmployeesById } from "@/lib/api/attendances";
-import { formattedDate, processFullAttendanceData } from "@/lib/dateFormat";
-import { AttendanceEntry } from "@/type/LeaveRequestType";
+import { formattedDate, MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
 
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
@@ -115,7 +114,7 @@ const MobileView = () => {
     
     // All other states and functions from your HomePage
     const [buttonLoading, setButtonLoading] = useState(false);
-    const [items, setItems] = useState<AttendanceEntry[]>([]);
+    const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [todayAttendance, setTodayAttendance] = useState({ checkIn: "--:--", checkOut: "--:--" });
 
     const employee_id = 1; // This should be dynamic

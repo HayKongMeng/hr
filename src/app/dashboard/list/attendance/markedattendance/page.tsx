@@ -16,7 +16,7 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import AttendanceCard from "@/components/mobile/employee/AttendanceCard";
 import LeaveChart from "@/components/mobile/LeaveChart";
 import { fetchAttendances, findEmployees, findEmployeesById } from "@/lib/api/attendances";
-import { processFullAttendanceData } from "@/lib/dateFormat";
+import { MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
 
 // --- Type Definitions ---
 type Attendance = {
@@ -30,7 +30,6 @@ type Attendance = {
         late_minutes?: number;
     };
 };
-type AttendanceEntry = { /* For Mobile View */ id: string; date: string; day: string; status: 'Present' | 'Absent' | 'Late'; checkIn: string; checkOut: string; };
 
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
@@ -168,7 +167,7 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
                         current={pagination.current}
                         pageSize={pagination.pageSize}
                         total={pagination.total}
-                        onChange={(page, pageSize) => handleTableChange({ current: page, pageSize })}
+                        // onChange={(page, pageSize) => handleTableChange({ current: page, pageSize })}
                     />
                 </Card>
             </div>
@@ -215,39 +214,44 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
 
 // --- My Attendance View (Refactored from MobileView) ---
 const MyAttendanceView = () => {
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
-    const [items, setItems] = useState<AttendanceEntry[]>([]);
+    const [employeeId, setEmployeeId] = useState<number | null>(null);
+    const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [chartData, setChartData] = useState({ presents: 0, absents: 0, lates: 0, leave: 0 }); // Added 'lates'
-    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 }); // Renamed 'claims'
+    const [chartData, setChartData] = useState({ presents: 0, absents: 0, lates: 0, leave: 0 }); 
+    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 }); 
 
     useEffect(() => {
-        setEmployeeId(localStorage.getItem('employee_id'));
-        if (!employeeId) return; // Don't fetch if user is not loaded yet
+        const storedId = localStorage.getItem('employee_id');
+        if (!storedId) return;
+
+        const numericId = Number(storedId);
+        setEmployeeId(numericId);
+
+        if (!employeeId) return; 
 
         setLoading(true);
         findEmployeesById(employeeId).then((result) => {
             // Use the data processing function you already have
             const { mappedItems, presentsCount, lateCount } = processFullAttendanceData(result.data || []);
+            setItems(mappedItems);
 
             // Calculate stats for the current month
             let workingDaysSoFar = 0;
             const startOfMonth = moment().startOf('month');
             const today = moment();
             for (let m = moment(startOfMonth); m.isSameOrBefore(today, 'day'); m.add(1, 'days')) {
-                if (m.isoWeekday() <= 5) workingDaysSoFar++; // Mon-Fri
+                if (m.isoWeekday() <= 5) workingDaysSoFar++; 
             }
             const absentsCount = workingDaysSoFar - presentsCount;
             
             setChartData({ presents: presentsCount, absents: absentsCount > 0 ? absentsCount : 0, lates: lateCount, leave: 0 });
             setSummaryStats({ workingDays: presentsCount, lateArrivals: lateCount, earlyLeavers: 0 }); // Placeholder for earlyLeavers
-            setItems(mappedItems);
         }).catch(err => {
             message.error("Failed to load your attendance data.");
         }).finally(() => {
             setLoading(false);
         });
-    }, [employeeId]); // Re-run when the user object is available
+    }, [employeeId]);
 
     return (
         <div className="p-4">

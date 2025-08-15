@@ -71,8 +71,7 @@ const UserForm = ({
                 return;
             } else if (type === "update" && data) {
                 
-                const updatedUser = await updateUser({
-                    id: data.id, 
+                const updatedUser = await updateUser(data.id,{
                     name: formData.name,
                     email: formData.email,
                     password: formData.password,

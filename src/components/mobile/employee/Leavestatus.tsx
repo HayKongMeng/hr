@@ -29,6 +29,8 @@ const LeaveStatus = ({
 }: LeaveStatusProps) => {
   const [leaveEntries, setLeaveEntries] = useState<LeaveEntry[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const companyId = localStorage.getItem('company_id');
+
 
   const fetchLeave: () => void = () => {
     fetchLeaves(1, 10).then((result) => {
@@ -56,6 +58,7 @@ const LeaveStatus = ({
       const response = await ApproveLeave({
         leave_id: selectedIds[0],
         approved_at: "2025-05-27 10:30:00",
+        company_id: Number(companyId),
         status: "Approved",
       });
       
@@ -88,6 +91,7 @@ const LeaveStatus = ({
       const response = await ApproveLeave({
         leave_id: selectedIds[0],
         approved_at: formattedApprovedAt,
+        company_id: Number(companyId),
         status: "Rejected",
       });
       

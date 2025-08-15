@@ -166,15 +166,14 @@ export const createLeaveType = async (payload: {
     }
 };
 
-export const updateLeaveType = async (payload: {
-    id: number;
+export const updateLeaveType = async (id:number, payload: {
     prefix: string;
     type_name: string;
     max_days: number;
     description?: string;
 }) => {
     try {
-        const leaveResponse = await api.put(`/leave/leave-types/${payload.id}`, {
+        const leaveResponse = await api.put(`/leave/leave-types/${id}`, {
             prefix: payload.prefix,
             type_name: payload.type_name,
             max_days: payload.max_days,
@@ -209,7 +208,7 @@ export const createEntitlement = async (payload: {
     employee_id: number;
     entitlement_type_id: number;
     total_days: number;
-    user_days: number;
+    used_days: number;
 }) => {
     const response = await api.post(`leave/entitlements`, payload);
     return response.data.result;

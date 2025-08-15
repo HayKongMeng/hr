@@ -79,8 +79,7 @@ const DepartmentForm = ({
                 return;
             } else if (type === "update" && data) {
                 
-                const updatedDepartment = await updateDepartment({
-                    id: data.id, 
+                const updatedDepartment = await updateDepartment(data.id, {
                     company_id: selectedCompany?.id as number,
                     code: formData.code,
                     name: formData.name,

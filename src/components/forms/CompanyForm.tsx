@@ -63,7 +63,6 @@ const CompanyForm = ({
     }, [data, type]);
 
     const handleCompany = handleSubmit(async (formData) => {
-        console.log(formData);
         setLoading(true);
         try {
             if (type === "create") {
@@ -94,8 +93,7 @@ const CompanyForm = ({
                 return;
             } else if (type === "update" && data) {
                 
-                const updatedCompany = await updateCompany({
-                    id: data.id, 
+                const updatedCompany = await updateCompany(data.id, {
                     company_code: formData.company_code,
                     name: formData.name,
                     type: formData.type,

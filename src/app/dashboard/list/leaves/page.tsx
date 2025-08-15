@@ -292,7 +292,9 @@ const LeaveManagementPage = () => {
                     setEmployees(allEmployees);
                     setLeaveTypes(typesRes || []);
                     const newEmployeeMap: { [id: number]: Employee } = {};
-                    allEmployees.forEach(emp => { newEmployeeMap[emp.id] = emp; });
+                    allEmployees.forEach((emp: Employee) => { 
+                        newEmployeeMap[emp.id] = emp; 
+                    });
                     setEmployeeMap(newEmployeeMap);
                 }
                 
@@ -353,12 +355,47 @@ const LeaveManagementPage = () => {
         setIsModalOpen(true);
     };
 
-    const handleCancel = async (leaveRequest: Leave) => {
-        const payload = {
-        ...leaveRequest,
-        status_id: 4, 
-    };
-    return updateLeave(payload);
+    const handleCancel = (id: number) => {
+        const recordToCancel = myLeaves.find(leave => leave.id === id);
+
+        if (!recordToCancel) {
+            message.error("Could not find the leave request to cancel.");
+            return;
+        }
+
+        Modal.confirm({
+            title: 'Cancel Leave Request?',
+            content: 'Are you sure you want to cancel this leave request?',
+            okText: 'Yes, Cancel',
+            okType: 'danger',
+            cancelText: 'No',
+            onOk: async () => {
+                try {
+                    const companyId = localStorage.getItem('company_id');
+                    if (!companyId) {
+                        message.error("Company ID not found. Please log in again.");
+                        return;
+                    }
+
+                    const payload = {
+                        id: recordToCancel.id,
+                        employee_id: recordToCancel.employee_id,
+                        company_id: Number(companyId),
+                        leave_type_id: recordToCancel.leave_type.id,
+                        status_id: 4,
+                        start_date: recordToCancel.start_date,
+                        end_date: recordToCancel.end_date,
+                        reason: recordToCancel.reason,
+                    };
+
+                    await updateLeave(payload);
+                    message.success("Leave request has been cancelled.");
+                    fetchData(); 
+                } catch (error) {
+                    message.error("Failed to cancel the leave request.");
+                }
+            },
+        });
     };
     
     const handleDelete = (id: number) => {

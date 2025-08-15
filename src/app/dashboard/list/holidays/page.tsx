@@ -171,7 +171,7 @@ const HolidayPage = () => {
           onEdit={handleOpenModal}
           onDelete={handleDelete}
           pagination={pagination}
-          onPageChange={(page, pageSize) => setPagination(prev => ({...prev, current: page, pageSize}))}
+          onPageChange={() => setPagination(prev => ({...prev}))}
         />
       ) : (
         <DesktopView

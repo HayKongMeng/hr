@@ -181,7 +181,7 @@ const LeaveTypeManagementPage = () => {
         setIsSubmitting(true);
         try {
             if (selectedLeaveType) {
-                await updateLeaveType({ ...values, id: selectedLeaveType.id });
+                await updateLeaveType( selectedLeaveType.id,values );
                 message.success("Leave type updated successfully!");
             } else {
                 await createLeaveType(values);

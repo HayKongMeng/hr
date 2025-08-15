@@ -9,7 +9,7 @@ const MarkedAttendance = () => {
     const [attendanceId, setAttendanceId] = useState<number | null>(null);
     const [hasCheckedOut, setHasCheckedOut] = useState<boolean>(false);
 
-    const employeeId = 3;
+    const employeeId = Number(localStorage.getItem("employeeId"));
     const today = new Date().toISOString().split("T")[0];
 
     useEffect(() => {

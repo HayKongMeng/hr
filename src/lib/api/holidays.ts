@@ -5,7 +5,7 @@ type HolidayPayload = {
     start_date: string;
     end_date: string;
     description?: string | null;
-    type: 'Public' | 'Optional' | 'Company' | 'Regional';
+    type: HolidayType;
     is_recurring: boolean;
 };
 
@@ -14,7 +14,7 @@ export const fetchHolidays = async (page: number = 1, limit: number = 10) => {
     return response.data.result;
 };
 
-type HolidayType = 'Public' | 'Optional' | 'Company' | 'Regional';
+ export type HolidayType = 'Public' | 'Optional' | 'Company' | 'Regional';
 
 export const createHoliday = async (payload: {
     name: string;

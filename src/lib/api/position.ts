@@ -36,14 +36,13 @@ export const createPosition = async (payload: {
     }
 };
 
-export const updatePosition = async (payload: {
-    id: number;
+export const updatePosition = async (id: number, payload: {
     code: string;
     title: string;
     description?: string | null;
     status: boolean;
 }) => {
-    const positionResponse = await api.put(`/employee/positions/${payload.id}`, {
+    const positionResponse = await api.put(`/employee/positions/${id}`, {
         code: payload.code,
         title: payload.title,
         description: payload.description,

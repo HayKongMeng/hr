@@ -173,7 +173,7 @@ const LeaveListPage = () => {
                             <>
                                 <FormModal
                                     table="Leave"
-                                    type="changestatus"
+                                    type="create"
                                     data={item}
                                     onSuccess={handleLeaveSuccess}
                                 />

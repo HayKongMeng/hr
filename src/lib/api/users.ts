@@ -55,8 +55,7 @@ export const createUser = async (payload: {
     }
 };
 
-export const updateUser = async (payload: {
-    id: number;
+export const updateUser = async (id: number, payload: {
     name: string;
     email: string;
     password: string;
@@ -65,7 +64,7 @@ export const updateUser = async (payload: {
     phone: string;
     role_id: number;
 }) => {
-    const userResponse = await api.put(`/auth/edit-register/${payload.id}`, {
+    const userResponse = await api.put(`/auth/edit-register/${id}`, {
         name: payload.name,
         email: payload.email,
         password: payload.password,

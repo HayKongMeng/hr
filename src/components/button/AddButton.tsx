@@ -36,7 +36,7 @@ const AddButton: React.FC<AddButtonProps> = ({
     <>
       <ButtonCustom
         onClick={handleOpen}
-        label={label}
+        label="Add"
         icon={<IoMdAdd />}
         className="primary-button mt-4 gap-0 rounded-md px-2 "
       />

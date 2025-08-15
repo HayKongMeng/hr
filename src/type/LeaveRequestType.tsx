@@ -27,4 +27,7 @@ export type AttendanceEntry = {
     id: number;
     name: string;
   };
+  status: 'Present' | 'Absent' | 'Late';
+  checkIn: string;
+  checkOut: string;
 };

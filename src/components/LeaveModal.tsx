@@ -35,13 +35,22 @@ const LeaveModal: React.FC<LeaveModalProps> = ({ isOpen, onClose, data }) => {
     const [employeeName, setEmployeeName] = useState<string>("");
     const isoString = new Date().toISOString();
     const mysqlDatetime = isoString.replace('T', ' ').replace('Z', '');
+    const [companyId, setCompanyId] = useState<number | null>(null);
+    useEffect(() => {
+        const storedCompanyId = localStorage.getItem('company_id');
+        if (storedCompanyId) {
+            setCompanyId(Number(storedCompanyId));
+        }
+    }, []);
 
     const handleApprove = async () => {
         setLoading(true);
+
         try {
             const res = await createApprove({
                 leave_id: data.id,
                 status_id: 2,
+                company_id: Number(companyId),
                 approved_at: mysqlDatetime,
             });
             toast.success("Leave approved successfully!");
@@ -57,6 +66,7 @@ const LeaveModal: React.FC<LeaveModalProps> = ({ isOpen, onClose, data }) => {
             const res = await createApprove({
                 leave_id: data.id,
                 status_id: 3,
+                company_id: Number(companyId),
                 approved_at: mysqlDatetime,
             });
             toast.success("Leave rejected successfully!");

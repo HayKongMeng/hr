@@ -26,6 +26,13 @@ const ApprovedForm = ({
     const [employeeName, setEmployeeName] = useState<string>("");
     const isoString = new Date().toISOString();
     const mysqlDatetime = isoString.replace('T', ' ').replace('Z', '');
+    const [companyId, setCompanyId] = useState<number | null>(null);
+    useEffect(() => {
+        const storedCompanyId = localStorage.getItem('company_id');
+        if (storedCompanyId) {
+            setCompanyId(Number(storedCompanyId));
+        }
+    }, []);
 
     const handleApprove = async () => {
         setLoading(true);
@@ -35,6 +42,7 @@ const ApprovedForm = ({
                     leave_id: data.id,
                     status_id: 2,
                     approved_at: mysqlDatetime,
+                    company_id: Number(companyId),
                 });
                 
                 toast.success("Leave approved successfully!");
@@ -56,6 +64,7 @@ const ApprovedForm = ({
                     leave_id: data.id,
                     status_id: 3,
                     approved_at: mysqlDatetime,
+                    company_id: Number(companyId),
                 });
                 toast.success("Leave rejected successfully!");
 

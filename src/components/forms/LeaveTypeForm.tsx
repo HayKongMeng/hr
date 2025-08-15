@@ -58,8 +58,7 @@ const LeaveTypeForm = ({
 
                 return;
             } else if (type === "update" && data) {
-                const updatedLeaveType = await updateLeaveType({
-                    id: data.id, 
+                const updatedLeaveType = await updateLeaveType(data.id, {
                     prefix: formData.prefix,
                     type_name: formData.type_name,
                     max_days: formData.max_days,

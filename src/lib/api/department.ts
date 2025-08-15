@@ -38,15 +38,14 @@ export const createDepartment = async (payload: {
     }
 };
 
-export const updateDepartment = async (payload: {
-    id: number;
+export const updateDepartment = async (id: number, payload: {
     company_id: number,
     code: string;
     name: string;
     description?: string | null;
     status: boolean;
 }) => {
-    const departmentResponse = await api.put(`/employee/departments/${payload.id}`, {
+    const departmentResponse = await api.put(`/employee/departments/${id}`, {
         company_id: payload.company_id,
         code: payload.code,
         name: payload.name,

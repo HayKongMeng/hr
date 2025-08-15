@@ -83,7 +83,7 @@ const MaritalStatusPage = () => {
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
-            const res = await fetchMaritalStatuses(page, pageSize);
+            const res = await fetchMaritalStatuses();
             const data = res.data || [];
             if (page === 1 && data.length === 0) {
                 setNeedsSetup(true);

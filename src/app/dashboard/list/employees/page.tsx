@@ -120,10 +120,10 @@ const EmployeeManagementPage = () => {
     const [dropdownData, setDropdownData] = useState<{ positions: any[], departments: any[], workStations: any[], employmentTypes: any[] }>({ positions: [], departments: [], workStations: [], employmentTypes: [] });
     const [dropdownLoading, setDropdownLoading] = useState(false);
 
-    const fetchData = useCallback(async (page: number, pageSize: number, search: string) => {
+    const fetchData = useCallback(async (page: number, pageSize: number) => {
         setLoading(true);
         try {
-            const res = await fetchEmployees(page, pageSize, search);
+            const res = await fetchEmployees(page, pageSize);
             setEmployees(res.data || []);
             setPagination({ current: page, pageSize, total: res.total_items });
         } catch (error) { message.error("Failed to fetch employees."); }
@@ -144,10 +144,10 @@ const EmployeeManagementPage = () => {
     
     useEffect(() => {
         if (isClient) {
-            const debounce = setTimeout(() => fetchData(pagination.current, pagination.pageSize, searchQuery), 300);
+            const debounce = setTimeout(() => fetchData(pagination.current, pagination.pageSize), 300);
             return () => clearTimeout(debounce);
         }
-    }, [isClient, pagination.current, pagination.pageSize, searchQuery, fetchData]);
+    }, [isClient, pagination.current, pagination.pageSize, fetchData]);
 
     // --- 4. THE CONDITIONAL RETURN NOW COMES AFTER ALL HOOKS ---
     if (!isClient) {
@@ -222,7 +222,7 @@ const EmployeeManagementPage = () => {
             }
 
             handleModalCancel();
-            fetchData(pagination.current, pagination.pageSize, searchQuery);
+            fetchData(pagination.current, pagination.pageSize);
         } catch (error: any) {
             console.error("Failed to save employee:", error);
             const errorMessage = error?.response?.data?.exception?.message || error?.response?.data?.message || "Operation failed.";
@@ -242,7 +242,7 @@ const EmployeeManagementPage = () => {
                 try {
                     await deleteEmployee(id);
                     message.success("Employee deleted.");
-                    fetchData(pagination.current, pagination.pageSize, searchQuery);
+                    fetchData(pagination.current, pagination.pageSize);
                 } catch { message.error("Failed to delete employee."); }
             },
         });

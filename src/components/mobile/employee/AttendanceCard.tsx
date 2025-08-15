@@ -1,9 +1,9 @@
 "use client";
 import Pagination from "@/components/Pagination";
-import { AttendanceEntry, LeaveRequest } from "@/type/LeaveRequestType";
+import { MappedAttendanceItem } from "@/lib/dateFormat";
 
 type AttendanceCardProps = {
-  items: AttendanceEntry[];
+  items: MappedAttendanceItem[];
 };
 
 const AttendanceCard: React.FC<AttendanceCardProps> = ({ items }) => {
@@ -17,7 +17,7 @@ const AttendanceCard: React.FC<AttendanceCardProps> = ({ items }) => {
           iconUrl: "https://api.builder.io/api/v1/image/assets/feb8ce0efd7646cb96252d2c86689552/90da4342bf08482f85d3851d966c0b0915777c57?placeholderIfAbsent=true"
         };
       case 'on time':
-      case 'ontime':
+      case 'Present':
         return {
           bgColor: 'bg-[#d5e8ff]',
           textColor: 'text-[#54a0fd]',
@@ -51,7 +51,7 @@ const AttendanceCard: React.FC<AttendanceCardProps> = ({ items }) => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[14px] font-medium text-[#141414] leading-none tracking-[-0.14px] mb-[7px]">
-                  {item.dateRange}
+                  {item.date}
                 </div>
                 <div className="flex items-center gap-7 text-[16px] font-normal tracking-[-0.5px] leading-[1.06]">
                   <div className={`flex items-center gap-[5px] ${styles.checkInColor}`}>
@@ -73,13 +73,13 @@ const AttendanceCard: React.FC<AttendanceCardProps> = ({ items }) => {
                 </div>
               </div>
               <div className={`${styles.bgColor} ${styles.textColor} px-[15px] py-1 rounded text-[12px] font-bold text-center whitespace-nowrap min-w-[66px]`}>
-                {item.status === 'ontime' ? 'On time' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                {item.status === 'Present' ? 'On time' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
               </div>
             </div>
           </div>
         );
       })}
-      <Pagination />
+      {/* <Pagination /> */}
     </div>
   );
 };

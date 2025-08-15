@@ -79,8 +79,7 @@ const HolidayFrom = ({
                 return;
             } else if (type === "update" && data) {
                 
-                const updatedPosition = await updateHoliday({
-                    id: data.id, 
+                const updatedPosition = await updateHoliday(data.id, {
                     name: formData.name,
                     start_date: formData.start_date,
                     end_date: formData.end_date,

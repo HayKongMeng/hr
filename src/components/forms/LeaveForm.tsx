@@ -51,6 +51,13 @@ const LeaveForm = ({
     const [selectedLeaveType, setSelectedLeaveType] = useState<{ id: number; type_name: string } | null>(null);
 
     const [loading, setLoading] = useState(false);
+    const [companyId, setCompanyId] = useState<number | null>(null);
+    useEffect(() => {
+        const storedCompanyId = localStorage.getItem('company_id');
+        if (storedCompanyId) {
+            setCompanyId(Number(storedCompanyId));
+        }
+    }, []);
 
     const handleDepartment = handleSubmit(async (formData) => {
         setLoading(true);
@@ -60,6 +67,7 @@ const LeaveForm = ({
                     employee_id: selectedEmployee?.id as number,
                     leave_type_id: selectedLeaveType?.id as number,
                     status_id: 1,
+                    company_id: Number(companyId),
                     start_date: formData.start_date,
                     end_date: formData.end_date,
                     reason: formData.reason || null,
@@ -79,6 +87,7 @@ const LeaveForm = ({
                     employee_id: selectedEmployee?.id as number,
                     leave_type_id: selectedLeaveType?.id as number,
                     status_id: 1,
+                    company_id: Number(companyId),
                     start_date: formData.start_date,
                     end_date: formData.end_date,
                     reason: formData.reason || null,

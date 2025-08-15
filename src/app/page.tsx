@@ -121,8 +121,7 @@ const LoginPage = () => {
                             <Loading />
                         ) : (
                             <Button
-                                type='submit'
-                                label='Log in'
+                                type='text'
                                 className='w-full h-10 bg-blue-700 text-white rounded-full'
                             />
                         )}

@@ -72,8 +72,7 @@ const PositionForm = ({
                 return;
             } else if (type === "update" && data) {
                 
-                const updatedPosition = await updatePosition({
-                    id: data.id, 
+                const updatedPosition = await updatePosition(data.id,{
                     code: formData.code,
                     title: formData.title,
                     description: formData.description,
