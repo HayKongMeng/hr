@@ -16,8 +16,9 @@ import {
     fetchPositions,
     createPosition,
     updatePosition,
-    deletePosition // Re-enabled this import
+    deletePosition
 } from "@/lib/api/position";
+import { FiDatabase } from "react-icons/fi";
 
 // --- Type Definitions ---
 type Position = {
@@ -60,6 +61,22 @@ const DesignationForm = ({ form, onFinish }: { form: any; onFinish: (values: any
     </Form>
 );
 
+const SetupView = ({ onSetup, loading }: { onSetup: () => void; loading: boolean }) => (
+    <Card>
+        <div className="text-center p-8">
+            <FiDatabase className="mx-auto text-4xl text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Setup Required</h2>
+            <p className="text-gray-600 mb-6">
+                It looks like there are no designations set up yet. <br />
+                You can add them manually or create some sample data to get started.
+            </p>
+            <Button type="primary" size="large" onClick={onSetup} loading={loading}>
+                Auto-Setup Sample Data
+            </Button>
+        </div>
+    </Card>
+);
+
 // --- Main Page Component ---
 const DesignationManagementPage = () => {
     // Hooks
@@ -75,31 +92,39 @@ const DesignationManagementPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+    const [needsSetup, setNeedsSetup] = useState(false);
 
     // Data Fetching
-    const fetchData = useCallback(async (page: number, pageSize: number) => {
+     const fetchData = useCallback(async (page: number = 1, pageSize: number = 10) => {
         setLoading(true);
         try {
             const res = await fetchPositions(page, pageSize);
-            setPositions(res.data || []);
-            setPagination(prev => ({ ...prev, total: res.total_items }));
+            const data = res.data || []; 
+
+            if (page === 1 && data.length === 0) {
+                setNeedsSetup(true);
+            } else {
+                setNeedsSetup(false);
+            }
+
+            setPositions(data);
+            setPagination(prev => ({ ...prev, total: res.total_items || 0, current: page, pageSize }));
         } catch (error) {
             message.error("Failed to fetch designations.");
         } finally {
             setLoading(false);
         }
-    }, []); // This useCallback is fine, it has no dependencies
+    }, []); 
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    // CORRECTED: This useEffect now depends on pagination values, not the fetchData function.
     useEffect(() => {
         if (isClient) {
             fetchData(pagination.current, pagination.pageSize);
         }
-    }, [isClient, pagination.current, pagination.pageSize]); // The loop is broken here.
+    }, [isClient, pagination.current, pagination.pageSize]); 
 
     if (!isClient) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
@@ -133,7 +158,6 @@ const DesignationManagementPage = () => {
                 message.success("Designation created successfully!");
             }
             handleModalCancel();
-            // Refetch the data for the current page
             fetchData(pagination.current, pagination.pageSize);
         } catch (error: any) {
             message.error(error?.response?.data?.message || "Operation failed.");
@@ -161,9 +185,33 @@ const DesignationManagementPage = () => {
         });
     };
     
-    // This handler now updates the pagination state, which will trigger the useEffect to refetch data.
     const handleTableChange: TableProps<Position>['onChange'] = (p) => {
         setPagination(prev => ({ ...prev, current: p.current!, pageSize: p.pageSize! }));
+    };
+
+    const handleSetup = async () => {
+        setIsSubmitting(true);
+        message.loading({ content: 'Creating sample data...', key: 'setup' });
+        try {
+            const sampleData = [
+                { title: 'Software Engineer', code: 'SE', status: true },
+                { title: 'Senior Software Engineer', code: 'SSE', status: true },
+                { title: 'Project Manager', code: 'PM', status: true },
+                { title: 'HR Manager', code: 'HRM', status: true },
+                { title: 'Accountant', code: 'ACC', status: true },
+            ];
+            
+            await Promise.all(sampleData.map(item => createPosition(item)));
+            
+            message.success({ content: 'Sample data created successfully!', key: 'setup', duration: 2 });
+            
+            // Refresh the data to show the new items and exit setup mode
+            await fetchData();
+        } catch (error) {
+            message.error({ content: 'Failed to create sample data.', key: 'setup', duration: 3 });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const viewProps = { positions, loading, pagination, handleTableChange, handleModalOpen, handleDelete };
@@ -175,26 +223,24 @@ const DesignationManagementPage = () => {
                     <h1 className="text-lg font-semibold">Manage Designations</h1>
                     <div className="text-sm text-gray-500 flex items-center gap-2">
                         <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
-                        <MdKeyboardArrowRight />
-                        <span>Designations</span>
+                        <MdKeyboardArrowRight /><span>Designations</span>
                     </div>
                 </div>
-                <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Designation</Button>
+                {/* Hide 'Add' button in setup mode */}
+                {!needsSetup && (
+                    <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Designation</Button>
+                )}
             </div>
 
-            <Card>
-                {isMobile ? <MobileView {...viewProps} /> : <DesktopView {...viewProps} />}
-            </Card>
+            {needsSetup ? (
+                <SetupView onSetup={handleSetup} loading={isSubmitting} />
+            ) : (
+                 <Card>
+                    {isMobile ? <MobileView {...viewProps} /> : <DesktopView {...viewProps} />}
+                </Card>
+            )}
 
-            <Modal
-                title={selectedPosition ? "Edit Designation" : "Add New Designation"}
-                open={isModalOpen}
-                onCancel={handleModalCancel}
-                onOk={form.submit}
-                confirmLoading={isSubmitting}
-                width={isMobile ? '100%' : 520}
-                style={isMobile ? { top: 0, padding: 0, height: '100vh' } : {}}
-            >
+            <Modal title={selectedPosition ? "Edit Designation" : "Add New Designation"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting} width={isMobile ? '100%' : 520} style={isMobile ? { top: 0, padding: 0, height: '100vh' } : {}}>
                 <div className={isMobile ? 'p-4' : ''}>
                     <DesignationForm form={form} onFinish={handleFormSubmit} />
                 </div>

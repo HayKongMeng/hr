@@ -4,30 +4,32 @@ import Image from 'next/image';
 import React, { useState } from 'react';
 import UserDropdown from './UserDropdown';
 import { CiMenuBurger } from 'react-icons/ci';
+import { Button } from 'antd';
+import { AiOutlineMenuUnfold } from 'react-icons/ai';
+import { RiMenuUnfold2Fill } from 'react-icons/ri';
 
 interface NavbarProps {
-    toggleMenu: () => void;
+    toggleCollapsed: () => void;
+    collapsed: boolean;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ toggleMenu }) => {
+const Navbar: React.FC<NavbarProps> = ({ toggleCollapsed, collapsed }) => {
     const [rotated, setRotated] = useState(false);
 
     const handleClick = () => {
         setRotated((prev) => !prev);
-        toggleMenu();
+        // toggleMenu();
     };
 
     return (
         <div className="flex items-center justify-between p-4 border-b md:border-b-0 z-10 relative">
             <div className="flex items-center">
-                <button className="w-10 h-10 mr-2 items-center justify-center rounded-lg border ring-gray-300 text-xs p-2 block md:hidden">
-                    <CiMenuBurger
-                        className={`w-5 h-5 transition-transform duration-300 ${
-                            rotated ? 'rotate-90' : 'rotate-0'
-                        }`}
-                        onClick={handleClick}
-                    />
-                </button>
+                <Button
+                    className="hidden md:block mr-2"
+                    type="text"
+                    icon={collapsed ? <AiOutlineMenuUnfold /> : <RiMenuUnfold2Fill />}
+                    onClick={toggleCollapsed} 
+                />
 
                 <UserDropdown />
             </div>

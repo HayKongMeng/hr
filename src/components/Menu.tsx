@@ -7,8 +7,6 @@ import { toast } from 'sonner';
 import { RxDashboard } from "react-icons/rx";
 import { LuUsers, LuSettings } from "react-icons/lu";
 import { TbPoint } from "react-icons/tb";
-import { RiArrowDropDownLine } from "react-icons/ri";
-import { LuServerCog } from "react-icons/lu";
 import { LuUserCog } from "react-icons/lu";
 import { FiUserPlus } from "react-icons/fi";
 import {
@@ -17,8 +15,9 @@ import {
   MdOutlineSpaceDashboard,
 } from 'react-icons/md';
 
+import { Menu as AntdMenu } from 'antd';
 import type { IconType } from 'react-icons';
-import { Spin } from 'antd';
+import { MenuItemType } from 'antd/es/menu/interface';
 
 
 const api = {
@@ -45,6 +44,11 @@ interface MenuItem extends Omit<MenuChildItem, 'href'> {
     visible: string[];
     children?: MenuChildItem[];
 }
+interface MenuProps {
+  closeMenu: () => void;
+  collapsed: boolean;
+}
+
 
 interface MenuSection {
     items: MenuItem[];
@@ -225,7 +229,8 @@ const menuItems: MenuSection[] = [
     },
 ];
 
-const Menu = () => {
+
+const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
     const router = useRouter();
     const pathname = usePathname();
     const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
@@ -245,94 +250,75 @@ const Menu = () => {
         }
     };
 
-    const toggleDropdown = (key: string) => {
-        setOpenDropdowns((prev) =>
-            prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-        );
+    const transformMenuItems = (items: (MenuItem | MenuChildItem)[], userRole: string): MenuItemType[] => {
+        return items
+            .filter(item => item.visible.includes(userRole))
+            .map((item) => {
+                const key = item.href || item.label;
+                const icon = item.iconComponent ? React.createElement(item.iconComponent) : null;
+
+                if (item.children && item.children.length > 0) {
+                    return {
+                        key: key,
+                        icon: icon,
+                        label: item.label,
+                        children: transformMenuItems(item.children, userRole),
+                    } as MenuItemType;
+                }
+
+                return {
+                    key: key,
+                    icon: icon,
+                    label: (
+                        <Link href={item.href || '#'} onClick={closeMenu}>
+                            {item.label}
+                        </Link>
+                    ),
+                } as MenuItemType;
+            });
     };
+
+    const antdMenuItems = role ? transformMenuItems(menuItems[0].items, role) : [];
     
-    const renderMenuItems = (
-        items: (MenuItem | MenuChildItem)[],
-        parentKey = ''
-    ) => {
-        return items.map((item) => {
-            if (!role || !item.visible.includes(role)) {
-                return null;
+    const getDefaultOpenKeys = () => {
+        const openKeys: string[] = [];
+        const findPath = (items: (MenuItem | MenuChildItem)[]) => {
+            for (const item of items) {
+                if (item.children) {
+                    const childHasActiveLink = item.children.some(child => child.href === pathname || (child.children && child.children.some(c => c.href === pathname)));
+                    if (childHasActiveLink) {
+                        openKeys.push(item.href || item.label);
+                        findPath(item.children); 
+                    }
+                }
             }
-
-            const key = parentKey ? `${parentKey} > ${item.label}` : item.label;
-            const isDropdown = !!item.children?.length;
-            const isOpen = openDropdowns.includes(key);
-            const isActive = item.href && pathname === item.href;
-
-        if (isDropdown) {
-            return (
-                <div key={key}>
-                    <button
-                        onClick={() => toggleDropdown(key)}
-                        className="flex w-full items-center justify-between px-3 py-3.5 text-left rounded-lg hover:bg-gray-100 transition"
-                    >
-                        <div className="flex items-center gap-3">
-                            {item.iconComponent &&
-                            React.createElement(item.iconComponent, {
-                                className: 'w-5 h-5 min-w-[20px] min-h-[20px] text-gray-600',
-                            })}
-                            <span className="text-sm font-medium">{item.label}</span>
-                        </div>
-                        <RiArrowDropDownLine
-                            size={24}
-                            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                        />
-                    </button>
-                    <div
-                        className={`ml-4 overflow-hidden transition-all duration-300 ${
-                            isOpen ? 'max-h-[1000px] mt-1' : 'max-h-0'
-                        }`}
-                    >
-                        <div className="pl-2 border-l border-gray-200 text-xs">
-                            {renderMenuItems(item.children!, key)}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <Link
-                key={key}
-                href={item.href || '#'}
-              
-                className={`flex items-center gap-3 px-3 py-3.5 rounded-lg transition text-sm font-medium ${
-                    isActive ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-                {item.iconComponent &&
-                    React.createElement(item.iconComponent, {
-                        className: isActive ? 'w-5 h-5 min-w-[20px] min-h-[20px] text-orange-600' : 'w-5 h-5 min-w-[20px] min-h-[20px] text-gray-600',
-                    })}
-                <span className='text-sm'>{item.label}</span>
-            </Link>
-        );
-        });
+        };
+        findPath(menuItems[0].items);
+        return openKeys;
     };
+
 
     return (
-        <div className="min-h-screen overflow-y-auto pr-2">
-            <nav className="mt-2 text-sm text-gray-800 space-y-6">
-                {menuItems.map((section, index) => (
-                    <div key={index}>
-                        <div className="space-y-1">{renderMenuItems(section.items)}</div>
-                    </div>
-                ))}
-            </nav>
+        <div className="h-full flex flex-col justify-between">
+            <AntdMenu
+                mode="inline"
+                inlineCollapsed={collapsed}
+                theme="light"
+                selectedKeys={[pathname]}
+                defaultOpenKeys={getDefaultOpenKeys()}
+                items={antdMenuItems}
+                style={{ borderRight: 0 }} 
+            />
+            
+            {/* Logout Button */}
             {role && (
-                <div className="mt-6 px-3">
+                <div className="p-2">
                     <button
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-3 px-3 py-3.5 rounded-lg transition text-sm font-medium text-red-600 hover:bg-red-50"
+                        className="flex w-full items-center gap-3 px-3 py-3 rounded-lg transition text-sm font-medium text-red-600 hover:bg-red-50"
                     >
-                        <MdLogout className="w-5 h-5 min-w-[20px] min-h-[20px]" />
-                        <span>Logout</span>
+                        <MdLogout className="w-5 h-5 min-w-[20px]" />
+                        {!collapsed && <span>Logout</span>}
                     </button>
                 </div>
             )}

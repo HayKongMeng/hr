@@ -117,15 +117,25 @@ const MobileView = () => {
     const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [todayAttendance, setTodayAttendance] = useState({ checkIn: "--:--", checkOut: "--:--" });
 
-    const employee_id = 1; // This should be dynamic
+    const [employeeId, setEmployeeId] = useState<number | null>(null);
     
+      useEffect(() => {
+        const storeEmployeeId = localStorage.getItem('employee_id');
+        if (storeEmployeeId) {
+            setEmployeeId(Number(storeEmployeeId));
+        }
+      }, []);
     const fetchMyAttendance = useCallback(() => {
-        findEmployeesById(employee_id).then(result => {
+        if (!employeeId) {
+            console.error("Employee ID is not set.");
+            return;
+        }
+        findEmployeesById(employeeId).then(result => {
             const { mappedItems, todayDetails } = processFullAttendanceData(result.data || []);
             setItems(mappedItems);
             setTodayAttendance(todayDetails);
         });
-    }, [employee_id]);
+    }, [employeeId]);
     
     useEffect(() => {
         fetchMyAttendance();

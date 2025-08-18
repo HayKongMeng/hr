@@ -8,7 +8,6 @@ import Modal from "../Modal";
 import { Spin, Tabs, TabsProps } from "antd";
 import Link from "next/link";
 import { getEmployeeById } from "@/lib/api/employee";
-import Image from "next/image";
 import Menu from "@/components/Menu";
 
 type Employee = {
@@ -30,7 +29,12 @@ const routeTitleMap: Record<string, string> = {
   // mobile: 'Mobile',
 };
 
-const MobileNavbar = () => {
+interface MobileNavbarProps {
+    toggleMenu: () => void;
+}
+
+const MobileNavbar: React.FC<MobileNavbarProps> = ({ toggleMenu }) => {
+
   const pathname = usePathname();
   const title = useMemo(() => {
     const segments = pathname.split("/").filter(Boolean);
@@ -153,17 +157,16 @@ const MobileNavbar = () => {
   }
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
   return (
     <div className="font-sans relative" >
       <header className="relative z-10 flex items-center justify-between p-4 bg-[#392648]">
         <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-2 text-white hover:text-gray-200 focus:outline-none"
-          aria-label="Open menu"
-        >
-          <HiOutlineMenuAlt2 className="w-6 h-6" />
-        </button>
+                onClick={toggleMenu}
+                className="p-2 text-white"
+                aria-label="Open menu"
+            >
+                <HiOutlineMenuAlt2 className="w-6 h-6" />
+            </button>
         <div className="relative p-2 text-white">
           <IoNotificationsOutline
             className="w-6 h-6"
@@ -225,10 +228,10 @@ const MobileNavbar = () => {
         </div>
 
         {/* Reuse the Menu component */}
-        <div className="overflow-y-auto h-full" 
+        {/* <div className="overflow-y-auto h-full" 
         >
-          <Menu />
-        </div>
+          <Menu closeMenu={() => setIsMenuOpen(false)}/>
+        </div> */}
       </div>
 
       {/* Overlay to close menu when clicked outside */}
