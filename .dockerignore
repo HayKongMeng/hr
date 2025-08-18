@@ -1,0 +1,11 @@
+.DS_Store
+.dockerignore
+.env
+.env*.local
+.git
+.gitignore
+.next
+.vscode
+npm-debug.log
+README.md
+node_modules
