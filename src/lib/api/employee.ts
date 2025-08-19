@@ -7,9 +7,28 @@ export const fetchEmployees = async (page: number = 1, limit: number = 10) => {
 };
 
 export type Employee = {
-    id: number;
-    name: string;
+    id: number; 
     user_id: number; 
+    employee_code: string; 
+    name: string; 
+    first_name: string; 
+    last_name: string; 
+    username: string; 
+    email: string; 
+    phone: string; 
+    address: string; 
+    date_of_birth: string; 
+    hire_date: string; 
+    gender: 'Male' | 'Female' | 'Other'; 
+    image?: string; 
+    position?: { id: number; title: string }; 
+    department?: { id: number; name: string }; 
+    work_station?: { id: number; name: string }; 
+    employment_type?: { id: number; status_name: string }; 
+    created_at: string; 
+    reporting_line1?: number | null;
+    reporting_line2?: number | null;
+    procurement_line?: number | null;
 };
 
 export const fetchAllEmployees = async (): Promise<Employee[]> => {

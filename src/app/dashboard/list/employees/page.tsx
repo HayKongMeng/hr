@@ -24,7 +24,7 @@ type Position = { id: number; title: string };
 type Department = { id: number; name: string };
 type WorkStation = { id: number; name: string };
 type EmploymentType = { id: number; status_name: string };
-type Employee = { id: number; user_id: number; employee_code: string; name: string; first_name: string; last_name: string; username: string; email: string; phone: string; address: string; date_of_birth: string; hire_date: string; gender: 'Male' | 'Female' | 'Other'; image?: string; position?: Position; department?: Department; work_station?: WorkStation; employment_type?: EmploymentType; created_at: string; };
+type Employee = { id: number; user_id: number; employee_code: string; name: string; first_name: string; last_name: string; username: string; email: string; phone: string; address: string; date_of_birth: string; hire_date: string; gender: 'Male' | 'Female' | 'Other'; image?: string; position?: Position; department?: Department; work_station?: WorkStation; employment_type?: EmploymentType; created_at: string;reporting_line1?: number | null; reporting_line2?: number | null; procurement_line?: number | null; };
 
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
@@ -139,7 +139,7 @@ const EmployeeManagementPage = () => {
         departments: any[], 
         workStations: any[], 
         employmentTypes: any[],
-        employees: Employee[] // Add employees to the dropdown data
+        employees: Employee[] 
     }>({ positions: [], departments: [], workStations: [], employmentTypes: [], employees: [] });
 
     const fetchData = useCallback(async (page: number, pageSize: number) => {
