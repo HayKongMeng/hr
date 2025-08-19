@@ -124,18 +124,14 @@ export const createApprove = async (payload: {
 
 export const ApproveLeave = async (payload: {
     leave_id: number;
-    company_id: number,
-    approved_at?: string;
-    status: string;
+    action: string,
+    comments: string;
 }) => {
     try {
-        const approved_by = Number(localStorage.getItem('user_id'));
         const response = await api.post(`/leave/approveds`, {
             leave_id: payload.leave_id,
-            company_id: payload.company_id,
-            approved_by,
-            approved_at: payload.approved_at,
-            status: payload.status,
+            action: payload.action,
+            comments: payload.comments,
         });
 
         return response.data;

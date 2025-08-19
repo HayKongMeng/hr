@@ -268,6 +268,7 @@ const LeaveManagementPage = () => {
     const [activeTabKey, setActiveTabKey] = useState('team');
     const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [companyId, setCompanyId] = useState<string | null>(null);
+    const [approvalForm] = Form.useForm();
     
     useEffect(() => { setIsClient(true); }, []);
     
@@ -468,16 +469,13 @@ const LeaveManagementPage = () => {
         finally { setIsSubmitting(false); }
     };
     
-    const handleApprovalAction = async (status: string) => {
+    const handleApprovalAction = async (values: { comments: string }, action: string) => {
         if (!selectedLeave) return;
 
-        if (!companyId) {
-            message.error("Company ID not found. Please log in again.");
-            return;
-        }
+        
         setIsSubmitting(true);
         try {
-            await ApproveLeave({ leave_id: selectedLeave.id, status, company_id: Number(companyId) });
+            await ApproveLeave({ leave_id: selectedLeave.id, action, comments: values.comments });
             message.success(`Leave status updated.`);
             handleModalCancel();
             fetchData();
@@ -559,13 +557,58 @@ const LeaveManagementPage = () => {
                 <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} loading={dropdownLoading} isMobile={isMobile}/>
             </Modal>
             
-            <Modal title="Manage Leave Request" open={isManageModalOpen} onCancel={handleModalCancel} footer={[
-                <Button key="back" onClick={handleModalCancel}>Cancel</Button>,
-                <Button key="reject" danger loading={isSubmitting} onClick={() => handleApprovalAction('Rejected')} icon={<FaTimes />}>Reject</Button>,
-                <Button key="approve" type="primary" loading={isSubmitting} onClick={() => handleApprovalAction('Approved')} icon={<FaCheck />}>Approve</Button>,
-            ]}>
-                <p>Approve or reject the leave request for <strong>{employeeMap[selectedLeave?.employee_id || 0]?.name || '...'}</strong>?</p>
-                <p><strong>Reason:</strong> {selectedLeave?.reason}</p>
+            <Modal 
+                title="Manage Leave Request" 
+                open={isManageModalOpen} 
+                onCancel={handleModalCancel}
+                // The footer is now part of the Form
+                footer={null} 
+            >
+                {selectedLeave && (
+                    <Form 
+                        form={approvalForm} 
+                        layout="vertical"
+                        // The onFinish handler will call the approval action
+                        onFinish={(values) => {
+                            // This is a placeholder, the actual status comes from the button
+                        }}
+                    >
+                        <p>Approve or reject the leave request for <strong>{employeeMap[selectedLeave.employee_id]?.name || '...'}</strong>?</p>
+                        <p><strong>Reason Provided:</strong> {selectedLeave.reason}</p>
+                        
+                        <Form.Item 
+                            name="comments" 
+                            label="Manager Comments" 
+                            rules={[{ required: true, message: 'Please provide a comment for your decision.' }]}
+                        >
+                            <Input.TextArea rows={4} placeholder="e.g., Approved, project timeline allows for it." />
+                        </Form.Item>
+
+                        <div className="flex justify-end gap-2 mt-4">
+                             <Button key="back" onClick={handleModalCancel}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                key="reject" 
+                                danger 
+                                loading={isSubmitting} 
+                                onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Rejected'))} 
+                                icon={<FaTimes />}
+                            >
+                                Reject
+                            </Button>
+                            <Button 
+                                key="approve" 
+                                type="primary" 
+                                loading={isSubmitting} 
+                                onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Approved'))} 
+                                icon={<FaCheck />}
+                            >
+                                Approve
+                            </Button>
+                        </div>
+                    </Form>
+                )}
             </Modal>
         </div>
     );

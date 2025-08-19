@@ -60,7 +60,7 @@ const menuItems: MenuSection[] = [
             {
                 iconComponent: RxDashboard,
                 label: "Dashboard",
-                visible: ["Admin", "Super Admin","Employee"],
+                visible: ["Admin", "Super Admin"],
                 children: [
                     {
                         iconComponent: TbPoint,
@@ -98,12 +98,12 @@ const menuItems: MenuSection[] = [
                 iconComponent: RxDashboard,
                 label: "Dashboards",
                 href: "/dashboard/dash",
-                visible: ["Admin", "Super Admin"],
+                visible: ["Admin", "Super Admin", "Employee"],
             },
             {
                 iconComponent: LuUsers,
                 label: "Staff",
-                visible: ["Admin", "Super Admin"],
+                visible: ["Admin", "Super Admin", "Employee"],
                 children: [
                     {
                         iconComponent: TbPoint,

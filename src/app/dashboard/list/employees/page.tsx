@@ -13,7 +13,7 @@ import type { TableProps, UploadFile } from 'antd';
 import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete, MdRemoveRedEye } from "react-icons/md";
 
 // --- API & Data ---
-import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/api/employee";
+import { fetchEmployees, fetchAllEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/api/employee";
 import { fetchAllPositions } from "@/lib/api/position";
 import { fetchAllDepartments } from "@/lib/api/department";
 import { fetchEmploymentTypes, fetchWorkStation } from "@/lib/api/status";
@@ -90,6 +90,21 @@ const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { f
                         <Select placeholder="Select status..." options={dropdownData.employmentTypes.map((et: EmploymentType) => ({ value: et.id, label: et.status_name }))} />
                     </Form.Item>
                 </Col>
+                <Col xs={24} md={8}>
+                    <Form.Item name="reporting_line1" label="Reporting Line 1">
+                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                    </Form.Item>
+                </Col>
+                 <Col xs={24} md={8}>
+                    <Form.Item name="reporting_line2" label="Reporting Line 2">
+                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                    </Form.Item>
+                </Col>
+                 <Col xs={24} md={8}>
+                    <Form.Item name="procurement_line" label="Procurement Line">
+                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                    </Form.Item>
+                </Col>
                  {/* Address is usually not required, so we leave it as is */}
                 <Col xs={24}>
                     <Form.Item name="address" label="Address">
@@ -117,8 +132,15 @@ const EmployeeManagementPage = () => {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const [dropdownData, setDropdownData] = useState<{ positions: any[], departments: any[], workStations: any[], employmentTypes: any[] }>({ positions: [], departments: [], workStations: [], employmentTypes: [] });
     const [dropdownLoading, setDropdownLoading] = useState(false);
+
+    const [dropdownData, setDropdownData] = useState<{ 
+        positions: any[], 
+        departments: any[], 
+        workStations: any[], 
+        employmentTypes: any[],
+        employees: Employee[] // Add employees to the dropdown data
+    }>({ positions: [], departments: [], workStations: [], employmentTypes: [], employees: [] });
 
     const fetchData = useCallback(async (page: number, pageSize: number) => {
         setLoading(true);
@@ -134,9 +156,23 @@ const EmployeeManagementPage = () => {
         if (dropdownData.positions.length > 0) return; 
         setDropdownLoading(true);
         try {
-            const [posRes, depRes, wsRes, etRes] = await Promise.all([ fetchAllPositions(), fetchAllDepartments(), fetchWorkStation(), fetchEmploymentTypes() ]);
-            setDropdownData({ positions: posRes || [], departments: depRes || [], workStations: wsRes || [], employmentTypes: etRes || [] });
-        } catch { message.error("Failed to load required data for the form."); }
+            const [posRes, depRes, wsRes, etRes, empRes] = await Promise.all([ 
+                fetchAllPositions(), 
+                fetchAllDepartments(), 
+                fetchWorkStation(), 
+                fetchEmploymentTypes(),
+                fetchAllEmployees() 
+            ]);
+            setDropdownData({ 
+                positions: posRes || [], 
+                departments: depRes || [], 
+                workStations: wsRes || [], 
+                employmentTypes: etRes || [],
+                employees: empRes || []
+            });
+        } catch(error) { 
+            console.error("Failed to load dropdown data:", error);
+            message.error("Failed to load required data for the form."); }
         finally { setDropdownLoading(false); }
     }, [dropdownData.positions.length]);
 

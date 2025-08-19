@@ -51,7 +51,10 @@ export const createEmployee = async (payload: {
     work_station_id: number;
     employment_type_id: number;
     image?: File | null;
-}): Promise<any> => {  // 👈 Add a return type (or define an interface if needed)
+    reporting_line1?: number | null;
+    reporting_line2?: number | null;
+    procurement_line?: number | null;
+}): Promise<any> => {  
     try {
         const posted_by = Number(localStorage.getItem('user_id'));
         const posted_by_name = localStorage.getItem('user_name');
@@ -82,10 +85,18 @@ export const createEmployee = async (payload: {
         formData.append('work_station_id', payload.work_station_id.toString());
         formData.append('employment_type_id', payload.employment_type_id.toString());
 
-     if (payload.address) {
+        if (payload.address) {
             formData.append('address', payload.address);
         }
-    
+        if (payload.reporting_line1) {
+            formData.append('reporting_line1', payload.reporting_line1.toString());
+        }
+        if (payload.reporting_line2) {
+            formData.append('reporting_line2', payload.reporting_line2.toString());
+        }
+        if (payload.procurement_line) {
+            formData.append('procurement_line', payload.procurement_line.toString());
+        }
         if (payload.image) {
             formData.append('image', payload.image);
         }
@@ -128,6 +139,9 @@ export const updateEmployee = async (
         work_station_id: number;
         employment_type_id: number;
         image?: File | null;
+        reporting_line1?: number | null;
+        reporting_line2?: number | null;
+        procurement_line?: number | null;
     }
 ): Promise<any> => {
     try {
@@ -160,6 +174,16 @@ export const updateEmployee = async (
 
         if (employeePayload.address) {
             formData.append('address', employeePayload.address);
+        }
+
+        if (employeePayload.reporting_line1) {
+            formData.append('reporting_line1', employeePayload.reporting_line1.toString());
+        }
+        if (employeePayload.reporting_line2) {
+            formData.append('reporting_line2', employeePayload.reporting_line2.toString());
+        }
+        if (employeePayload.procurement_line) {
+            formData.append('procurement_line', employeePayload.procurement_line.toString());
         }
 
         if (employeePayload.image) {

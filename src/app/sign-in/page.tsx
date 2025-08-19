@@ -122,9 +122,6 @@ const LoginPage = () => {
                                 })}
                                 error={errors.password ? errors.password?.message : ""}
                             />
-                            <span className='text-sm text-gray-600 hover:underline cursor-pointer'>
-                                Forget Password?
-                            </span>
                         </div>
                         {isLoading ? (
                             <Loading />
