@@ -169,7 +169,7 @@ export const updateEmployee = async (
         formData.append('posted_by', posted_by.toString());
         formData.append('posted_by_name', posted_by_name || '');
 
-        formData.append('_method', 'PUT');
+        formData.append('_method', 'POST');
         // Step 3: Send to employee-service
         const response = await api.post(`/employee/employees/${employeeId}`, formData, {
             headers: {
