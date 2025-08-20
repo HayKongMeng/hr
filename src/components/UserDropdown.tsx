@@ -21,6 +21,7 @@ export default function UserDropdown() {
     const [open, setOpen] = useState(false);
     const [userName, setUserName] = useState<string>('')
     const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const employeeId = typeof window !== 'undefined' ? localStorage.getItem('employee_id') : null;
 
     useEffect(() => {
         const storedName = localStorage.getItem('user_name')
@@ -78,7 +79,7 @@ export default function UserDropdown() {
                 <div className="absolute left-0 mt-2 w-48 bg-white rounded-2xl card-table z-10">
                     <ul className="py-2">
                         <li className='px-4 py-4  text-sm font-normal text-[#293240] cursor-pointer hover:bg-gray-100'>
-                            <Link href="/dashboard/profile" className="gap-2 flex items-center">
+                           <Link href={`/dashboard/list/employees/${employeeId}`} className="gap-2 flex items-center">
                                 <LuUser size={20} /> My Profile
                             </Link>
                         </li>

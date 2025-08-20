@@ -181,30 +181,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ toggleMenu }) => {
       {pathname === "/dashboard/mobile/home" && (
         <div className="relative">
           {/* <img src="/banner.svg" className='w-full' alt="bannser" /> */}
-          <div className="flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
-            {loadingProfile ? (
-              <Spin />
-            ) : (
-              <>
-                <img
-                  src={employee?.image || "/avatar.png"}
-                  alt="User Avatar"
-                  className="w-16 h-16 rounded-full border-white z-10 object-cover"
-                />
-                <p className="mt-2 text-base font-semibold z-10">
-                  Good morning, {employee?.name || "User"}
-                </p>
-                <p className="text-sm opacity-80 z-10">
-                  {employee?.position?.title || "Employee"}
-                </p>
-                <p className="text-sm underline mt-2 z-10">
-                  <Link href="/dashboard/mobile/employee/profile">
-                    View profile
-                  </Link>
-                </p>
-              </>
-            )}
-          </div>
+          
         </div>
       )}
 

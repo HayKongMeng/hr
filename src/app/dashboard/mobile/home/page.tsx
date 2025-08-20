@@ -6,7 +6,7 @@ import OverviewHr from "@/components/mobile/employee/OverviewHr";
 import ButtonCustom from "@/components/ui/Button";
 import { LuQrCode } from "react-icons/lu";
 import QrCodeModal from "@/components/QrCodeModal";
-import { Flex, Input, message, Radio, Space, Tag } from "antd";
+import { Flex, Input, message, Radio, Space, Spin, Tag } from "antd";
 import { CheckboxGroupProps } from "antd/es/checkbox";
 import { PiSealCheck } from "react-icons/pi";
 import { IoIosCheckboxOutline } from "react-icons/io";
@@ -19,13 +19,24 @@ import ChipInput from "@/components/ChipInput";
 import AnnoucementCard from "@/components/card/AnnoucementCard";
 import { checkInAndOut, findEmployees, findEmployeesById } from "@/lib/api/attendances";
 import { formattedDate, MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
+import { getEmployeeById } from "@/lib/api/employee";
+import Link from "next/link";
 
+type Employee = {
+  name: string;
+  email: string;
+  image: string | null;
+  position?: {
+    title: string;
+  };
+};
 
 const HomePage = () => {
   formattedDate;
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   // const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [employee, setEmployee] = useState<Employee | null>(null);
   const [items, setItems] = useState<MappedAttendanceItem[]>([]);
   const [todayAttendance, setTodayAttendance] = useState({
     checkIn: "--:--",
@@ -37,9 +48,37 @@ const HomePage = () => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
     const [employeeId, setEmployeeId] = useState<number | null>(null);
+useEffect(() => {
+    // Define an async function inside the effect
+    const fetchEmployeeData = async () => {
+      setLoadingProfile(true);
+      
+      if (!employeeId) {
+        console.error("No employee ID found in localStorage.");
+        setLoadingProfile(false);
+        return;
+      }
 
+      try {
+        // Await the promise to get the response
+        const response = await getEmployeeById(Number(employeeId));
+        // Set the state with the actual data from the response
+        if (response.data.result) {
+          setEmployee(response.data.result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch employee data:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    // Call the async function
+    fetchEmployeeData();
+  }, []);
   useEffect(() => {
     setIsClient(true);
     const storeEmployeeId = localStorage.getItem('employee_id');
@@ -375,6 +414,30 @@ const HomePage = () => {
   return (
     <div className="min-h-screen w-full overflow-y-auto max-h-[calc(100vh-62px)] pb-20">
       <main className="relative z-20 ">
+        <div className="flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
+            {loadingProfile ? (
+              <Spin />
+            ) : (
+              <>
+                <img
+                  src={employee?.image || "/avatar.png"}
+                  alt="User Avatar"
+                  className="w-16 h-16 rounded-full border-white z-10 object-cover"
+                />
+                <p className="mt-2 text-base font-semibold z-10">
+                  Good morning, {employee?.name || "User"}
+                </p>
+                <p className="text-sm opacity-80 z-10">
+                  {employee?.position?.title || "Employee"}
+                </p>
+                <p className="text-sm underline mt-2 z-10">
+                  <Link href="/dashboard/mobile/employee/profile">
+                    View profile
+                  </Link>
+                </p>
+              </>
+            )}
+          </div>
         <div>
           <Flex vertical gap="middle">
             <Radio.Group

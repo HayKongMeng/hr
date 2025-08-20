@@ -1,4 +1,5 @@
 import api from './index';
+import dayjs from "dayjs";
 
 export const fetchCompanies = async (page: number = 1, limit: number = 10) => {
     const response = await api.get(`employee/company?page=${page}&limit=${limit}`);
@@ -103,3 +104,31 @@ export const deleteCompany = async (id: number) => {
     const response = await api.delete(`employee/company/${id}`);
     return response;
 }
+
+export interface DashboardSummary {
+    total_employees: number;
+    checkins_today: number;
+    checkouts_today: number;
+    leave_requests_today: number;
+    employee_gender: {
+        male: number;
+        female: number;
+        percentages: {
+            male: number;
+            female: number;
+        };
+    };
+    present_today: number;
+    absent_today: number;
+}
+
+export const fetchDashboardSummary = async (date?: string): Promise<DashboardSummary> => {
+    const queryDate = date || dayjs().format('YYYY-MM-DD');
+    try {
+        const response = await api.get(`/employee/summary?date=${queryDate}`);
+        return response.data.result;
+    } catch (error) {
+        console.error("Failed to fetch dashboard summary:", error);
+        throw error;
+    }
+};

@@ -8,16 +8,16 @@ import { IoIosArrowDown } from "react-icons/io";
 import { Disclosure } from '@headlessui/react'
 import { RiEdit2Line } from "react-icons/ri";
 import { BsPatchCheckFill } from "react-icons/bs";
-import { 
-    FaIdBadge, 
-    FaUsers, 
-    FaCalendarAlt, 
-    FaBuilding, 
+import {
+    FaIdBadge,
+    FaUsers,
+    FaCalendarAlt,
+    FaBuilding,
     FaCommentDots,
-    FaPhoneAlt, 
+    FaPhoneAlt,
     FaEnvelope,
-    FaGenderless, 
-    FaBirthdayCake, 
+    FaGenderless,
+    FaBirthdayCake,
     FaMapMarkerAlt,
     FaPassport,
     FaCalendarTimes,
@@ -25,7 +25,7 @@ import {
     FaPrayingHands,
     FaRing,
     FaUserTimes,
-    FaChild
+    FaChild, FaLock
 } from "react-icons/fa";
 import { MdKeyboardArrowRight } from 'react-icons/md';
 import EmergencyContactForm from '@/components/forms/EmergencyContactFrom';
@@ -42,11 +42,12 @@ import { getEducationDetailByEmployeeId } from '@/lib/api/educationdetail';
 import EducationDetailsForm from '@/components/forms/EducationDetailsForm';
 import { getExperienceByEmployeeId } from '@/lib/api/experience';
 import ExperienceForm from '@/components/forms/ExperienceForm';
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 
 interface EmergencyContact {
     id: number;
     employee_id: number;
-    contact_type: 'primary' | 'secondary' | string; 
+    contact_type: 'primary' | 'secondary' | string;
     name: string;
     relationship: string;
     phone1: string;
@@ -79,9 +80,9 @@ type Experience = {
 const ProfilePage = () => {
     const router = useRouter();
     const { id } = useParams();
-    
+
     const [employee, setEmployee] = useState<any>(null);
-    const [imgSrc, setImgSrc] = useState('/avatar.png');
+    const [imgSrc, setImgSrc] = useState('');
     const [selectedPersonalInfoId, setSelectedPersonalInfoId] = useState<number | undefined>();
     const [selectedBankInfoId, setSelectedBankInfoId] = useState<number | undefined>();
     const [selectedFamilyInfoId, setSelectedFamilyInfoId] = useState<number | undefined>();
@@ -102,6 +103,7 @@ const ProfilePage = () => {
     const [isModalOpenFamilyIn, setIsModalOpenFamilyIn] = useState(false);
     const [isModalOpenEduDetail, setIsModalOpenEduDetail] = useState(false);
     const [isModalOpenExperience, setIsModalOpenExperience] = useState(false);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
     const handleOpenEmergencyContact = (employeeId: number | undefined) => {
         if (employeeId === undefined) return;
@@ -145,14 +147,15 @@ const ProfilePage = () => {
     const handleCloseFamilyInfo = () => setIsModalOpenFamilyIn(false);
     const handleCloseEduDetail = () => setIsModalOpenEduDetail(false);
     const handleCloseExperience = () => setIsModalOpenExperience(false);
+    const handleCloseChangePassword = () => setIsChangePasswordModalOpen(false);
 
     const fetchData = async () => {
         if (!id) return;
         try {
             setLoading(true);
             const [
-                    employeeRes, 
-                    contactsRes, 
+                    employeeRes,
+                    contactsRes,
                     personalInfo,
                     bankInfo,
                     familyInfo,
@@ -192,7 +195,7 @@ const ProfilePage = () => {
             setImgSrc('/avatar.png');
         }
     }, [employee?.image_url]);
-    
+
     const goBackToList = () => {
         router.push('/dashboard/list/employees');
     };
@@ -215,6 +218,8 @@ const ProfilePage = () => {
 
         return `${Math.floor(diffInYears)}+ years`;
     };
+
+    if (loading) return <LoadingRollerSpinner />;
 
     return (
         <div className="min-h-screen p-6">
@@ -245,7 +250,7 @@ const ProfilePage = () => {
                             height={80}
                             unoptimized
                             className="rounded-full border object-cover absolute top-0 left-1/2 translate-x-[-50%] translate-y-[62%]"
-                            onError={() => setImgSrc('/avatar.png')}
+                            onError={() => setImgSrc( employee?.image || '/avatar.png')}
                         />
                     </div>
 
@@ -297,7 +302,7 @@ const ProfilePage = () => {
                             </button>
                         </div>
                     </div>
-                 
+
                     {/* Basic Info */}
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
@@ -312,7 +317,7 @@ const ProfilePage = () => {
                                 onCancel={() => setShowModal(false)}
                             />
                         </div>
-                    
+
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
                                 <FaPhoneAlt className="text-blue-600" />
@@ -358,7 +363,7 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Personal Information</p>
-                            <button 
+                            <button
                                 onClick={() => {
                                     if (employee?.id !== undefined && personalInformation?.[0]?.id) {
                                         handleOpenPersoalInfo(employee.id, personalInformation[0].id); // Edit
@@ -371,7 +376,7 @@ const ProfilePage = () => {
                                 <RiEdit2Line size={16} />
                             </button>
                         </div>
-                        
+
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
                                 <FaPassport className="text-blue-600" />
@@ -432,7 +437,7 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Emergency Contact Number</p>
-                            <button 
+                            <button
                                 onClick={() => {
                                     if (employee?.id !== undefined) {
                                         handleOpenEmergencyContact(employee.id);
@@ -522,6 +527,25 @@ const ProfilePage = () => {
                                     static
                                     className={`disclosure-panel ${open ? 'open' : ''} mt-2 text-sm text-gray-700`}
                                 >
+                                    <div className='border-t pt-4'>
+                                        <div className='flex items-center justify-between'>
+                                            <div className="flex items-center gap-2">
+                                                <FaLock className="text-gray-500"/>
+                                                <p className='text-gray-900 text-xs font-semibold'>Password</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setIsChangePasswordModalOpen(true)}
+                                                className='text-xs text-blue-600 hover:underline'
+                                            >
+                                                Change Password
+                                            </button>
+                                        </div>
+                                    </div>
+                                </Disclosure.Panel>
+                                <Disclosure.Panel
+                                    static
+                                    className={`disclosure-panel ${open ? 'open' : ''} mt-2 text-sm text-gray-700`}
+                                >
                                      <div className='border-t'>
                                         <div className="text-xs text-gray-700 pt-4">
                                             {employee?.address}
@@ -537,7 +561,7 @@ const ProfilePage = () => {
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Bank Information</h3>
                                     <div className='flex items-center'>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (employee?.id !== undefined && bankInformation?.[0]?.id) {
                                                     handleOpenBankInfo(employee.id, bankInformation[0].id); // Edit
@@ -598,7 +622,7 @@ const ProfilePage = () => {
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Family Information</h3>
                                     <div className='flex items-center'>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (employee?.id !== undefined && familyInformation?.[0]?.id) {
                                                     handleOpenFamilyInfo(employee.id, familyInformation[0].id); // Edit
@@ -659,7 +683,7 @@ const ProfilePage = () => {
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Education Details</h3>
                                     <div className='flex items-center'>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (employee?.id !== undefined) {
                                                     handleOpenEduDetail(employee.id);
@@ -716,7 +740,7 @@ const ProfilePage = () => {
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Experience</h3>
                                     <div className='flex items-center'>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (employee?.id !== undefined) {
                                                     handleOpenExperience(employee.id);
@@ -740,7 +764,7 @@ const ProfilePage = () => {
                                         </Disclosure.Button>
                                     </div>
                                 </div>
-                                <Disclosure.Panel 
+                                <Disclosure.Panel
                                     static
                                     className={`disclosure-panel ${open ? 'open' : ''} mt-2 text-sm text-gray-700`}
                                 >
@@ -778,51 +802,59 @@ const ProfilePage = () => {
                 </div>
             </div>
             {isModalOpenEmC && employee?.id !== undefined && (
-                <EmergencyContactForm 
-                    onClose={handleCloseEmergencyContact} 
+                <EmergencyContactForm
+                    onClose={handleCloseEmergencyContact}
                     employeeId={employee.id}
-                    onSaved={fetchData}  
+                    onSaved={fetchData}
                 />
             )}
             {isModalOpenPerIn && employee?.id !== undefined && (
-                <PersonalInfoForm 
+                <PersonalInfoForm
                     onClose={handleClosePersoalInfo}
-                    key={selectedPersonalInfoId ?? "new"} 
-                    employeeId={employee.id} 
+                    key={selectedPersonalInfoId ?? "new"}
+                    employeeId={employee.id}
                     personalInfoId={selectedPersonalInfoId} // pass if editing
                     onSaved={fetchData}
                 />
             )}
             {isModalOpenBankIn && employee?.id !== undefined && (
-                <BankInfoForm 
+                <BankInfoForm
                     onClose={handleCloseBankInfo}
-                    key={selectedBankInfoId ?? "new"} 
-                    employeeId={employee.id} 
+                    key={selectedBankInfoId ?? "new"}
+                    employeeId={employee.id}
                     bankInfoId={selectedBankInfoId} // pass if editing
                     onSaved={fetchData}
                 />
             )}
             {isModalOpenFamilyIn && employee?.id !== undefined && (
-                <FamilyInfoForm 
+                <FamilyInfoForm
                     onClose={handleCloseFamilyInfo}
-                    key={selectedFamilyInfoId ?? "new"} 
-                    employeeId={employee.id} 
+                    key={selectedFamilyInfoId ?? "new"}
+                    employeeId={employee.id}
                     familyInfoId={selectedFamilyInfoId} // pass if editing
                     onSaved={fetchData}
                 />
             )}
             {isModalOpenEduDetail && employee?.id !== undefined && (
-                <EducationDetailsForm 
-                    onClose={handleCloseEduDetail} 
+                <EducationDetailsForm
+                    onClose={handleCloseEduDetail}
                     employeeId={employee.id}
-                    onSaved={fetchData}  
+                    onSaved={fetchData}
                 />
             )}
             {isModalOpenExperience && employee?.id !== undefined && (
-                <ExperienceForm 
-                    onClose={handleCloseExperience} 
+                <ExperienceForm
+                    onClose={handleCloseExperience}
                     employeeId={employee.id}
-                    onSaved={fetchData}  
+                    onSaved={fetchData}
+                />
+            )}
+            {isChangePasswordModalOpen && employee && (
+                <ChangePasswordModal
+                    open={isChangePasswordModalOpen}
+                    employee={employee}
+                    onCancel={handleCloseChangePassword}
+                    onSuccess={fetchData}
                 />
             )}
         </div>

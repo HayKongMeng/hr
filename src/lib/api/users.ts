@@ -77,6 +77,18 @@ export const updateUser = async (id: number, payload: {
     return userResponse.data;
 };
 
+//change password
+export const updateEmployeeRegistration = async (employeeId: number, payload: { name: string, email: string, password?: string }) => {
+    try {
+        // Using POST as it's common for this type of update endpoint
+        const response = await api.put(`/auth/update-register-employee/${employeeId}`, payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating employee registration:', error);
+        throw error;
+    }
+};
+
 export const createRole = async (payload: {
     role_name: string;
     status: boolean;

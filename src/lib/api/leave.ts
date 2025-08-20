@@ -14,7 +14,13 @@ export const fetchLeaveTypes = async (page: number = 1, limit: number = 10) => {
     const response = await api.get(`leave/leave-types?page=${page}&limit=${limit}`);
     return response.data.result;
 };
-
+export type Approval = {
+    id: number;
+    approved_by: number;
+    action: string;
+    comments: string | null;
+    approved_at: string;
+};
 export const getLeaveById = (id: number) => api.get(`leave/leaves/${id}`);
 
 export type LeaveType = {
