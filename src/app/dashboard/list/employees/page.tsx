@@ -52,7 +52,7 @@ const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { f
                 <Col xs={24} md={8}><Form.Item name="hire_date" label="Joining Date" rules={[{ required: true }]}><DatePicker className="w-full" /></Form.Item></Col>
                 <Col xs={24} md={8}><Form.Item name="phone" label="Phone Number" rules={[{ required: true }]}><Input /></Form.Item></Col>
                 <Col xs={24}><Form.Item name="gender" label="Gender"><Radio.Group><Radio value="Male">Male</Radio><Radio value="Female">Female</Radio><Radio value="Other">Other</Radio></Radio.Group></Form.Item></Col>
-                 <Col xs={24}><Form.Item name="image" label="Profile Image" valuePropName="fileList" getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList}><Upload listType="picture" maxCount={1} beforeUpload={() => false}><Button icon={<FaUpload />}>Select Image</Button></Upload></Form.Item></Col>
+                <Col xs={24}><Form.Item name="image" label="Profile Image" valuePropName="fileList" getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList}><Upload listType="picture" maxCount={1} beforeUpload={() => false}><Button icon={<FaUpload />}>Select Image</Button></Upload></Form.Item></Col>
             </Row>
 
             <h3 className="text-lg font-semibold border-b pb-2 my-4">Login Credentials</h3>
@@ -92,20 +92,39 @@ const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { f
                 </Col>
                 <Col xs={24} md={8}>
                     <Form.Item name="reporting_line1" label="Reporting Line 1">
-                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                        <Select
+                            showSearch
+                            allowClear
+                            placeholder="Select manager..."
+                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
+                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                        />
                     </Form.Item>
                 </Col>
-                 <Col xs={24} md={8}>
+                <Col xs={24} md={8}>
                     <Form.Item name="reporting_line2" label="Reporting Line 2">
-                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                        <Select
+                            showSearch
+                            allowClear
+                            placeholder="Select manager..."
+                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
+                            // --- FIX APPLIED HERE ---
+                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                        />
                     </Form.Item>
                 </Col>
-                 <Col xs={24} md={8}>
+                <Col xs={24} md={8}>
                     <Form.Item name="procurement_line" label="Procurement Line">
-                        <Select showSearch allowClear placeholder="Select manager..." options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                        <Select
+                            showSearch
+                            allowClear
+                            placeholder="Select manager..."
+                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
+                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                        />
                     </Form.Item>
                 </Col>
-                 {/* Address is usually not required, so we leave it as is */}
+                {/* Address is usually not required, so we leave it as is */}
                 <Col xs={24}>
                     <Form.Item name="address" label="Address">
                         <Input.TextArea rows={3} />

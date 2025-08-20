@@ -5,19 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/mobile/home/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/mobile/home/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/CountChart.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/CountChart.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/UserCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/UserCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/UserDropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/UserDropdown.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/mobile/MobileNavbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/MobileNavbar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/company.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/company.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/leave.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/leave.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/users.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/client/ProfileClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/client/ProfileClient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +30,7 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "js.debugger.nextJs.config.created.client": "true",
@@ -86,7 +77,7 @@
       <updated>1755662659313</updated>
       <workItem from="1755662660946" duration="3000" />
       <workItem from="1755662672480" duration="13000" />
-      <workItem from="1755662686589" duration="10433000" />
+      <workItem from="1755662686589" duration="11149000" />
     </task>
     <servers />
   </component>

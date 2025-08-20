@@ -55,12 +55,12 @@ const LeaveStatus = ({
 
   const handleApprove = async () => {
     try {
-      const response = await ApproveLeave({
-        leave_id: selectedIds[0],
-        approved_at: "2025-05-27 10:30:00",
-        company_id: Number(companyId),
-        status: "Approved",
-      });
+      // const response = await ApproveLeave({
+      //   leave_id: selectedIds[0],
+      //   approved_at: "2025-05-27 10:30:00",
+      //   company_id: Number(companyId),
+      //   status: "Approved",
+      // });
       
       // If onRefresh prop is provided, call it; otherwise fetch internally
       if (onRefresh) {
@@ -88,12 +88,12 @@ const LeaveStatus = ({
 
       const formattedApprovedAt = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
       
-      const response = await ApproveLeave({
-        leave_id: selectedIds[0],
-        approved_at: formattedApprovedAt,
-        company_id: Number(companyId),
-        status: "Rejected",
-      });
+      // const response = await ApproveLeave({
+      //   leave_id: selectedIds[0],
+      //   approved_at: formattedApprovedAt,
+      //   company_id: Number(companyId),
+      //   status: "Rejected",
+      // });
       
       // If onRefresh prop is provided, call it; otherwise fetch internally
       if (onRefresh) {
