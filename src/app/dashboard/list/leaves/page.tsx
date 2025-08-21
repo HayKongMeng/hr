@@ -174,8 +174,7 @@ const ApprovalHistory = ({ approvals, employeeMap }: { approvals: Approval[], em
     );
 };
 
-// --- View for Team Leave Requests (Updated with onView) ---
-// --- View for Team Leave Requests (Corrected and Updated) ---
+// --- View for Team Leave Requests
 const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onTableChange, onEdit, onManage, onDelete, onView }: { isMobile: boolean, leaves: Leave[], loading: boolean, pagination: any, employeeMap: { [id: number]: Employee }, onTableChange: (p: any) => void, onEdit: (r: Leave) => void, onManage: (r: Leave) => void, onDelete: (id: number) => void, onView: (r: Leave) => void; }) => {
 
     const columns: TableProps<Leave>['columns'] = [
@@ -241,15 +240,14 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
     );
 };
 
-// --- View for My Leave Requests (Updated with onView) ---
-const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel, onView, employeeMap }: {
+// --- View for My Leave Requests
+const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel, onView }: {
     isMobile: boolean;
     myLeaves: Leave[];
     loading: boolean;
     onEdit: (record: Leave) => void;
     onCancel: (id: number) => void;
     onView: (record: Leave) => void;
-    employeeMap: { [id: number]: Employee };
 }) => {
     const columns: TableProps<Leave>['columns'] = [
         { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
@@ -343,13 +341,11 @@ const LeaveManagementPage = () => {
     const [companyId, setCompanyId] = useState<string | null>(null);
     const [approvalForm] = Form.useForm();
 
-    // --- NEW STATE FOR VIEW MODAL ---
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
 
     useEffect(() => { setIsClient(true); }, []);
 
-    // --- NEW HANDLER for viewing details ---
     const handleViewDetails = async (record: Leave) => {
         setIsViewModalOpen(true);
         setViewLoading(true);
@@ -377,27 +373,35 @@ const LeaveManagementPage = () => {
         try {
             const currentEmployeeId = localStorage.getItem('employee_id');
 
-            // Fetch employees and leave types once if they are not already loaded
-            if (employees.length === 0) {
-                const [empRes, typesRes] = await Promise.all([
-                    fetchEmployees(1, 1000),
-                    fetchAllLeaveTypes()
-                ]);
-                const allEmployees = empRes.data || [];
-                setEmployees(allEmployees);
-                setLeaveTypes(typesRes || []);
-                const newEmployeeMap: { [id: number]: Employee } = {};
-                allEmployees.forEach((emp: Employee) => { newEmployeeMap[emp.id] = emp; });
-                setEmployeeMap(newEmployeeMap);
-            }
-
-            // Fetch role-specific leave data
+            // --- Role-specific data fetching ---
             if (role === 'Employee') {
                 if (currentEmployeeId) {
-                    const myLeavesRes = await fetchEmployeesLeave(Number(currentEmployeeId));
+                    const [myLeavesRes, typesRes] = await Promise.all([
+                        fetchEmployeesLeave(Number(currentEmployeeId)),
+                        fetchAllLeaveTypes() // Fetch types if not already loaded
+                    ]);
                     setMyLeaves(myLeavesRes.data || []);
+                    if (leaveTypes.length === 0) {
+                        setLeaveTypes(typesRes || []);
+                    }
                 }
             } else { // For Admin/Manager
+                if (employees.length === 0) {
+                    const [empRes, typesRes] = await Promise.all([
+                        fetchEmployees(1, 1000),
+                        fetchAllLeaveTypes()
+                    ]);
+                    const allEmployees = empRes.data || [];
+                    setEmployees(allEmployees);
+                    setLeaveTypes(typesRes || []);
+
+                    // Build the employee map
+                    const newEmployeeMap: { [id: number]: Employee } = {};
+                    allEmployees.forEach((emp: Employee) => { newEmployeeMap[emp.id] = emp; });
+                    setEmployeeMap(newEmployeeMap);
+                }
+
+                // Fetch team and personal leave data
                 if (currentEmployeeId) {
                     const [teamRes, myRes] = await Promise.all([
                         fetchLeaves(teamPagination.current, teamPagination.pageSize),
@@ -410,10 +414,11 @@ const LeaveManagementPage = () => {
             }
         } catch (error) {
             message.error("Failed to fetch leave data.");
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [role, employees.length, teamPagination.current, teamPagination.pageSize]);
+    }, [role, employeeId, employees.length, leaveTypes.length, teamPagination.current, teamPagination.pageSize]);
 
 
     useEffect(() => {
@@ -573,7 +578,6 @@ const LeaveManagementPage = () => {
                 isMobile={isMobile}
                 myLeaves={myLeaves}
                 loading={loading}
-                employeeMap={employeeMap}
                 onView={handleViewDetails}
                 onEdit={handleEditLeave}
                 onCancel={handleCancel}
