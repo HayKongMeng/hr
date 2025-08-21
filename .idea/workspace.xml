@@ -6,17 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/entitlements/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/entitlements/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/mobile/employee/profile/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/mobile/home/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/mobile/employee/AttendanceCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/employee/AttendanceCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/mobile/employee/Leavestatus.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/employee/Leavestatus.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/attendances.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/attendances.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/leave.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/leave.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/dateFormat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/dateFormat.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +79,7 @@
       <updated>1755662659313</updated>
       <workItem from="1755662660946" duration="3000" />
       <workItem from="1755662672480" duration="13000" />
-      <workItem from="1755662686589" duration="27038000" />
+      <workItem from="1755662686589" duration="36818000" />
     </task>
     <servers />
   </component>

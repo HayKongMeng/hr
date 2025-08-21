@@ -507,8 +507,24 @@ const HomePage = () => {
                 }
             }
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || err.message || "An error occurred.";
-            message.error(errorMessage);
+            const errorMessage = err.response?.data?.error || "";
+            console.log(errorMessage)
+            // if (errorMessage.includes('"Reason is required when checking in/out outside company network."')) {
+                message.warning("IP address mismatch. Please provide a reason.");
+
+                const ipRes = await fetch("https://api.ipify.org/?format=json");
+                const ipData = await ipRes.json();
+                const ip = ipData.ip;
+                let latitude = 0, longitude = 0;
+
+                const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
+
+                setPendingAttendanceData({ type, latitude, longitude, scan_code, ip });
+
+                setIsReasonModalOpen(true);
+            // } else {
+            //     message.error(errorMessage || "An unexpected error occurred.");
+            // }
         } finally {
             setButtonLoading(false);
         }

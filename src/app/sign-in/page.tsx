@@ -27,7 +27,7 @@ const LoginPage = () => {
       
         try {
             const response = await api.post('/auth/login', data);
-           
+
             const { user,employee, token } = response.data.result;
             
             localStorage.setItem('access_token', token);
@@ -54,7 +54,11 @@ const LoginPage = () => {
             }
        
             toast.success('Login successful!');
-            router.push('/dashboard/admin');
+            if (user.roles[0] === 'Employee') {
+                router.push('/dashboard/dash');
+            } else {
+                router.push('/dashboard/admin');
+            }
             // window.location.href = '/dashboard/admin'; dashboard/mobile/home
             // window.location.href = 'dashboard/mobile/home';
 
