@@ -22,17 +22,10 @@ export const checkInAndOut = async (payload: {
     longitude: number,
     scan_code: string,
     ip: string,
+    reason?: string
 }) => {
     try {
-        const departmentResponse = await api.post('/employee/mark-attendance', {
-            employee_id: payload.employee_id,
-            type: payload.type,
-            latitude: payload.latitude,
-            longitude: payload.longitude,
-            scan_code: payload.scan_code,
-            ip: payload.ip,
-        });
-
+        const departmentResponse = await api.post('/employee/mark-attendance', payload);
         return departmentResponse.data;
     } catch (error) {
         console.error('Error creating employee:', error);

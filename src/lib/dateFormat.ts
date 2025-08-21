@@ -1,230 +1,143 @@
-import { AttendanceEntry } from "@/type/LeaveRequestType";
 import moment from "moment";
 
-const today = new Date();
-
-export const formattedDate = today.toLocaleDateString("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
+// A simple utility to get today's date for display
+export const formattedDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
 });
 
-
-
+// A utility to format 24hr time to 12hr time with AM/PM
 export const formatTime12hr = (time24: string): string => {
-  if (!time24 || !time24.includes(":")) return "--:--";
-  const [h, m] = time24.split(":");
-  let hour = parseInt(h, 10);
-  const minute = parseInt(m, 10);
-  const ampm = hour >= 12 ? "pm" : "am";
-  hour = hour % 12;
-  hour = hour ? hour : 12; // The hour '0' should be '12'
-  const minuteStr = minute < 10 ? "0" + minute : String(minute);
-  return `${hour}:${minuteStr} ${ampm}`;
+    if (!time24 || !time24.includes(":")) return "--:--";
+    // Use moment for robust and simple time formatting
+    return moment(time24, "HH:mm:ss").format("h:mm a");
 };
 
-// export const processFullAttendanceData = (apiData: any[]) => {
-  
-//   const todayString = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-//   let todayDetails = {
-//     checkIn: "--:--",
-//     checkInStatus: "Not Checked In",
-//     checkOut: "--:--",
-//     checkOutStatus: "-",
-//   };
-
-//   const mappedItems: AttendanceEntry[] = apiData.map((att: any) => {
-//     let checkInTime = "--:--";
-//     let checkOutTime = "--:--";
-//     let status = "ontime";
-
-//     try {
-//       const parsedData = att.attendance_data
-//         ? JSON.parse(att.attendance_data)
-//         : {};
-
-//       if (parsedData.checkin) {
-//         checkInTime = formatTime12hr(parsedData.checkin.time);
-//         const rawStatus = parsedData.checkin.status?.toLowerCase();
-//         if (rawStatus === "late") status = "late";
-//         else if (rawStatus === "leave") status = "leave";
-//       }
-
-//       if (parsedData.checkout) {
-//         checkOutTime = formatTime12hr(parsedData.checkout.time);
-//       }
-
-//       // This part for OverviewHr was already correct
-//       if (att.date && att.date.startsWith(todayString)) {
-//         if (parsedData.checkin) {
-//           todayDetails.checkIn = formatTime12hr(parsedData.checkin.time);
-//           todayDetails.checkInStatus = parsedData.checkin.status || "-";
-//         }
-//         if (parsedData.checkout) {
-//           todayDetails.checkOut = formatTime12hr(parsedData.checkout.time);
-//           todayDetails.checkOutStatus = parsedData.checkout.status || "-";
-//         } else {
-//             todayDetails.checkOutStatus = "-";
-//         }
-//       }
-//     } catch (err) {
-//       console.warn("Failed to parse attendance_data:", err);
-//     }
-
-//     return {
-//       id: String(att.id),
-//       dateRange: att.date
-//         ? new Date(att.date).toLocaleDateString("en-GB", {
-//             day: "2-digit",
-//             month: "short",
-//             year: "numeric",
-//           })
-//         : "",
-//       status,
-//       // Now these values are correctly formatted
-//       checkIn: checkInTime,
-//       checkOut: checkOutTime,
-//     };
-//   });
-
-//   const presentsCount = mappedItems.filter(item => item.checkInStatus === 'Present').length;
-//   const lateCount = mappedItems.filter(item => item.checkInStatus === 'Late').length;
-
-//   return {
-//     mappedItems,
-//     todayDetails,
-//     presentsCount,
-//     lateCount,
-//   };
-// };
-
+// Define the shape of the processed attendance item for type safety
 export type MappedAttendanceItem = {
-  id: string;
-  date: string;
-  day: string;
-  status: 'Present' | 'Absent' | 'Late';
-  checkIn: string;
-  checkOut: string;
+    id: string;
+    date: string; // For display, e.g., "Thu, 21 Aug"
+    dateForCompare: string; // For reliable comparison, e.g., "2025-08-21"
+    day: string;
+    status: 'Present' | 'Absent' | 'Late';
+    checkIn: string;
+    checkOut: string;
 };
 
+// This is now the single source of truth for processing all attendance data
 export function processFullAttendanceData(apiData: any[]): {
-  mappedItems: MappedAttendanceItem[];
-  todayDetails: {
-    checkIn: string;
-    checkInStatus: string;
-    checkOut: string;
-    checkOutStatus: string;
-  };
-  presentsCount: number;
-  lateCount: number;
+    mappedItems: MappedAttendanceItem[];
+    todayDetails: {
+        checkIn: string;
+        checkInStatus: string;
+        checkOut: string;
+        checkOutStatus: string;
+    };
+    presentsCount: number;
+    lateCount: number;
 } {
-  const todayString = moment().format("YYYY-MM-DD");
-  let todayDetails = {
-    checkIn: "--:--",
-    checkInStatus: "Absent",
-    checkOut: "--:--",
-    checkOutStatus: "-",
-  };
-  let presentsCount = 0;
-  let lateCount = 0;
+    const todayString = moment().format("YYYY-MM-DD");
+    let todayDetails = {
+        checkIn: "--:--",
+        checkInStatus: "Absent",
+        checkOut: "--:--",
+        checkOutStatus: "-",
+    };
+    let presentsCount = 0;
+    let lateCount = 0;
 
-  if (!Array.isArray(apiData)) {
-    console.error("processFullAttendanceData expects an array, but received:", apiData);
-    return { mappedItems: [], todayDetails, presentsCount, lateCount };
-  }
-
-  const mappedItems: MappedAttendanceItem[] = apiData.map((att: any) => {
-    let checkInTime = "--:--";
-    let checkOutTime = "--:--";
-    let status: 'Present' | 'Absent' | 'Late' = 'Absent';
-    let checkInStatusForToday = 'Absent';
-
-    const rawData = att.attendance_data;
-
-    try {
-      // --- ROBUST PARSING LOGIC ---
-      let checkinInfo: any = null;
-      let checkoutInfo: any = null;
-
-      if (typeof rawData === 'string') {
-        // Handle the OLD format (JSON string)
-        const parsedData = JSON.parse(rawData);
-        checkinInfo = parsedData.checkin;
-        checkoutInfo = parsedData.checkout;
-      } else if (Array.isArray(rawData) && rawData.length > 0) {
-        const data = rawData[0];
-        checkinInfo = { status: data.status, time: data.clock_in || "00:00:00" };
-        checkoutInfo = { status: data.early_leaving ? "Left Early" : "On Time", time: data.clock_out };
-      }
-
-      // --- UNIFIED PROCESSING LOGIC ---
-      if (checkinInfo && checkinInfo.time) {
-        presentsCount++;
-        checkInTime = formatTime12hr(checkinInfo.time);
-        status = (checkinInfo.status?.toLowerCase() === 'late' || checkinInfo.late === true) ? 'Late' : 'Present';
-        if (status === 'Late') {
-            lateCount++;
-        }
-      }
-
-      if (checkoutInfo && checkoutInfo.time) {
-        checkOutTime = formatTime12hr(checkoutInfo.time);
-      }
-
-      if (att.date === todayString) {
-        todayDetails.checkIn = checkInTime;
-        todayDetails.checkInStatus = status;
-        todayDetails.checkOut = checkOutTime;
-        todayDetails.checkOutStatus = checkoutInfo?.status || "-";
-      }
-
-    } catch (err) {
-      console.warn(`Failed to parse attendance_data for record id ${att.id}:`, rawData);
+    if (!Array.isArray(apiData)) {
+        console.error("processFullAttendanceData expects an array, but received:", apiData);
+        return { mappedItems: [], todayDetails,presentsCount: 0, lateCount: 0 };
     }
 
-    return {
-      id: String(att.id),
-      date: moment(att.date).format("ddd, DD MMM"),
-      day: moment(att.date).format('dddd'),
-      status: status,
-      checkIn: checkInTime,
-      checkOut: checkOutTime,
-    };
-  });
-  
-  return { mappedItems, todayDetails, presentsCount, lateCount };
+    const mappedItems: MappedAttendanceItem[] = apiData.map((att: any) => {
+        let checkInTime = "--:--";
+        let checkOutTime = "--:--";
+        let status: 'Present' | 'Absent' | 'Late' = 'Absent';
+
+        try {
+            let checkinInfo: any = null;
+            let checkoutInfo: any = null;
+
+            // The API returns attendance_data as a JSON string, so we must parse it
+            if (att.attendance_data) {
+                const parsedData = JSON.parse(att.attendance_data);
+                checkinInfo = parsedData.checkin;
+                checkoutInfo = parsedData.checkout;
+            }
+
+            if (checkinInfo && checkinInfo.time) {
+                presentsCount++;
+                checkInTime = moment(checkinInfo.time, "HH:mm:ss").format("h:mm a");
+                status = checkinInfo.status?.toLowerCase() === 'late' ? 'Late' : 'Present';
+                if (status === 'Late') {
+                    lateCount++;
+                }
+            }
+
+            if (checkoutInfo && checkoutInfo.time) {
+                checkOutTime = formatTime12hr(checkoutInfo.time);
+            }
+
+            // --- FIX #1: Use `startsWith` for reliable date comparison ---
+            // This correctly finds today's record from the full timestamp
+            if (att.date && att.date.startsWith(todayString)) {
+                todayDetails.checkIn = checkInTime;
+                todayDetails.checkInStatus = status;
+                todayDetails.checkOut = checkOutTime;
+                todayDetails.checkOutStatus = checkoutInfo?.status || "-";
+            }
+
+        } catch (err) {
+            console.warn(`Failed to parse attendance_data for record id ${att.id}:`, att.attendance_data, err);
+        }
+
+        return {
+            id: String(att.id),
+            date: moment(att.date).format("ddd, DD MMM"),
+            dateForCompare: moment(att.date).format("YYYY-MM-DD"),
+            day: moment(att.date).format('dddd'),
+            status: status,
+            checkIn: checkInTime,
+            checkOut: checkOutTime,
+        };
+    });
+
+    return { mappedItems, todayDetails, presentsCount, lateCount };
 }
 
 
+// --- FIX #2: Corrected `getTodayCheckStatus` ---
+// This function now uses the correct types and logic to match the data structure.
+export function getTodayCheckStatus(items: MappedAttendanceItem[]): "checkedIn" | "checkedOut" | "notCheckedIn" {
+    // Use the same reliable format as the data processing function
+    const today = moment().format("YYYY-MM-DD");
 
-
-export function getTodayCheckStatus(items: AttendanceEntry[]): "checkedIn" | "checkedOut" | "notCheckedIn" {
-    const today = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-    const todayEntry = items.find((item: any) => item.dateRange === today);
+    // Find today's entry by comparing the correct property
+    const todayEntry = items.find((item) => item.dateForCompare === today);
 
     if (todayEntry) {
-      if (
-        todayEntry.checkIn &&
-        todayEntry.checkIn !== "-" && todayEntry.checkIn !== "--:--" &&
-        (!todayEntry.checkOut || todayEntry.checkOut === "-" || todayEntry.checkOut === "--:--")
-      ) {
-        return "checkedIn";
-      }
-      if (!todayEntry.checkIn || todayEntry.checkIn === "-" || todayEntry.checkIn === "--:--") {
-        return "notCheckedIn";
-      }
-      if (
-        todayEntry.checkIn &&
-        todayEntry.checkIn !== "-" && todayEntry.checkIn !== "--:--" &&
-        todayEntry.checkOut &&
-        todayEntry.checkOut !== "-" && todayEntry.checkOut !== "--:--"
-      ) {
-        return "checkedOut";
-      }
+        // Check if checked in but not checked out
+        if (
+            todayEntry.checkIn && todayEntry.checkIn !== "--:--" &&
+            (!todayEntry.checkOut || todayEntry.checkOut === "--:--")
+        ) {
+            return "checkedIn";
+        }
+        // Check if not checked in at all
+        if (!todayEntry.checkIn || todayEntry.checkIn === "--:--") {
+            return "notCheckedIn";
+        }
+        // Check if both checked in and checked out
+        if (
+            todayEntry.checkIn && todayEntry.checkIn !== "--:--" &&
+            todayEntry.checkOut && todayEntry.checkOut !== "--:--"
+        ) {
+            return "checkedOut";
+        }
     }
+    // Default to not checked in if no entry is found for today
     return "notCheckedIn";
 }

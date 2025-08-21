@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <MobileNavbar toggleMenu={toggleMenu} />
                 </div>
                 
-                <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <main className="flex-1 overflow-y-auto bg-gray-50">
                     {children}
                 </main>
                 

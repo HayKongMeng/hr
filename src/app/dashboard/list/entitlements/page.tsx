@@ -15,10 +15,10 @@ import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
 // --- API & Data ---
 import {
     fetchEntitlements,
-    createEntitlement, 
+    createEntitlement,
     // updateEntitlement, 
     deleteEntitlement,
-    fetchEmployeesEntitlements,
+    fetchEmployeesEntitlements, generateEntitlementToEmployee,
 } from "@/lib/api/leave";
 import { fetchEmployees, Employee } from "@/lib/api/employee";
 import { fetchAllLeaveTypes, LeaveType } from "@/lib/api/leave";
@@ -64,25 +64,7 @@ const EntitlementForm = ({ form, onFinish, employees, leaveTypes }: { form: any;
         <Form.Item name="employee_id" label="Employee" rules={[{ required: true }]}>
             <Select showSearch placeholder="Select an employee" options={employees.map(e => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
         </Form.Item>
-        <Form.Item name="leave_type_id" label="Leave Type" rules={[{ required: true }]}>
-            <Select placeholder="Select a leave type" options={leaveTypes.map(lt => ({ value: lt.id, label: lt.type_name }))} />
-        </Form.Item>
-        <Row gutter={16}>
-            <Col span={12}>
-                <Form.Item name="total_days" label="Total Days" rules={[{ required: true }]}>
-                    <InputNumber min={0} className="w-full" />
-                </Form.Item>
-            </Col>
-            <Col span={12}>
-                {/* ADDED: used_days field for creation */}
-                <Form.Item name="used_days" label="Used Days (Initial)" initialValue={0} rules={[{ required: true }]}>
-                    <InputNumber min={0} className="w-full" />
-                </Form.Item>
-            </Col>
-        </Row>
-        <Form.Item name="period" label="Validity Period" rules={[{ required: true }]}>
-            <DatePicker.RangePicker className="w-full" />
-        </Form.Item>
+
     </Form>
 );
 
@@ -202,16 +184,7 @@ const LeaveEntitlementPage = () => {
                 // An updateEntitlement function is needed for this logic
                 message.info("Update functionality is not yet implemented.");
             } else {
-                const payload = {
-                    employee_id: values.employee_id,
-                    leave_type_id: values.leave_type_id,
-                    entitlement_type_id: 1,
-                    total_days: values.total_days,
-                    used_days: values.used_days || 0,
-                    start_period: values.period[0].format('YYYY-MM-DD'),
-                    end_period: values.period[1].format('YYYY-MM-DD'),
-                };
-                await createEntitlement(payload);
+                await generateEntitlementToEmployee(values.employee_id);
                 message.success("Entitlement assigned successfully!");
             }
             handleModalCancel();
@@ -223,14 +196,14 @@ const LeaveEntitlementPage = () => {
         }
     };
     
-    const handleDelete = (id: number) => {
+    const handleDelete = (record: LeaveEntitlement) => {
         Modal.confirm({
             title: 'Delete Entitlement?',
             content: 'This will permanently remove the leave balance for this employee and type.',
             okText: 'Delete', okType: 'danger',
             onOk: async () => {
                 try {
-                    await deleteEntitlement(id);
+                    await deleteEntitlement(record.employee_id, record.leave_type_id);
                     message.success("Entitlement deleted.");
                     fetchData();
                 } catch { message.error("Failed to delete entitlement."); }
@@ -303,7 +276,7 @@ const LeaveEntitlementPage = () => {
 const AdminEntitlementView = ({ groupedData, onEdit, onDelete, isMobile }: { 
     groupedData: { [key: string]: { employeeName: string; entitlements: LeaveEntitlement[] } };
     onEdit: (record: LeaveEntitlement) => void;
-    onDelete: (id: number) => void;
+    onDelete: (record: LeaveEntitlement) => void;
     isMobile: boolean; // Accept isMobile prop
 }) => {
     
@@ -360,7 +333,7 @@ const AdminEntitlementView = ({ groupedData, onEdit, onDelete, isMobile }: {
             render: (_, record: LeaveEntitlement) => (
                 <Space>
                     <Button size="small" icon={<MdEdit />} onClick={() => onEdit(record)}>Edit</Button>
-                    <Button size="small" danger icon={<MdDelete />} onClick={() => onDelete(record.id)}>Delete</Button>
+                    <Button size="small" danger icon={<MdDelete />} onClick={() => onDelete(record)}>Delete</Button>
                 </Space>
             )
         }

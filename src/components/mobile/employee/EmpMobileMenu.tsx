@@ -13,7 +13,7 @@ const EmpMobileMenu = () => {
     return (
         <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-100 z-50">
             <nav className="flex justify-around items-center h-16">
-                <Link href="/dashboard/mobile/home" className="flex flex-col items-center text-teal-600 font-bold">
+                <Link href="/dashboard/dash" className="flex flex-col items-center text-teal-600 font-bold">
                 <GoHome className="w-6 h-6" />
                     <span className="text-xs mt-1">Home</span>
                 </Link>

@@ -1,5 +1,4 @@
 "use client";
-import Pagination from "@/components/Pagination";
 import { MappedAttendanceItem } from "@/lib/dateFormat";
 
 type AttendanceCardProps = {

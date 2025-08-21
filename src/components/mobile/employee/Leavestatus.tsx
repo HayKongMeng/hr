@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { cn } from "../../../utils/utils";
-import { ApproveLeave, createApprove, fetchLeaves } from "@/lib/api/leave";
+import {ApproveLeave, createApprove, fetchEmployeesLeave, fetchLeaves, getLeaveById} from "@/lib/api/leave";
 import { toast } from "sonner";
 
 type LeaveEntry = {
@@ -20,32 +20,48 @@ interface LeaveStatusProps {
   leaveEntries?: LeaveEntry[];
   onRefresh?: () => void;
   showActions?: boolean;
+  userRole?: string | null;
+  employeeId?: number | null;
 }
 
 const LeaveStatus = ({ 
   leaveEntries: propLeaveEntries, 
   onRefresh,
-  showActions = true 
+  showActions = true, userRole, employeeId
 }: LeaveStatusProps) => {
   const [leaveEntries, setLeaveEntries] = useState<LeaveEntry[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const companyId = localStorage.getItem('company_id');
+  const [loading, setLoading] = useState(true);
 
 
-  const fetchLeave: () => void = () => {
-    fetchLeaves(1, 10).then((result) => {
-      setLeaveEntries(result.data || []);
-    });
-  };
+    const fetchLeaveData = async () => {
+        if (!userRole || typeof employeeId !== 'number') return;
 
-  useEffect(() => {
-    // If props are provided, use them; otherwise fetch data
-    if (propLeaveEntries) {
-      setLeaveEntries(propLeaveEntries);
-    } else {
-      fetchLeave();
-    }
-  }, [propLeaveEntries]);
+        setLoading(true);
+        try {
+            let result;
+            // --- CONDITIONAL API CALL ---
+            if (userRole === 'Employee') {
+                // Employee fetches their own leave
+                result = await fetchEmployeesLeave(employeeId);
+            } else {
+                // Admin/Manager fetches all leaves
+                result = await fetchLeaves(1, 10);
+            }
+            setLeaveEntries(result.data || []);
+        } catch (error: any) {
+            console.error("Failed to fetch leave entries:", error.message);
+            toast.error("Could not load leave requests.");
+            setLeaveEntries([]); // Clear entries on error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLeaveData();
+    }, [userRole, employeeId]);
+
 
   const handleCheckboxChange = (id: number) => {
     setSelectedIds((prev) =>
@@ -54,6 +70,7 @@ const LeaveStatus = ({
   };
 
   const handleApprove = async () => {
+      if (selectedIds.length === 0) return;
     try {
       // const response = await ApproveLeave({
       //   leave_id: selectedIds[0],
@@ -63,11 +80,11 @@ const LeaveStatus = ({
       // });
       
       // If onRefresh prop is provided, call it; otherwise fetch internally
-      if (onRefresh) {
-        onRefresh();
-      } else {
-        fetchLeave();
-      }
+      // if (onRefresh) {
+      //   onRefresh();
+      // } else {
+      //     fetchEmployeesLeave(employeeId);
+      // }
       
       setSelectedIds([]);
       toast.success("Leave approved successfully");
@@ -77,6 +94,7 @@ const LeaveStatus = ({
   };
 
   const handleReject = async () => {
+      if (selectedIds.length === 0) return;
     try {
       const now = new Date();
       const year = now.getFullYear();
@@ -96,11 +114,11 @@ const LeaveStatus = ({
       // });
       
       // If onRefresh prop is provided, call it; otherwise fetch internally
-      if (onRefresh) {
-        onRefresh();
-      } else {
-        fetchLeave();
-      }
+      // if (onRefresh) {
+      //   onRefresh();
+      // } else {
+      //     fetchEmployeesLeave(employeeId);
+      // }
       
       setSelectedIds([]);
       toast.success("Leave rejected successfully");

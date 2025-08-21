@@ -216,7 +216,12 @@ export const createEntitlement = async (payload: {
     return response.data.result;
 };
 
-export const deleteEntitlement = async (empId: number) => {
-    const response = await api.delete(`leave/entitlements/${empId}`);
+export const generateEntitlementToEmployee = async (employee_id: number) => {
+    const response = await api.post(`leave/generate-entitlements/${employee_id}`)
+    return response.data.result;
+}
+
+export const deleteEntitlement = async (empId: number, leaveType: number) => {
+    const response = await api.delete(`leave/entitlements/delete/${empId}/${leaveType}`);
     return response.data.result;
 }
