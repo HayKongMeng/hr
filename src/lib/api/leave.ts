@@ -1,17 +1,17 @@
 import api from './index';
 
 export const fetchLeaves = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`leave/leaves?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/leave/leaves?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
 export const fetchEmployeesLeave = async (id: number) => {
-    const response = await api.get(`leave/employee/${id}`);
+    const response = await api.get(`api/leave/employee/${id}`);
     return response.data.result;
 };
 
 export const fetchLeaveTypes = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`leave/leave-types?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/leave/leave-types?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 export type Approval = {
@@ -21,7 +21,7 @@ export type Approval = {
     comments: string | null;
     approved_at: string;
 };
-export const getLeaveById = (id: number) => api.get(`leave/leaves/${id}`);
+export const getLeaveById = (id: number) => api.get(`api/leave/leaves/${id}`);
 
 export type LeaveType = {
     id: number;
@@ -36,12 +36,12 @@ export type LeaveType = {
 };
 
 export const fetchAllLeaveTypes = async (): Promise<LeaveType[]> => {
-    const response = await api.get(`leave/leave-types`);
+    const response = await api.get(`api/leave/leave-types`);
     return response.data.result.data;
 };
 
 export const getLeaveTypeById = async (id: number) => {
-    const response = await api.get(`/leave/leave-types/${id}`);
+    const response = await api.get(`/api/leave/leave-types/${id}`);
     return response.data.result; 
 };
 
@@ -55,7 +55,7 @@ export const createLeave = async (payload: {
     reason?: string | null;
 }) => {
     try {
-        const leaveResponse = await api.post('/leave/leaves', {
+        const leaveResponse = await api.post('/api/leave/leaves', {
             employee_id: payload.employee_id,
             company_id: payload.company_id,
             leave_type_id: payload.leave_type_id,
@@ -83,7 +83,7 @@ export const updateLeave = async (payload: {
     reason?: string | null;
 }) => {
     try {
-        const leaveResponse = await api.put(`/leave/leaves/${payload.id}`, {
+        const leaveResponse = await api.put(`/api/leave/leaves/${payload.id}`, {
             employee_id: payload.employee_id,
             company_id: payload.company_id,
             leave_type_id: payload.leave_type_id,
@@ -101,7 +101,7 @@ export const updateLeave = async (payload: {
 };
 
 export const deleteLeave = async (id: number) => {
-    const response = await api.delete(`/leave/leaves/${id}`);
+    const response = await api.delete(`/api/leave/leaves/${id}`);
     return response.data;
 };
 
@@ -113,7 +113,7 @@ export const createApprove = async (payload: {
 }) => {
     try {
         const approved_by = Number(localStorage.getItem('user_id'));
-        const response = await api.post(`/leave/leaves/${payload.leave_id}/approve`, {
+        const response = await api.post(`/api/leave/leaves/${payload.leave_id}/approve`, {
             leave_id: payload.leave_id,
             approved_by,
             approved_at: payload.approved_at,
@@ -134,7 +134,7 @@ export const ApproveLeave = async (payload: {
     comments: string;
 }) => {
     try {
-        const response = await api.post(`/leave/approveds`, {
+        const response = await api.post(`/api/leave/approveds`, {
             leave_id: payload.leave_id,
             action: payload.action,
             comments: payload.comments,
@@ -154,7 +154,7 @@ export const createLeaveType = async (payload: {
     description?: string;
 }) => {
     try {
-        const leaveResponse = await api.post('/leave/leave-types', {
+        const leaveResponse = await api.post('/api/leave/leave-types', {
             prefix: payload.prefix,
             type_name: payload.type_name,
             max_days: payload.max_days,
@@ -175,7 +175,7 @@ export const updateLeaveType = async (id:number, payload: {
     description?: string;
 }) => {
     try {
-        const leaveResponse = await api.put(`/leave/leave-types/${id}`, {
+        const leaveResponse = await api.put(`/api/leave/leave-types/${id}`, {
             prefix: payload.prefix,
             type_name: payload.type_name,
             max_days: payload.max_days,
@@ -191,18 +191,18 @@ export const updateLeaveType = async (id:number, payload: {
 
 
 export const deleteLeaveType = async (id: number) => {
-    const response = await api.delete(`leave/leave-types/${id}`);
+    const response = await api.delete(`api/leave/leave-types/${id}`);
     return response;
 }
 
 
 export const fetchEntitlements = async () => {
-    const response = await api.get(`leave/entitlements`);
+    const response = await api.get(`api/leave/entitlements`);
     return response.data;
 }
 
 export const fetchEmployeesEntitlements = async (employeeId: number) => {
-    const response = await api.get(`leave/employee/${employeeId}/entitlements/`);
+    const response = await api.get(`api/leave/employee/${employeeId}/entitlements/`);
     return response.data;
 }
 
@@ -212,16 +212,16 @@ export const createEntitlement = async (payload: {
     total_days: number;
     used_days: number;
 }) => {
-    const response = await api.post(`leave/entitlements`, payload);
+    const response = await api.post(`api/leave/entitlements`, payload);
     return response.data.result;
 };
 
 export const generateEntitlementToEmployee = async (employee_id: number) => {
-    const response = await api.post(`leave/generate-entitlements/${employee_id}`)
+    const response = await api.post(`api/leave/generate-entitlements/${employee_id}`)
     return response.data.result;
 }
 
 export const deleteEntitlement = async (empId: number, leaveType: number) => {
-    const response = await api.delete(`leave/entitlements/delete/${empId}/${leaveType}`);
+    const response = await api.delete(`api/leave/entitlements/delete/${empId}/${leaveType}`);
     return response.data.result;
 }

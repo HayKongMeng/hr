@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { RxDashboard } from "react-icons/rx";
-import { LuUsers, LuSettings } from "react-icons/lu";
+import { LuUsers } from "react-icons/lu";
 import { TbPoint } from "react-icons/tb";
 import { LuUserCog } from "react-icons/lu";
-import { FiUserPlus } from "react-icons/fi";
+import {FiUser, FiUserPlus} from "react-icons/fi";
 import {
   MdAccessTime,
   MdLogout,
@@ -95,15 +95,27 @@ const menuItems: MenuSection[] = [
                 ]
             },
             {
+                iconComponent: FiUser,
+                label: "Profile",
+                href: "/dashboard/admin",
+                visible: ["Admin","Employee"],
+            },
+            {
                 iconComponent: RxDashboard,
                 label: "Dashboards",
                 href: "/dashboard/dash",
                 visible: ["Admin", "Super Admin", "Employee"],
             },
             {
+                iconComponent: RxDashboard,
+                label: "Holidays",
+                href: "/dashboard/list/holidays",
+                visible: ["Admin", "Super Admin", "Employee"],
+            },
+            {
                 iconComponent: LuUsers,
                 label: "Staff",
-                visible: ["Admin", "Super Admin", "Employee"],
+                visible: ["Admin", "Super Admin"],
                 children: [
                     {
                         iconComponent: TbPoint,
@@ -218,12 +230,6 @@ const menuItems: MenuSection[] = [
                         visible: ["Admin"],
                     }
                 ],
-            },
-            {
-                iconComponent: LuSettings,
-                label: "System Setting",
-                href: "/settings",
-                visible: ["Admin", "Employee"],
             },
         ],
     },

@@ -1,7 +1,7 @@
 import api from './index';
 
 export const fetchDepartments = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`employee/departments?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/departments?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
@@ -11,7 +11,7 @@ export type Department = {
 };
 
 export const fetchAllDepartments = async (): Promise<Department[]> => {
-    const response = await api.get(`employee/all-departments`);
+    const response = await api.get(`api/employee/all-departments`);
     return response.data.result.data;
 };
 
@@ -23,7 +23,7 @@ export const createDepartment = async (payload: {
     status: boolean;
 }) => {
     try {
-        const departmentResponse = await api.post('/employee/departments', {
+        const departmentResponse = await api.post('/api/employee/departments', {
             company_id: payload.company_id,
             code: payload.code,
             name: payload.name,
@@ -45,7 +45,7 @@ export const updateDepartment = async (id: number, payload: {
     description?: string | null;
     status: boolean;
 }) => {
-    const departmentResponse = await api.put(`/employee/departments/${id}`, {
+    const departmentResponse = await api.put(`/api/employee/departments/${id}`, {
         company_id: payload.company_id,
         code: payload.code,
         name: payload.name,
@@ -57,6 +57,6 @@ export const updateDepartment = async (id: number, payload: {
 };
 
 export const deleteDepartment = async (id: number) => {
-    const response = await api.delete(`employee/departments/${id}`);
+    const response = await api.delete(`api/employee/departments/${id}`);
     return response;
 }

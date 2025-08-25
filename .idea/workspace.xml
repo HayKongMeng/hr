@@ -5,8 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/FormModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FormModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Menu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ProfileImageUploader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ProfileImageUploader.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/BankInfoForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/BankInfoForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/EducationDetailsForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/EducationDetailsForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/EmergencyContactFrom.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/EmergencyContactFrom.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/ExperienceForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/ExperienceForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/FamilyInfoForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/FamilyInfoForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/PersonalInfoForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/PersonalInfoForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/Textbox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/Textbox.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/attendances.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/attendances.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/bankInformation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/bankInformation.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/company.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/company.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/companyHistory.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/companyHistory.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/department.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/department.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/educationdetail.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/educationdetail.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/employee.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/employee.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/employmenttype.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/employmenttype.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/experience.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/experience.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/familyInformation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/familyInformation.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/holidays.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/holidays.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/leave.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/leave.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/maritalstatuses.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/maritalstatuses.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/nationality.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/nationality.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/personalinformation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/personalinformation.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/position.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/position.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/status.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/status.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/users.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/workingstation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/workingstation.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validationSchema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validationSchema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/middleware.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,26 +67,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "last_opened_file_path": "C:/Users/Hkong/OneDrive/Documents/DPDC/HR/hrms_front/hrms",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.Next.js: server-side.executor": "Run",
-    "ts.external.directory.path": "C:\\Users\\Hkong\\OneDrive\\Documents\\DPDC\\HR\\hrms_front\\hrms\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Hkong/OneDrive/Documents/DPDC/HR/hrms_front/hrms&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.Next.js: server-side.executor&quot;: &quot;Run&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\Hkong\\OneDrive\\Documents\\DPDC\\HR\\hrms_front\\hrms\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api\auth" />
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api" />
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\auth" />
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app" />
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api\auth\route" />
+    </key>
+  </component>
   <component name="RunManager" selected="npm.Next.js: server-side">
     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:4000/">
       <method v="2" />
@@ -76,7 +127,10 @@
       <updated>1755662659313</updated>
       <workItem from="1755662660946" duration="3000" />
       <workItem from="1755662672480" duration="13000" />
-      <workItem from="1755662686589" duration="38410000" />
+      <workItem from="1755662686589" duration="44382000" />
+      <workItem from="1755827011008" duration="22771000" />
+      <workItem from="1755878867866" duration="1894000" />
+      <workItem from="1756086469146" duration="12285000" />
     </task>
     <servers />
   </component>

@@ -10,7 +10,7 @@ type HolidayPayload = {
 };
 
 export const fetchHolidays = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`leave/holidays?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/leave/holidays?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
@@ -25,7 +25,7 @@ export const createHoliday = async (payload: {
     is_recurring: boolean;
 }) => {
     try {
-        const holidayResponse = await api.post('/leave/holidays', {
+        const holidayResponse = await api.post('/api/leave/holidays', {
             name: payload.name,
             start_date: payload.start_date,
             end_date: payload.end_date,
@@ -43,11 +43,11 @@ export const createHoliday = async (payload: {
 
 export const updateHoliday = async (id: number, payload: HolidayPayload) => {
     // PUT to the specific resource URL
-    const { data } = await api.put(`/leave/holidays/${id}`, payload);
+    const { data } = await api.put(`/api/leave/holidays/${id}`, payload);
     return data;
 };
 
 export const deleteHoliday = async (id: number) => {
-    const response = await api.delete(`leave/holidays/${id}`);
+    const response = await api.delete(`api/leave/holidays/${id}`);
     return response;
 }

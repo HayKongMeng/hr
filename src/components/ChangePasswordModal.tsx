@@ -124,7 +124,7 @@ const ChangePasswordModal = ({ open, employee, onCancel, onSuccess }: ChangePass
 
                 <div className="flex flex-row justify-between items-center gap-3 sm:gap-4 w-full pt-2">
                     <button
-                        className="box-border flex-row justify-center items-center px-4 sm:px-5 py-2.5 sm:py-3.5 gap-2.5 h-10 sm:h-12 bg-[#EAEDF3] border border-[#F5F6F7] rounded-full flex-none flex-grow text-sm sm:text-base font-bold"
+                        className="box-border flex-row justify-center items-center px-4 sm:px-5  gap-2.5 h-10 sm:h-12 bg-[#EAEDF3] border border-[#F5F6F7] rounded-full flex-none flex-grow text-sm sm:text-base font-bold"
                         onClick={handleClose}
                     >
                         Cancel

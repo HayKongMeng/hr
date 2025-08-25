@@ -352,7 +352,7 @@ const HomePage = () => {
 
     // --- CONSOLIDATED DATA FETCHING ---
     const fetchData = useCallback(async () => {
-        if (!employeeId || !userRole) return; // Wait for both ID and Role
+        if (!employeeId || !userRole) return;
 
         setLoadingProfile(true);
         try {
@@ -608,7 +608,7 @@ const HomePage = () => {
     ];
 
     return (
-        <div className="min-h-screen w-full overflow-y-auto max-h-[calc(100vh-62px)] pb-20">
+        <div className="min-h-screen w-full max-h-[calc(100vh-62px)] pb-20">
             <main className="relative z-20 ">
                 <div className="flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
                     {loadingProfile ? (
@@ -634,213 +634,215 @@ const HomePage = () => {
                         </>
                     )}
                 </div>
-                {userRole !== 'Employee' && (
-                    <div>
-                        <Flex vertical gap="middle">
-                            <Radio.Group
-                                value={selectedOption}
-                                onChange={(e) => setSelectedOption(e.target.value)}
-                                className="bg-shadow border-none flex justify-between"
-                                optionType="button"
-                                buttonStyle="solid"
-                            >
-                                {adminOptions.map(opt => (
-                                    <Radio.Button key={String(opt.value)} value={String(opt.value)} className="bg-[#ffffff] text-black !rounded-full !border-none data-[checked=true]:!bg-[#ffffff] data-[checked=true]:!text-white">
-                                        {opt.label}
-                                    </Radio.Button>
-                                ))}
-                            </Radio.Group>
-                        </Flex>
-                    </div>
-                )}
-                {selectedOption === "MySpace" && (
-                    <>
-                        <div className="bg-shadow gap-4 flex flex-col p-4">
-                            <div className="flex justify-between items-center ">
-                                <div>
-                                    <h1>Date</h1>
-                                    <span>{formattedDate}</span>
+                <div className="pl-4">
+                    {userRole !== 'Employee' && (
+                        <div>
+                            <Flex vertical gap="middle">
+                                <Radio.Group
+                                    value={selectedOption}
+                                    onChange={(e) => setSelectedOption(e.target.value)}
+                                    className="bg-shadow border-none flex justify-between"
+                                    optionType="button"
+                                    buttonStyle="solid"
+                                >
+                                    {adminOptions.map(opt => (
+                                        <Radio.Button key={String(opt.value)} value={String(opt.value)} className="bg-[#ffffff] text-black !rounded-full !border-none data-[checked=true]:!bg-[#ffffff] data-[checked=true]:!text-white">
+                                            {opt.label}
+                                        </Radio.Button>
+                                    ))}
+                                </Radio.Group>
+                            </Flex>
+                        </div>
+                    )}
+                    {selectedOption === "MySpace" && (
+                        <>
+                            <div className="bg-shadow gap-4 flex flex-col p-4">
+                                <div className="flex justify-between items-center ">
+                                    <div>
+                                        <h1>Date</h1>
+                                        <span>{formattedDate}</span>
+                                    </div>
+                                    <div>
+                                        <h1>Time</h1>
+                                        <span>8:00 am - 5:30 pm</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1>Time</h1>
-                                    <span>8:00 am - 5:30 pm</span>
-                                </div>
-                            </div>
 
-                            <ButtonCustom
-                                label={buttonConfig.label}
-                                className={buttonConfig.className}
-                                type="submit"
-                                // disabled={buttonConfig.disabled || buttonLoading}
-                                icon={
-                                    <LuQrCode
-                                        color={buttonConfig.iconColor}
-                                    />
-                                }
-                                onClick={buttonConfig.disabled ? undefined : handleCheckInClick}
-                            />
-                        </div>
-                        {/* <CheckInCheckOut /> */}
-                        <OverviewHr
-                            data={{ presents: 30, absents: 20, leave: 5 }}
-                            todayAttendance={todayAttendance}
-                        />
-                        <div className="bg-shadow p-4 mt-4">
-                            <div className="flex items-center justify-between mb-[19px]">
-                                <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                    Attendance
-                                </h2>
-                                <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                    View more
-                                </button>
+                                <ButtonCustom
+                                    label={buttonConfig.label}
+                                    className={buttonConfig.className}
+                                    type="submit"
+                                    // disabled={buttonConfig.disabled || buttonLoading}
+                                    icon={
+                                        <LuQrCode
+                                            color={buttonConfig.iconColor}
+                                        />
+                                    }
+                                    onClick={buttonConfig.disabled ? undefined : handleCheckInClick}
+                                />
                             </div>
-                            {items.length > 0 ? (
-                                <AttendanceCard items={items} />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-10">
-                                    <img
-                                        src="/empty.svg"
-                                        alt="No attendance data"
-                                        className="w-40 h-40"
-                                    />
-                                    <p className="text-gray-500 mt-4 text-sm font-satoshi">
-                                        No attendance data found
-                                    </p>
+                            {/* <CheckInCheckOut /> */}
+                            <OverviewHr
+                                data={{ presents: 30, absents: 20, leave: 5 }}
+                                todayAttendance={todayAttendance}
+                            />
+                            <div className="bg-shadow p-4 mt-4">
+                                <div className="flex items-center justify-between mb-[19px]">
+                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
+                                        Attendance
+                                    </h2>
+                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
+                                        View more
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                        <div className="bg-shadow">
-                            <div className="flex items-center justify-between mb-[19px]">
-                                <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                    Leave Status
-                                </h2>
-                                <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                    View more
-                                </button>
+                                {items.length > 0 ? (
+                                    <AttendanceCard items={items} />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-10">
+                                        <img
+                                            src="/empty.svg"
+                                            alt="No attendance data"
+                                            className="w-40 h-40"
+                                        />
+                                        <p className="text-gray-500 mt-4 text-sm font-satoshi">
+                                            No attendance data found
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                            <LeaveStatus
-                                showActions={false}
-                                userRole={userRole}
-                                employeeId={employeeId}
-                            />
-                        </div>
-                    </>
-                )}
-                {userRole !== 'Employee' && selectedOption === "Organization" && (
-                    <>
-                        <div className="bg-shadow p-4">
-                            <h2 className="text-[20px] font-medium text-black mb-4">
-                                Overview
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <div className="bg-[#392648] rounded-3xl p-4 h-28">
-                                        <div className="flex items-center gap-2 mb-3 text-white">
-                                            <div className="w-6 h-6 flex-shrink-0">
-                                                <PiSealCheck className="w-6 h-6 mr-2" />
-                                            </div>
-                                            <span className="text-[#dedede] text-sm font-medium">
+                            <div className="bg-shadow">
+                                <div className="flex items-center justify-between mb-[19px]">
+                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
+                                        Leave Status
+                                    </h2>
+                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
+                                        View more
+                                    </button>
+                                </div>
+                                <LeaveStatus
+                                    showActions={false}
+                                    userRole={userRole}
+                                    employeeId={employeeId}
+                                />
+                            </div>
+                        </>
+                    )}
+                    {userRole !== 'Employee' && selectedOption === "Organization" && (
+                        <>
+                            <div className="bg-shadow p-4">
+                                <h2 className="text-[20px] font-medium text-black mb-4">
+                                    Overview
+                                    <div className="grid grid-cols-2 gap-4 mt-4">
+                                        <div className="bg-[#392648] rounded-3xl p-4 h-28">
+                                            <div className="flex items-center gap-2 mb-3 text-white">
+                                                <div className="w-6 h-6 flex-shrink-0">
+                                                    <PiSealCheck className="w-6 h-6 mr-2" />
+                                                </div>
+                                                <span className="text-[#dedede] text-sm font-medium">
                         Late Arrival
                       </span>
+                                            </div>
+                                            <div>
+                                                <div className="text-white text-base font-normal">
+                                                    1 staff
+                                                </div>
+                                                <div className="text-[#dedede] text-xs font-normal mt-1">
+                                                    Manage
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div className="text-white text-base font-normal">
-                                                1 staff
-                                            </div>
-                                            <div className="text-[#dedede] text-xs font-normal mt-1">
-                                                Manage
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-[#392648] rounded-3xl p-4 h-28">
-                                        <div className="flex items-center gap-2 mb-3 text-white">
-                                            <div className="w-6 h-6 flex-shrink-0">
-                                                <PiSealCheck className="w-6 h-6 mr-2" />
-                                            </div>
-                                            <span className="text-[#dedede] text-sm font-medium">
+                                        <div className="bg-[#392648] rounded-3xl p-4 h-28">
+                                            <div className="flex items-center gap-2 mb-3 text-white">
+                                                <div className="w-6 h-6 flex-shrink-0">
+                                                    <PiSealCheck className="w-6 h-6 mr-2" />
+                                                </div>
+                                                <span className="text-[#dedede] text-sm font-medium">
                         Check in at
                       </span>
-                                        </div>
-                                        <div>
-                                            <div className="text-white text-base font-normal">
-                                                1 staff
                                             </div>
-                                            <div className="text-[#dedede] text-xs font-normal mt-1">
-                                                Manage
+                                            <div>
+                                                <div className="text-white text-base font-normal">
+                                                    1 staff
+                                                </div>
+                                                <div className="text-[#dedede] text-xs font-normal mt-1">
+                                                    Manage
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </h2>
-                        </div>
-                        <div className="bg-shadow p-4 mt-4">
-                            <div className="flex items-center justify-between mb-[19px]">
-                                <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                    Attendance
                                 </h2>
-                                <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                    View more
-                                </button>
                             </div>
-                            {itemsEmployee.length > 0 ? (
-                                <AttendanceCard items={itemsEmployee} />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-10">
-                                    <img
-                                        src="/empty.svg"
-                                        alt="No attendance data"
-                                        className="w-40 h-40"
-                                    />
-                                    <p className="text-gray-500 mt-4 text-sm font-satoshi">
-                                        No attendance data found
-                                    </p>
+                            <div className="bg-shadow p-4 mt-4">
+                                <div className="flex items-center justify-between mb-[19px]">
+                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
+                                        Attendance
+                                    </h2>
+                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
+                                        View more
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                        <div className="bg-shadow p-4 mt-4">
-                            <div className="flex items-center justify-between mb-[19px]">
-                                <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                    Leave Requests
-                                </h2>
-                                <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                    View more
-                                </button>
+                                {itemsEmployee.length > 0 ? (
+                                    <AttendanceCard items={itemsEmployee} />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-10">
+                                        <img
+                                            src="/empty.svg"
+                                            alt="No attendance data"
+                                            className="w-40 h-40"
+                                        />
+                                        <p className="text-gray-500 mt-4 text-sm font-satoshi">
+                                            No attendance data found
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex gap-2 items-center">
-                                <IoIosCheckboxOutline className="text-2xl text-[#D1D5DB]" />{" "}
-                                Select All
+                            <div className="bg-shadow p-4 mt-4">
+                                <div className="flex items-center justify-between mb-[19px]">
+                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
+                                        Leave Requests
+                                    </h2>
+                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
+                                        View more
+                                    </button>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                    <IoIosCheckboxOutline className="text-2xl text-[#D1D5DB]" />{" "}
+                                    Select All
+                                </div>
+                                <LeaveRequestAdmin
+                                    checkedIds={checkedIds}
+                                    onCheck={handleCheck}
+                                />
                             </div>
-                            <LeaveRequestAdmin
-                                checkedIds={checkedIds}
-                                onCheck={handleCheck}
-                            />
-                        </div>
-                    </>
-                )}{" "}
-                {userRole !== 'Employee' && selectedOption === "Annoucement" && (
-                    <>
-                        <div className="bg-shadow">
-                            <ButtonCustom
-                                label="Post Announcement"
-                                className="bg-shadow mb-4"
-                                type="submit"
-                                onClick={handleAnnoucementClick}
-                                icon={<CiEdit />}
-                                disabled={false}
-                                loading={false}
-                            >
-                            </ButtonCustom>
-                            <div className="">
-                                <Input
-                                    className="!stroke-none bg-[rgba(150,166,194,0.2)] w-full rounded-[10px] text-[#364663]"
-                                    placeholder="Search..."
-                                    prefix={<CiSearch className="text-[#364663] text-xl" />}
-                                ></Input>
+                        </>
+                    )}{" "}
+                    {userRole !== 'Employee' && selectedOption === "Annoucement" && (
+                        <>
+                            <div className="bg-shadow">
+                                <ButtonCustom
+                                    label="Post Announcement"
+                                    className="bg-shadow mb-4"
+                                    type="submit"
+                                    onClick={handleAnnoucementClick}
+                                    icon={<CiEdit />}
+                                    disabled={false}
+                                    loading={false}
+                                >
+                                </ButtonCustom>
+                                <div className="">
+                                    <Input
+                                        className="!stroke-none bg-[rgba(150,166,194,0.2)] w-full rounded-[10px] text-[#364663]"
+                                        placeholder="Search..."
+                                        prefix={<CiSearch className="text-[#364663] text-xl" />}
+                                    ></Input>
+                                </div>
+                                <div>
+                                    <AnnoucementCard />
+                                </div>
                             </div>
-                            <div>
-                                <AnnoucementCard />
-                            </div>
-                        </div>
-                    </>
-                )}
+                        </>
+                    )}
+                </div>
             </main>
             <QrCodeModal
                 isOpen={isQrModalOpen}

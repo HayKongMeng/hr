@@ -1,191 +1,141 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { HiXMark } from "react-icons/hi2";
-import { LiaSave } from "react-icons/lia";
-import Loading from "../ui/Loading";
-import Button from "../ui/Button";
-import Textbox from "../ui/Textbox";
-import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { Modal, Form, Input, Button, Spin, Row, Col, DatePicker, message } from "antd";
 import { FamilyInfoFormSchema, familyInfoSchema } from "@/lib/validationSchema";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFamilyInformation, getFamilyInformationById, updateFamilyInformation } from "@/lib/api/familyInformation";
+import dayjs from 'dayjs';
 
-
-interface FamilyInfoFormProps { 
-    onSaved: () => void; 
-    onClose: () => void; 
+interface FamilyInfoAntFormProps {
+    open: boolean;
+    onClose: () => void;
     employeeId: number;
-    familyInfoId?: number;
+    onSaved: () => void;
+    familyInfoId?: number; // For editing
 }
 
-const FamilyInfoForm: React.FC<FamilyInfoFormProps> = ({ onSaved, onClose, employeeId, familyInfoId }) => {
+const FamilyInfoForm: React.FC<FamilyInfoAntFormProps> = ({ open, onClose, employeeId, onSaved, familyInfoId }) => {
     const {
-        register,
+        control,
         handleSubmit,
-        formState: { errors },
         reset,
     } = useForm<FamilyInfoFormSchema>({
         resolver: zodResolver(familyInfoSchema),
         defaultValues: {},
     });
 
-    const [loading, setLoading] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [submitLoading, setSubmitLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(false);
 
-    const handleFamily = handleSubmit(async (formData) => {
-        setLoading(true);
+    // Fetch existing family info for editing
+    useEffect(() => {
+        if (open && familyInfoId) {
+            setInitialLoading(true);
+            const loadFamilyInfo = async () => {
+                try {
+                    const response = await getFamilyInformationById(familyInfoId);
+                    const data = response.data.result.data;
+                    reset({
+                        name: data.name || "",
+                        relationship: data.relationship || "",
+                        passport_expiry_date: data.passport_expiry_date ? dayjs(data.passport_expiry_date) : null,
+                        phone: data.phone || "",
+                    });
+                } catch (error) {
+                    console.error("Failed to load family info:", error);
+                    message.error("Failed to load family information.");
+                } finally {
+                    setInitialLoading(false);
+                }
+            };
+            loadFamilyInfo();
+        } else if (open && !familyInfoId) {
+            reset(); // Clear form for 'add new'
+            setInitialLoading(false);
+        }
+    }, [open, familyInfoId, reset]);
+
+    const handleFormSubmit = handleSubmit(async (formData) => {
+        setSubmitLoading(true);
         try {
+            const payload = {
+                ...formData,
+                // Format the date back to a string for the API
+                passport_expiry_date: dayjs(formData.passport_expiry_date).format('YYYY-MM-DD'),
+            };
+
             if (familyInfoId) {
-                await updateFamilyInformation({
-                    id: familyInfoId, // include the ID here
-                    employee_id: employeeId,
-                    name: formData.name,
-                    relationship: formData.relationship,
-                    passport_expiry_date: formData.passport_expiry_date,
-                    phone: formData.phone,
-                });
-                toast.success("Family information updated successfully");
+                await updateFamilyInformation({ id: familyInfoId, employee_id: employeeId, ...payload });
+                message.success("Family information updated successfully.");
             } else {
-                await createFamilyInformation({
-                    employee_id: employeeId,
-                    name: formData.name,
-                    relationship: formData.relationship || null,
-                    passport_expiry_date: formData.passport_expiry_date,
-                    phone: formData.phone || null,
-                });
-                toast.success("Family information created successfully");
+                await createFamilyInformation({ employee_id: employeeId, ...payload });
+                message.success("Family information created successfully.");
             }
-            onSaved(); 
+            onSaved();
             onClose();
-        } catch (err) {
-            setLoading(false);
-
-            let message = "Failed to create leave.";
-
-            const error = err as AxiosError<any>; // 👈 explicitly cast the error
-
-            if (error.response?.data?.exception?.message) {
-                message = error.response.data.exception.message;
-            } else if (error.response?.data?.message) {
-                message = error.response.data.message;
-            }
-
-            toast.error(message);
-            console.error("Error:", message);
+        } catch (error) {
+            console.error("Submit failed:", error);
+            message.error("Failed to save family information.");
         } finally {
-            setLoading(false);
+            setSubmitLoading(false);
         }
     });
-    
-    useEffect(() => {
-        if (!familyInfoId) {
-            setIsLoading(false);
-            return;
-        }
-        const loadFmailyInfo = async () => {
-            setIsLoading(true);
-            try {
-                const response = await getFamilyInformationById(familyInfoId);
-                const data = response.data.result.data;
-                reset({
-                    name: data.name || "",
-                    relationship: data.relationship || "",
-                    passport_expiry_date: data.passport_expiry_date || "",
-                    phone: data.phone || "",
-                });
-            } catch (error) {
-                console.error("Failed to load family info:", error);
-                toast.error("Failed to load family information.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
 
-        loadFmailyInfo();
-    }, [familyInfoId, reset]);
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 overflow-auto">
-            <div className="relative w-full max-w-4xl mx-4 sm:mx-6 bg-white rounded-[24px] border shadow-lg transition-all duration-300 transform animate-modal-popin max-h-[90vh] overflow-y-auto">
-                {isLoading ? (
-                    <h1 className="p-2">Loading...</h1>
-                ) : (  
-                    <form onSubmit={handleFamily} className="bg-white rounded-[24px] shadow-sm">
-                        <div className="flex items-center justify-between pb-4 border-b p-6">
-                            <h1 className="text-lg font-bold text-gray-900">{familyInfoId ? "Edit Family Information" : "Add Family Information"}</h1>
-                            <button
-                                type="button"
-                                aria-label="Close"
-                                onClick={onClose}
-                                className="p-0.5 rounded-full bg-gray-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                            >
-                                <HiXMark size={15} className="text-white" />
-                            </button>
-                        </div>
-
-                        <div className="px-6 pt-6 space-y-6 text-sm text-gray-700">
-                            <div className="flex gap-4">
-                                <Textbox
-                                    type="text"
-                                    label="Name *"
-                                    register={register("name")}
-                                    error={errors.name ? errors.name.message : ""}
-                                    className="w-full rounded-lg"
-                                />
-                                <Textbox
-                                    type="text"
-                                    label="Relationship"
-                                    register={register("relationship")}
-                                    error={errors.relationship ? errors.relationship.message : ""}
-                                    className="w-full rounded-lg"
-                                />
-                            </div>
-                            <div className="flex gap-4">
-                                <Textbox
-                                    type="date"
-                                    label="Passport Expiry Date *"
-                                    register={register("passport_expiry_date")}
-                                    error={errors.passport_expiry_date ? errors.passport_expiry_date.message : ""}
-                                    className="w-full rounded-lg"
-                                />
-                                <Textbox
-                                    type="text"
-                                    label="Phone"
-                                    register={register("phone")}
-                                    error={errors.phone ? errors.phone.message : ""}
-                                    className="w-full rounded-lg"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 pb-4 px-6 border-t">
-                            {loading ? (
-                                <Loading />
-                            ) : (
-                                <>
-                                    <Button
-                                        type="button"
-                                        onClick={onClose}
-                                        className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-                                        icon={<HiXMark size={18} />}
-                                        label="Cancel"
-                                    />
-                                    <Button
-                                        type="submit"
-                                        className="inline-flex items-center px-4 py-2 bg-[#6fd943] border border-[#6fd943] text-sm font-semibold text-white hover:bg-[#48a522] rounded-lg"
-                                        icon={<LiaSave size={18} />}
-                                        label="Save"
-                                    />
-                                </>
-                            )}
-                        </div>
-                    </form>
-                )}
-            </div>
-        </div>
+        <Modal
+            title={familyInfoId ? "Edit Family Information" : "Add Family Information"}
+            open={open}
+            onCancel={handleClose}
+            width={700}
+            footer={[
+                <Button key="back" onClick={handleClose}>Cancel</Button>,
+                <Button key="submit" type="primary" loading={submitLoading} onClick={handleFormSubmit}>Save</Button>,
+            ]}
+        >
+            <Spin spinning={initialLoading} tip="Loading...">
+                <Form layout="vertical">
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Controller name="name" control={control} render={({ field, fieldState: { error } }) => (
+                                <Form.Item label="Name *" validateStatus={error ? 'error' : ''} help={error?.message}>
+                                    <Input {...field} placeholder="e.g., Jane Doe" />
+                                </Form.Item>
+                            )} />
+                        </Col>
+                        <Col span={12}>
+                            <Controller name="relationship" control={control} render={({ field, fieldState: { error } }) => (
+                                <Form.Item label="Relationship" validateStatus={error ? 'error' : ''} help={error?.message}>
+                                    <Input {...field} value={field.value ?? ''} placeholder="e.g., Spouse, Sibling" />
+                                </Form.Item>
+                            )} />
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Controller name="passport_expiry_date" control={control} render={({ field, fieldState: { error } }) => (
+                                <Form.Item label="Date of Birth *" validateStatus={error ? 'error' : ''} help={error?.message}>
+                                    <DatePicker {...field} style={{ width: '100%' }} format="YYYY-MM-DD" />
+                                </Form.Item>
+                            )} />
+                        </Col>
+                        <Col span={12}>
+                            <Controller name="phone" control={control} render={({ field, fieldState: { error } }) => (
+                                <Form.Item label="Phone" validateStatus={error ? 'error' : ''} help={error?.message}>
+                                    <Input {...field} value={field.value ?? ''} placeholder="Enter phone number" />
+                                </Form.Item>
+                            )} />
+                        </Col>
+                    </Row>
+                </Form>
+            </Spin>
+        </Modal>
     );
 };
 

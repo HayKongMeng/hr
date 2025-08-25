@@ -6,8 +6,42 @@ html {
   scroll-behavior: smooth;
   font-family: 'Satoshi'
 }
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-bg {
+    background: linear-gradient(-45deg, #1d2b4b, #302943, #4a044e, #2c1a4c);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+}
 
 @layer components {
+    .glass-form-container {
+        @apply relative bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300;
+    }
+
+    .glass-form-container::before {
+        content: '';
+        position: absolute;
+        top: var(--mouse-y, -100px);
+        left: var(--mouse-x, -100px);
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        pointer-events: none; /* Make sure it doesn't block clicks */
+    }
+
+    /* Show the spotlight on hover */
+    .glass-form-container:hover::before {
+        opacity: 1;
+    }
+
     .bg-shadow {
         @apply bg-white border border-[#EFF1F8] rounded-[10px] shadow-[0px_0.3px_0.9px_rgba(0,0,0,0.11),0px_1.6px_3.6px_rgba(0,0,0,0.132)] mt-5 p-4;
     }

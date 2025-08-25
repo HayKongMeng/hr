@@ -62,7 +62,7 @@ const forms: {
     [key: string]: (type: "create" | "update", data?: any, onSuccess?: () => void, nCancel?: () => void) => JSX.Element;
 } = {
     Company: (type, data, onSuccess, onCancel) => <CompanyForm type={type} data={data} onSuccess={onSuccess} onCancel={onCancel} />,
-    Employee: (type, data, onSuccess, onCancel) => <EmployeeForm type={type} data={data} onSuccess={onSuccess} onCancel={onCancel}  />,
+    Employee: (type, data, onSuccess, onCancel) => <EmployeeForm type={type} data={data} onSuccess={onSuccess} onCancel={onCancel} />,
     CompanyHistory: (type, data, onSuccess) => <CompanyHistoryForm type={type} data={data} onSuccess={onSuccess} />,
     Position: (type, data, onSuccess, onCancel) => <PositionForm type={type} data={data} onSuccess={onSuccess} onCancel={onCancel}  />,
     Department: (type, data, onSuccess, onCancel) => <DepartmentForm type={type} data={data} onSuccess={onSuccess} onCancel={onCancel} />,

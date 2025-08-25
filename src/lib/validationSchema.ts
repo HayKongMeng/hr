@@ -1,47 +1,40 @@
 import { z } from "zod";
+import dayjs from 'dayjs';
+
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+
+dayjs.extend(isSameOrAfter);
 
 export const createEmployeeSchema = z.object({
-    name: z
-        .string({ required_error: "Username is required." })
-        .min(3, { message: "Username must be at least 3 characters." })
-        .max(20, { message: "Username must be at most 20 characters." }),
+    first_name: z.string().min(1, "First name is required"),
+    last_name: z.string().min(1, "Last name is required"),
+    name: z.string().min(1, "Username is required"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal('')),
+    confirm_password: z.string().optional().or(z.literal('')),
+    employee_code: z.string().min(1, "Employee ID is required"),
+    phone: z.string().min(1, "Phone number is required"),
+    address: z.string().optional().nullable(),
 
-    email: z
-        .string({ required_error: "Email is required." })
-        .email({ message: "Please enter a valid email." }),
-
-    password: z
-        .string()
-        .min(8, { message: "Password must be at least 8 characters" }),
-    confirm_password: z.string().min(8, { message: "Confirm your password" }),
-
-    employee_code: z
-        .string({ required_error: "Employee code is required." })
-        .min(1, { message: "Phone cannot be empty." }),
-
-    first_name: z
-        .string({ required_error: "First name is required." })
-        .min(1, { message: "First name cannot be empty." }),
-
-    last_name: z
-        .string({ required_error: "Last name is required." })
-        .min(1, { message: "Last name cannot be empty." }),
-
-    phone: z
-        .string({ required_error: "Phone is required." })
-        .min(1, { message: "Phone cannot be empty." }),
-    
-    address: z.string().optional(),
-
-    date_of_birth: z.string().refine(
-        (val) => !isNaN(Date.parse(val)),
-        "Invalid date"
-    ),   
-    hire_date: z.string().refine(
-        (val) => !isNaN(Date.parse(val)),
-        "Invalid date"
-    ),   
-});
+    // Accept any type for dates, then validate them as dayjs objects
+    date_of_birth: z.any()
+        .refine(date => date, "Date of birth is required")
+        .refine(date => dayjs(date).isValid(), "Invalid date"),
+    hire_date: z.any()
+        .refine(date => date, "Joining date is required")
+        .refine(date => dayjs(date).isValid(), "Invalid date"),
+})
+    // Add cross-field validation for password confirmation
+    .refine(data => {
+        // Only validate passwords if a new one is being provided
+        if (data.password) {
+            return data.password === data.confirm_password;
+        }
+        return true;
+    }, {
+        message: "Passwords do not match",
+        path: ["confirm_password"], // Show error on the confirm_password field
+    });
 
 // export const updateEmployeeSchema = createEmployeeSchema
 //     .omit({ password: true }) // remove password field entirely
@@ -222,24 +215,32 @@ export const emergencyContactSchema = z.object({
 export type EmergencyContactFormSchema = z.infer<typeof emergencyContactSchema>;
 
 export const personalInfoSchema = z.object({
-    passport_no: z.string().max(50),
-    passport_expiry_date: z.string().refine((date) => {
-        return !isNaN(Date.parse(date));
-    }, {
-        message: "Invalid date format",
-    }),
+    passport_no: z.string().min(1, "Passport number is required"),
+
+    passport_expiry_date: z.any()
+        .refine(date => date, "Passport expiry date is required") // 1. Checks if a value was provided
+        .refine(date => dayjs(date).isValid(), "Invalid date format") // 2. Checks if the value is a valid date
+        // --- THE FIX IS HERE ---
+        // 3. Checks if the valid date is today or in the future
+        .refine(
+            date => dayjs(date).isSameOrAfter(dayjs(), 'day'),
+            { message: "Passport expiry date must be today or a future date." }
+        ),
+
+    nationality_id: z.number({ required_error: "Nationality is required" }),
+    marital_status_id: z.number({ required_error: "Marital status is required" }),
+
     religion: z.string().optional().nullable(),
     employment_spouse: z.string().optional().nullable(),
-    number_of_children: z
-        .string()
-        .min(1, "This field is required")
-        .refine((val) => !isNaN(Number(val)), {
-        message: "Must be a number",
-        })
-        .transform((val) => parseInt(val))
-        .refine((val) => val >= 0, {
-        message: "Must be 0 or greater",
-        }),
+    number_of_children: z.preprocess(
+        (val) => {
+            if (val === "" || val === null || val === undefined) return null;
+            return Number(val);
+        },
+        z.number({ invalid_type_error: "Please enter a valid number" })
+            .min(0, "Number of children cannot be negative")
+            .nullable()
+    ),
 });
 
 export type PersonalInfoFormSchema = z.infer<typeof personalInfoSchema>;
@@ -254,38 +255,75 @@ export const bankInfoSchema = z.object({
 export type BankInfoFormSchema = z.infer<typeof bankInfoSchema>;
 
 export const familyInfoSchema = z.object({
-    name: z.string().min(1, { message: "Name is required" }),
+    name: z.string().min(1, "Name is required"),
     relationship: z.string().optional().nullable(),
-    passport_expiry_date: z.string().min(1, { message: "Date of birth is required" }),
+
+    passport_expiry_date: z.any()
+        .refine(date => date, "Date of birth is required")
+        .refine(date => dayjs(date).isValid(), "Invalid date"),
+
     phone: z.string().optional().nullable(),
 });
 
 export type FamilyInfoFormSchema = z.infer<typeof familyInfoSchema>;
 
 export const educationSchema = z.object({
-    institution_name: z.string().min(1, { message: 'Institution name is required' }),
-    course: z.string().min(1, { message: 'Course is required' }),
-    start_date: z.string().min(1, { message: 'Start date is required' }).refine(val => !isNaN(Date.parse(val)), {message: 'Start date must be a valid date',}),
-    end_date: z.string().min(1, { message: 'End date is required' }).refine(val => !isNaN(Date.parse(val)), {message: 'End date must be a valid date',}),
-}).refine((data) => {
-    const start = new Date(data.start_date);
-    const end = new Date(data.end_date);
-    return end >= start;
-}, {
-    path: ['end_date'],
-    message: 'End date must be after or equal to start date',
-});
+    institution_name: z.string().min(1, "Institution name is required"),
+    course: z.string().min(1, "Course/Degree is required"),
+
+    start_date: z.any()
+        .refine(date => date, "Start date is required")
+        .refine(date => dayjs(date).isValid(), "Invalid start date"),
+
+    end_date: z.any()
+        .refine(date => date, "End date is required")
+        .refine(date => dayjs(date).isValid(), "Invalid end date"),
+})
+    .refine(data => {
+        if (data.start_date && data.end_date) {
+            return dayjs(data.end_date).isAfter(dayjs(data.start_date));
+        }
+        return true;
+    }, {
+        message: "End date must be after the start date",
+        path: ["end_date"],
+    });
+
 
 
 export type  EducationFormSchema = z.infer<typeof  educationSchema>;
 
-export const experienceSchema = z.object({
-    previous_company_name: z.string({ required_error: "Previous company name is required" }).min(1, "Previous company name is required"),
-    designation: z.string({ required_error: "Designation is required" }).min(1, "Designation is required"),
-    start_date: z.string({ required_error: "Start date is required" }).refine((date) => !isNaN(Date.parse(date)), {message: "Start date must be a valid date",}),
-    end_date: z.string({ required_error: "End date is required" }).refine((date) => !isNaN(Date.parse(date)), {message: "End date must be a valid date",}),
-    is_current: z.boolean().optional(),
-});
 
-export type ExperienceFormSchema = z.infer<typeof  experienceSchema>;
+export const experienceSchema = z.object({
+    previous_company_name: z.string().min(1, "Company name is required"),
+    designation: z.string().min(1, "Designation is required"),
+
+    start_date: z.any()
+        .refine(date => date, "Start date is required")
+        .refine(date => dayjs(date).isValid(), "Invalid start date"),
+
+    end_date: z.any().optional().nullable(),
+
+    is_current: z.boolean().optional(),
+})
+    .refine(data => {
+        if (!data.is_current && !data.end_date) {
+            return false;
+        }
+        return true;
+    }, {
+        message: "End date is required unless this is your current job",
+        path: ["end_date"],
+    })
+    .refine(data => {
+        if (data.start_date && data.end_date) {
+            return dayjs(data.end_date).isAfter(dayjs(data.start_date));
+        }
+        return true;
+    }, {
+        message: "End date must be after the start date",
+        path: ["end_date"],
+    });
+
+export type ExperienceFormSchema = z.infer<typeof experienceSchema>;
 

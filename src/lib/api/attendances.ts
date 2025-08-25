@@ -1,17 +1,17 @@
 import api from './index';
 
 export const fetchAttendances = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`employee/attendances?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/attendances?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
 export const findEmployees = async () => {
-    const response = await api.get(`employee/find-attendances`);
+    const response = await api.get(`api/employee/find-attendances`);
     return response.data.result;
 };
 
 export const findEmployeesById = async (id: number) => {    
-    const response = await api.get(`employee/attendances/employee/${id}`);
+    const response = await api.get(`api/employee/attendances/employee/${id}`);
     return response.data.result;
 };
 
@@ -25,7 +25,7 @@ export const checkInAndOut = async (payload: {
     reason?: string
 }) => {
     try {
-        const departmentResponse = await api.post('/employee/mark-attendance', payload);
+        const departmentResponse = await api.post('/api/employee/mark-attendance', payload);
         return departmentResponse.data;
     } catch (error) {
         console.error('Error creating employee:', error);

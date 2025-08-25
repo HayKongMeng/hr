@@ -1,7 +1,7 @@
 import api from './index';
 
 export const fetchPositions = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`employee/positions?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/positions?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
@@ -11,7 +11,7 @@ export type Position = {
 };
 
 export const fetchAllPositions = async (): Promise<Position[]> => {
-    const response = await api.get(`employee/all-positions`);
+    const response = await api.get(`api/employee/all-positions`);
     return response.data.result.data;
 };
 
@@ -22,7 +22,7 @@ export const createPosition = async (payload: {
     status: boolean;
 }) => {
     try {
-        const positionResponse = await api.post('/employee/positions', {
+        const positionResponse = await api.post('/api/employee/positions', {
             code: payload.code,
             title: payload.title,
             description: payload.description,
@@ -42,7 +42,7 @@ export const updatePosition = async (id: number, payload: {
     description?: string | null;
     status: boolean;
 }) => {
-    const positionResponse = await api.put(`/employee/positions/${id}`, {
+    const positionResponse = await api.put(`/api/employee/positions/${id}`, {
         code: payload.code,
         title: payload.title,
         description: payload.description,
@@ -53,7 +53,7 @@ export const updatePosition = async (id: number, payload: {
 };
 
 export const deletePosition = async (id: number) => {
-    const response = await api.delete(`employee/positions/${id}`);
+    const response = await api.delete(`api/employee/positions/${id}`);
     return response;
 }
 

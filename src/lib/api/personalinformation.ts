@@ -1,7 +1,7 @@
 import api from './index';
 
-export const getPersonalInformationByEmployeeId = (employeeId: number) => api.get(`employee/personal-information-as-emp`, { params: { employee_id: employeeId } });
-export const getPersonalInformationById = (id: number) => api.get(`employee/personal-information/${id}`);
+export const getPersonalInformationByEmployeeId = (employeeId: number) => api.get(`api/employee/personal-information-as-emp`, { params: { employee_id: employeeId } });
+export const getPersonalInformationById = (id: number) => api.get(`api/employee/personal-information/${id}`);
 
 export const createPersonalInformation = async (payload: {
     employee_id: number,
@@ -11,10 +11,10 @@ export const createPersonalInformation = async (payload: {
     marital_status_id: number;
     religion?: string | null;
     employment_spouse?: string | null;
-    number_of_children: number;
+    number_of_children: number | null;
 }) => {
     try {
-        const personalInformationResponse = await api.post('/employee/personal-information', {
+        const personalInformationResponse = await api.post('/api/employee/personal-information', {
             employee_id: payload.employee_id,
             passport_no: payload.passport_no,
             passport_expiry_date: payload.passport_expiry_date,
@@ -41,7 +41,7 @@ export const updatePersonalInformation = async (payload: {
     marital_status_id: number;
     religion?: string | null;
     employment_spouse?: string | null;
-    number_of_children: number;
+    number_of_children: number | null;
 }) => {
     try {
         const {
@@ -56,7 +56,7 @@ export const updatePersonalInformation = async (payload: {
             number_of_children,
         } = payload;
 
-        const response = await api.put(`/employee/personal-information/${id}`, {
+        const response = await api.put(`/api/employee/personal-information/${id}`, {
             employee_id,
             passport_no,
             passport_expiry_date,

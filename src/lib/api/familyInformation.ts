@@ -1,7 +1,7 @@
 import api from './index';
 
-export const getFamilyInformationByEmployeeId = (employeeId: number) => api.get(`employee/family-information-as-emp`, { params: { employee_id: employeeId } });
-export const getFamilyInformationById = (id: number) => api.get(`employee/family-information/${id}`);
+export const getFamilyInformationByEmployeeId = (employeeId: number) => api.get(`api/employee/family-information-as-emp`, { params: { employee_id: employeeId } });
+export const getFamilyInformationById = (id: number) => api.get(`api/employee/family-information/${id}`);
 
 export const createFamilyInformation = async (payload: {
     employee_id: number,
@@ -11,7 +11,7 @@ export const createFamilyInformation = async (payload: {
     phone?: string | null;
 }) => {
     try {
-        const familyInformationResponse = await api.post('/employee/family-information', {
+        const familyInformationResponse = await api.post('/api/employee/family-information', {
             employee_id: payload.employee_id,
             name: payload.name,
             relationship: payload.relationship,
@@ -44,7 +44,7 @@ export const updateFamilyInformation = async (payload: {
             phone,
         } = payload;
 
-        const response = await api.put(`/employee/family-information/${id}`, {
+        const response = await api.put(`/api/employee/family-information/${id}`, {
             employee_id,
             name,
             relationship,

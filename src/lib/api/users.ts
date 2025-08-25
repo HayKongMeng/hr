@@ -1,12 +1,12 @@
 import api from './index';
 
 export const fetchUsers = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`auth/get-all-users`);
+    const response = await api.get(`api/auth/get-all-users`);
     return response.data.result;
 };
 
 export const fetchAllRoles = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`auth/roles-list`);
+    const response = await api.get(`api/auth/roles-list`);
     return response.data.result;
 };
 
@@ -16,14 +16,14 @@ export type Role = {
 };
 
 export const fetchRoles = async (): Promise<Role[]> => {
-    const response = await api.get(`auth/roles`);
+    const response = await api.get(`api/auth/roles`);
     return response.data.result.data;
 };
 
 export type PermissionMap = Record<string, string[]>;
 
 export const fetchPermission = async (): Promise<PermissionMap> => {
-    const response = await api.get(`auth/permissions/meta`);
+    const response = await api.get(`api/auth/permissions/meta`);
     return response.data.result.data;
 };
 
@@ -38,7 +38,7 @@ export const createUser = async (payload: {
     role_id: number;
 }) => {
     try {
-        const userResponse = await api.post('auth/register', {
+        const userResponse = await api.post('api/auth/register', {
             name: payload.name,
             email: payload.email,
             password: payload.password,
@@ -64,7 +64,7 @@ export const updateUser = async (id: number, payload: {
     phone: string;
     role_id: number;
 }) => {
-    const userResponse = await api.put(`/auth/edit-register/${id}`, {
+    const userResponse = await api.put(`/api/auth/edit-register/${id}`, {
         name: payload.name,
         email: payload.email,
         password: payload.password,
@@ -81,7 +81,7 @@ export const updateUser = async (id: number, payload: {
 export const updateEmployeeRegistration = async (employeeId: number, payload: { name: string, email: string, password?: string }) => {
     try {
         // Using POST as it's common for this type of update endpoint
-        const response = await api.put(`/auth/update-register-employee/${employeeId}`, payload);
+        const response = await api.put(`/api/auth/update-register-employee/${employeeId}`, payload);
         return response.data;
     } catch (error) {
         console.error('Error updating employee registration:', error);
@@ -95,7 +95,7 @@ export const createRole = async (payload: {
     permissions: { module: string; actions: string[] }[];
 }) => {
     try {
-        const roleResponse = await api.post('auth/roles-assign-permissions', {
+        const roleResponse = await api.post('api/auth/roles-assign-permissions', {
             role_name: payload.role_name,
             status: payload.status,
             permissions: payload.permissions,
@@ -114,7 +114,7 @@ export const updateRole = async (payload: {
     status: boolean;
     permissions: { module: string; actions: string[] }[];
 }) => {
-    const roleResponse = await api.put(`/auth/roles-assign-permissions/${payload.id}`, {
+    const roleResponse = await api.put(`/api/auth/roles-assign-permissions/${payload.id}`, {
         role_name: payload.role_name,
         status: payload.status,
         permissions: payload.permissions,
@@ -124,7 +124,7 @@ export const updateRole = async (payload: {
 };
 
 export const deleteRole = async (id: number) => {
-    const response = await api.delete(`auth/roles/${id}`);
+    const response = await api.delete(`api/auth/roles/${id}`);
     return response;
 }
 

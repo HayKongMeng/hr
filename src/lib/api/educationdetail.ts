@@ -1,7 +1,7 @@
 import api from './index';
 
-export const getEducationDetailByEmployeeId = (employeeId: number) => api.get(`employee/edu-details-as-emp`, { params: { employee_id: employeeId } });
-export const getEducationDetailById = (id: number) => api.get(`employee/edu-details/${id}`);
+export const getEducationDetailByEmployeeId = (employeeId: number) => api.get(`api/employee/edu-details-as-emp`, { params: { employee_id: employeeId } });
+export const getEducationDetailById = (id: number) => api.get(`api/employee/edu-details/${id}`);
 
 export const createEducationDetail = async (payload: {
     employee_id: number,
@@ -11,7 +11,7 @@ export const createEducationDetail = async (payload: {
     end_date: string;
 }) => {
     try {
-        const bankInformationResponse = await api.post('/employee/edu-details', {
+        const bankInformationResponse = await api.post('/api/employee/edu-details', {
             employee_id: payload.employee_id,
             institution_name: payload.institution_name,
             course: payload.course,
@@ -44,7 +44,7 @@ export const updateEducationDetail = async (payload: {
             end_date,
         } = payload;
 
-        const response = await api.put(`/employee/edu-details/${id}`, {
+        const response = await api.put(`/api/employee/edu-details/${id}`, {
             employee_id,
             institution_name,
             course,

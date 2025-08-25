@@ -6,7 +6,7 @@ export type Status = {
 };
 
 export const fetchStatuses = async (): Promise<Status[]> => {
-    const response = await api.get(`employee/status`);
+    const response = await api.get(`api/employee/status`);
     return response.data.result.data;
 };
 
@@ -16,7 +16,7 @@ export type MaritalStatus = {
 };
 
 export const fetchMaritalStatuses = async (): Promise<MaritalStatus[]> => {
-    const response = await api.get(`employee/marital-statuses`);
+    const response = await api.get(`api/employee/marital-statuses`);
     return response.data.result.data;
 };
 
@@ -26,7 +26,7 @@ export type Nationality = {
 };
 
 export const fetchNationality = async (): Promise<Nationality[]> => {
-    const response = await api.get(`employee/nationalities`);
+    const response = await api.get(`api/employee/nationalities`);
     return response.data.result.data;
 };
 
@@ -36,7 +36,7 @@ export type WorkStation = {
 };
 
 export const fetchWorkStation = async (): Promise<WorkStation[]> => {
-    const response = await api.get(`employee/work-stations`);
+    const response = await api.get(`api/employee/work-stations`);
     return response.data.result.data;
 };
 
@@ -46,7 +46,7 @@ export type EmploymentType = {
 };
 
 export const fetchEmploymentTypes = async (): Promise<EmploymentType[]> => {
-    const response = await api.get(`employee/employment-type`);
+    const response = await api.get(`api/employee/employment-type`);
     return response.data.result.data;
 };
 
@@ -56,6 +56,6 @@ export type LeaveStatus = {
 };
 
 export const fetchLeaveStatuses = async (): Promise<LeaveStatus[]> => {
-    const response = await api.get(`leave/statuses`);
+    const response = await api.get(`api/leave/statuses`);
     return response.data.result.data;
 };

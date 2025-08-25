@@ -2,7 +2,7 @@ import api from './index';
 import dayjs from "dayjs";
 
 export const fetchCompanies = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`employee/company?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/company?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
@@ -12,11 +12,11 @@ export type Company = {
 };
 
 export const fetchAllCompanies = async (): Promise<Company[]> => {
-    const response = await api.get(`employee/all-companies`);
+    const response = await api.get(`api/employee/all-companies`);
     return response.data.result.data;
 };
 
-export const getCompanyById = (id: number) => api.get(`employee/company/${id}`);
+export const getCompanyById = (id: number) => api.get(`api/employee/company/${id}`);
 
 export const createCompany = async (payload: {
     company_code: string;
@@ -56,7 +56,7 @@ export const createCompany = async (payload: {
             posted_by_name,
         };
 
-        const companyResponse = await api.post('/employee/company', finalPayload);
+        const companyResponse = await api.post('/api/employee/company', finalPayload);
 
         return companyResponse.data;
     } catch (error) {
@@ -86,7 +86,7 @@ export const updateCompany = async (id: number, payload: {
         const posted_by = Number(localStorage.getItem('user_id'));
         const posted_by_name = localStorage.getItem('user_name');
 
-        const companyResponse = await api.put(`/employee/company/${id}`, {
+        const companyResponse = await api.put(`/api/employee/company/${id}`, {
             ...payload,
             posted_by,
             posted_by_name,
@@ -101,7 +101,7 @@ export const updateCompany = async (id: number, payload: {
 };
 
 export const deleteCompany = async (id: number) => {
-    const response = await api.delete(`employee/company/${id}`);
+    const response = await api.delete(`api/employee/company/${id}`);
     return response;
 }
 
@@ -125,7 +125,8 @@ export interface DashboardSummary {
 export const fetchDashboardSummary = async (date?: string): Promise<DashboardSummary> => {
     const queryDate = date || dayjs().format('YYYY-MM-DD');
     try {
-        const response = await api.get(`/employee/summary?date=${queryDate}`);
+        const response = await api.get(`/api/employee/summary?date=${queryDate}`);
+        console.log("tttttttttttttttttttttt")
         return response.data.result;
     } catch (error) {
         console.error("Failed to fetch dashboard summary:", error);

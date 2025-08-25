@@ -17,7 +17,6 @@ const AdminPage = () => {
     useEffect(() => {
         const getSummary = async () => {
             try {
-                // No need to setLoading(true) here, it's already true initially
                 const data = await fetchDashboardSummary();
                 console.log("Fetched Summary Data:", data); // DEBUGGING: Check if data is correct
                 setSummaryData(data);

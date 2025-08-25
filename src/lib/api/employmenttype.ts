@@ -2,21 +2,21 @@
 import api from './index';
 
 export const fetchEmploymentTypes = async () => {
-    const response = await api.get(`employee/employment-type`);
+    const response = await api.get(`api/employee/employment-type`);
     return response.data.result;
 };
 
 export const createEmploymentType = async (payload: { type_code: number; status_name: string }) => {
-    const response = await api.post('employee/employment-type', payload);
+    const response = await api.post('api/employee/employment-type', payload);
     return response.data;
 };
 
 export const updateEmploymentType = async (id: number, payload: { type_code: number; status_name: string }) => {
-    const response = await api.put(`employee/employment-type/${id}`, payload);
+    const response = await api.put(`api/employee/employment-type/${id}`, payload);
     return response.data;
 };
 
 export const deleteEmploymentType = async (id: number) => {
-    const response = await api.delete(`employee/employment-type/${id}`);
+    const response = await api.delete(`api/employee/employment-type/${id}`);
     return response.data;
 };

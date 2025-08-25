@@ -2,7 +2,7 @@
 import api from './index';
 
 export const fetchEmployees = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`employee/employees?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/employees?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
@@ -32,7 +32,7 @@ export type Employee = {
 };
 
 export const fetchAllEmployees = async (): Promise<Employee[]> => {
-    const response = await api.get(`employee/all-employees`);
+    const response = await api.get(`api/employee/all-employees`);
     return response.data.result.data;
 };
 
@@ -51,12 +51,12 @@ export const getEmployeeName = async (id: number): Promise<string> => {
     }
 };
 
-export const getEmployeeById = (id: number) => api.get(`employee/employees/${id}`);
+export const getEmployeeById = (id: number) => api.get(`api/employee/employees/${id}`);
 
 export const createEmployee = async (payload: {
     username: string;
     email: string;
-    password: string;
+    password?: string;
     employee_code: string;
     first_name: string;
     last_name: string;
@@ -78,7 +78,7 @@ export const createEmployee = async (payload: {
         const posted_by = Number(localStorage.getItem('user_id'));
         const posted_by_name = localStorage.getItem('user_name');
 
-        const authResponse = await api.post('/auth/register-employee', {
+        const authResponse = await api.post('/api/auth/register-employee', {
             name: payload.username,
             email: payload.email,
             password: payload.password,
@@ -123,7 +123,7 @@ export const createEmployee = async (payload: {
         formData.append('posted_by', posted_by.toString());
         formData.append('posted_by_name', posted_by_name || '');
 
-        const employeeResponse = await api.post('/employee/employees', formData, {
+        const employeeResponse = await api.post('/api/employee/employees', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -142,7 +142,7 @@ export const updateEmployee = async (
     authPayload: {
         username: string;
         email: string;
-        password: string;
+        password?: string | null;
     },
     employeePayload: {
         employee_code: string;
@@ -167,12 +167,16 @@ export const updateEmployee = async (
         const posted_by = Number(localStorage.getItem('user_id'));
         const posted_by_name = localStorage.getItem('user_name');
 
-        // Step 1: Update in auth-service
-        await api.put(`/auth/update-register-employee/${userId}`, {
+        const authServicePayload: { name: string; email: string; password?: string } = {
             name: authPayload.username,
             email: authPayload.email,
-            password: authPayload.password,
-        });
+        };
+
+        if (authPayload.password && authPayload.password.length > 0) {
+            authServicePayload.password = authPayload.password;
+        }
+
+        await api.put(`/auth/update-register-employee/${userId}`, authServicePayload);
 
         // Step 2: FormData for employee update
         const formData = new FormData();
@@ -214,7 +218,7 @@ export const updateEmployee = async (
 
         formData.append('_method', 'POST');
         // Step 3: Send to employee-service
-        const response = await api.post(`/employee/employees/${employeeId}`, formData, {
+        const response = await api.post(`/api/employee/employees/${employeeId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -229,11 +233,11 @@ export const updateEmployee = async (
 
 
 export const deleteEmployee = async (id: number) => {
-    const response = await api.delete(`employee/employees/${id}`);
+    const response = await api.delete(`api/employee/employees/${id}`);
     return response;
 }
 
-export const getEmergencyContactsByEmployeeId = (employeeId: number) => api.get(`employee/eid-emergency-contacts`, { params: { employee_id: employeeId } });
+export const getEmergencyContactsByEmployeeId = (employeeId: number) => api.get(`api/employee/eid-emergency-contacts`, { params: { employee_id: employeeId } });
 
 
 export type EmergencyContactPayload = {
@@ -250,7 +254,7 @@ export const createEmergencyContacts = async (
     payload: EmergencyContactPayload[]
 ) => {
     try {
-        const response = await api.post("/employee/emergency-contacts/bulk", payload, {
+        const response = await api.post("/api/employee/emergency-contacts/bulk", payload, {
             headers: {
                 "Content-Type": "application/json",
             },

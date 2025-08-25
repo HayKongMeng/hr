@@ -1,7 +1,7 @@
 import api from './index';
 
-export const getBankInformationByEmployeeId = (employeeId: number) => api.get(`employee/bank-information-as-emp`, { params: { employee_id: employeeId } });
-export const getBackInformationById = (id: number) => api.get(`employee/bank-information/${id}`);
+export const getBankInformationByEmployeeId = (employeeId: number) => api.get(`api/employee/bank-information-as-emp`, { params: { employee_id: employeeId } });
+export const getBackInformationById = (id: number) => api.get(`api/employee/bank-information/${id}`);
 
 export const createBankInformation = async (payload: {
     employee_id: number,
@@ -11,7 +11,7 @@ export const createBankInformation = async (payload: {
     branch_address?: string | null;
 }) => {
     try {
-        const bankInformationResponse = await api.post('/employee/bank-information', {
+        const bankInformationResponse = await api.post('/api/employee/bank-information', {
             employee_id: payload.employee_id,
             bank_details: payload.bank_details,
             bank_account_no: payload.bank_account_no,
@@ -44,7 +44,7 @@ export const updateBankInformation = async (payload: {
             branch_address,
         } = payload;
 
-        const response = await api.put(`/employee/bank-information/${id}`, {
+        const response = await api.put(`/api/employee/bank-information/${id}`, {
             employee_id,
             bank_details,
             bank_account_no,

@@ -1,147 +1,177 @@
 "use client";
 
-import React, { useState } from "react";
-import { HiXMark } from "react-icons/hi2";
-import { LiaSave } from "react-icons/lia";
-import Loading from "../ui/Loading";
-import Button from "../ui/Button";
-import Textbox from "../ui/Textbox";
-import { toast } from "sonner";
+import React, {useEffect, useState} from "react";
+import { Modal, Form, Input, Button, Spin, Row, Col, Checkbox, DatePicker, message } from "antd";
 import { ExperienceFormSchema, experienceSchema } from "@/lib/validationSchema";
-import { useForm } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createExperience } from "@/lib/api/experience";
+import dayjs from 'dayjs';
 
-interface ExperienceFormProps {
+interface ExperienceAntFormProps {
+    open: boolean;
     onClose: () => void;
     employeeId: number;
     onSaved: () => void;
 }
 
-const ExperienceForm: React.FC<ExperienceFormProps> = ({ onSaved, onClose, employeeId }) => {
+const ExperienceForm: React.FC<ExperienceAntFormProps> = ({ open, onSaved, onClose, employeeId }) => {
     const {
-        register,
+        control, // Use control for Controller
         handleSubmit,
-        formState: { errors },
+        setValue, // We'll use this to clear the end date
+        reset,
     } = useForm<ExperienceFormSchema>({
         resolver: zodResolver(experienceSchema),
-        defaultValues: {},
+        defaultValues: {
+            is_current: false,
+        },
     });
+
+    // Watch the 'is_current' checkbox to disable the end date picker
+    const isCurrent = useWatch({ control, name: "is_current" });
 
     const [loading, setLoading] = useState(false);
 
+    // Effect to clear end_date when 'is_current' is checked
+    useEffect(() => {
+        if (isCurrent) {
+            setValue("end_date", "");
+        }
+    }, [isCurrent, setValue]);
+
     const handleEducation = handleSubmit(async (formData) => {
         setLoading(true);
-       
+
         try {
             await createExperience({
                 employee_id: employeeId,
                 previous_company_name: formData.previous_company_name,
                 designation: formData.designation,
-                start_date: formData.start_date,
-                end_date: formData.end_date,
+                start_date: dayjs(formData.start_date).format('YYYY-MM-DD'),
+                end_date: formData.is_current ? null : dayjs(formData.end_date).format('YYYY-MM-DD'),
                 is_current: formData.is_current
             });
-            toast.success("Experience saved.");
-            onSaved(); 
+            message.success("Experience saved.");
+            onSaved();
             onClose();
+            reset();
         } catch (error) {
             console.error("Submit failed", error);
-            toast.error("Failed to save contacts.");
+            message.error("Failed to save experience.");
         } finally {
             setLoading(false);
         }
     });
 
+    const handleClose = () => {
+        reset();
+        onClose();
+    }
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 overflow-auto">
-            <div className="relative w-full max-w-4xl mx-4 sm:mx-6 bg-white rounded-[24px] border shadow-lg transition-all duration-300 transform animate-modal-popin max-h-[90vh] overflow-y-auto">
-                <form onSubmit={handleEducation} className="bg-white rounded-[24px] shadow-sm">
-                    <div className="flex items-center justify-between pb-4 border-b p-6">
-                        <h1 className="text-lg font-bold text-gray-900">Company Information</h1>
-                        <button
-                            type="button"
-                            aria-label="Close"
-                            onClick={onClose}
-                            className="p-0.5 rounded-full bg-gray-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                        >
-                            <HiXMark size={15} className="text-white" />
-                        </button>
-                    </div>
-
-                    <div className="px-6 pt-6 space-y-6 text-sm text-gray-700">
-                        <div className="flex gap-4">
-                            <Textbox
-                                type="text"
-                                label="Previous Company Name *"
-                                register={register("previous_company_name")}
-                                error={errors.previous_company_name ? errors.previous_company_name.message : ""}
-                                className="w-full rounded-lg"
-                            />
-                            <Textbox
-                                type="text"
-                                label="Designation *"
-                                register={register("designation")}
-                                error={errors.designation ? errors.designation.message : ""}
-                                className="w-full rounded-lg"
-                            />
-                        </div>
-                        <div className="flex gap-4">
-                            <Textbox
-                                type="date"
-                                label="Start Date *"
-                                register={register("start_date")}
-                                error={errors.start_date ? errors.start_date.message : ""}
-                                className="w-full rounded-lg"
-                            />
-                            <Textbox
-                                type="date"
-                                label="End Date *"
-                                register={register("end_date")}
-                                error={errors.end_date ? errors.end_date.message : ""}
-                                className="w-full rounded-lg"
-                            />
-                        </div>
-                        <div className="flex gap-4">
-                            <div className="flex items-center gap-2 pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="is_current"
-                                    {...register("is_current")}
-                                    className="w-4 h-4"
-                                />
-                                <label htmlFor="is_current" className="text-sm text-gray-700">
-                                    Check if you working present
-                                </label>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 pb-4 px-6 border-t">
-                        {loading ? (
-                            <Loading />
-                        ) : (
-                        <>
-                            <Button
-                                type="button"
-                                onClick={onClose}
-                                className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-                                icon={<HiXMark size={18} />}
-                                label="Cancel"
-                            />
-                            <Button
-                                type="submit"
-                                className="inline-flex items-center px-4 py-2 bg-[#6fd943] border border-[#6fd943] text-sm font-semibold text-white hover:bg-[#48a522] rounded-lg"
-                                icon={<LiaSave size={18} />}
-                                label="Save"
-                            />
-                        </>
-                        )}
-                    </div>
-                </form>
-            </div>
-        </div>
+        <Modal
+            title="Add Experience"
+            open={open}
+            onCancel={handleClose}
+            width={700}
+            footer={[
+                <Button key="back" onClick={handleClose}>
+                    Cancel
+                </Button>,
+                <Button
+                    key="submit"
+                    type="primary"
+                    loading={loading}
+                    onClick={handleEducation}
+                >
+                    Save
+                </Button>,
+            ]}
+        >
+            <Form layout="vertical">
+                <Row gutter={16}>
+                    <Col span={12}>
+                        <Controller
+                            name="previous_company_name"
+                            control={control}
+                            render={({ field, fieldState: { error } }) => (
+                                <Form.Item
+                                    label="Company Name *"
+                                    validateStatus={error ? 'error' : ''}
+                                    help={error?.message}
+                                >
+                                    <Input {...field} placeholder="e.g., Google Inc." />
+                                </Form.Item>
+                            )}
+                        />
+                    </Col>
+                    <Col span={12}>
+                        <Controller
+                            name="designation"
+                            control={control}
+                            render={({ field, fieldState: { error } }) => (
+                                <Form.Item
+                                    label="Designation *"
+                                    validateStatus={error ? 'error' : ''}
+                                    help={error?.message}
+                                >
+                                    <Input {...field} placeholder="e.g., Senior Software Engineer" />
+                                </Form.Item>
+                            )}
+                        />
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col span={12}>
+                        <Controller
+                            name="start_date"
+                            control={control}
+                            render={({ field, fieldState: { error } }) => (
+                                <Form.Item
+                                    label="Start Date *"
+                                    validateStatus={error ? 'error' : ''}
+                                    help={error?.message}
+                                >
+                                    <DatePicker {...field} style={{ width: '100%' }} format="YYYY-MM-DD" />
+                                </Form.Item>
+                            )}
+                        />
+                    </Col>
+                    <Col span={12}>
+                        <Controller
+                            name="end_date"
+                            control={control}
+                            render={({ field, fieldState: { error } }) => (
+                                <Form.Item
+                                    label={isCurrent ? "End Date" : "End Date *"}
+                                    validateStatus={error ? 'error' : ''}
+                                    help={error?.message}
+                                    required={!isCurrent} // Make the asterisk conditional
+                                >
+                                    <DatePicker {...field} style={{ width: '100%' }} format="YYYY-MM-DD" disabled={isCurrent} />
+                                </Form.Item>
+                            )}
+                        />
+                    </Col>
+                </Row>
+                <Row>
+                    <Col span={24}>
+                        <Controller
+                            name="is_current"
+                            control={control}
+                            render={({ field }) => (
+                                <Form.Item>
+                                    <Checkbox {...field} checked={field.value}>
+                                        I am currently working here
+                                    </Checkbox>
+                                </Form.Item>
+                            )}
+                        />
+                    </Col>
+                </Row>
+            </Form>
+        </Modal>
     );
 };
 

@@ -1,5 +1,5 @@
 'use client';
-import { useRouter, useParams } from 'next/navigation';
+import {useRouter, useParams, notFound} from 'next/navigation';
 import Image from 'next/image';
 import { getEmergencyContactsByEmployeeId, getEmployeeById } from '@/lib/api/employee';
 import { TbPointFilled } from "react-icons/tb";
@@ -80,7 +80,7 @@ type Experience = {
 const ProfilePage = () => {
     const router = useRouter();
     const { id } = useParams();
-
+    const pageIdAsNumber = Number(id);
     const [employee, setEmployee] = useState<any>(null);
     const [imgSrc, setImgSrc] = useState('');
     const [selectedPersonalInfoId, setSelectedPersonalInfoId] = useState<number | undefined>();
@@ -93,6 +93,7 @@ const ProfilePage = () => {
     const [educationDetail, setEducationDetail] = useState<EducationDetail[]>([]);
     const [experience, setExperience] = useState<Experience[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -185,8 +186,29 @@ const ProfilePage = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, [id]);
+        const loggedInUserRole = localStorage.getItem('user_role');
+        const loggedInEmployeeId = localStorage.getItem('employee_id');
+
+        if (loggedInUserRole && loggedInUserRole !== 'Employee') {
+            setIsAuthorized(true);
+            return;
+        }
+
+        if (loggedInUserRole === 'Employee') {
+            if (loggedInEmployeeId && Number(loggedInEmployeeId) === pageIdAsNumber) {
+                setIsAuthorized(true);
+            } else {
+                // Mismatch found, block access
+                setIsAuthorized(false);
+            }
+        }
+    }, [pageIdAsNumber]);
+
+    useEffect(() => {
+        if (isAuthorized) {
+            fetchData();
+        }
+    }, [isAuthorized]);
 
     useEffect(() => {
         if (employee?.image_url) {
@@ -199,6 +221,15 @@ const ProfilePage = () => {
     const goBackToList = () => {
         router.push('/dashboard/list/employees');
     };
+
+    if (isAuthorized === null) {
+        return <LoadingRollerSpinner />;
+    }
+
+    // If authorization check failed, show the Not Found page
+    if (isAuthorized === false) {
+        return notFound();
+    }
 
     if (loading) return <LoadingRollerSpinner />;
 
@@ -241,7 +272,7 @@ const ProfilePage = () => {
                 <span className="text-gray-700 font-medium">Employee Details</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6">
-                <div className="bg-white rounded-xl card-table overflow-hidden relative">
+                <div className="bg-shadow p-0  overflow-hidden relative">
                     <div className="bg-gradient-to-r h-24 from-[#392648] to-[#4A3AFF] p-4 text-center rounded-b-xl">
                         <Image
                             src={imgSrc}
@@ -496,7 +527,7 @@ const ProfilePage = () => {
                     {/* Sections */}
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-white rounded-xl card-table p-4">
+                            <div className="bg-shadow">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-md font-semibold">About Employee</h3>
                                     <div className="flex items-center">
@@ -557,7 +588,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-white rounded-xl card-table p-4">
+                            <div className="bg-shadow">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Bank Information</h3>
                                     <div className='flex items-center'>
@@ -618,7 +649,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-white rounded-xl card-table p-4">
+                            <div className="bg-shadow">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Family Information</h3>
                                     <div className='flex items-center'>
@@ -679,7 +710,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-white rounded-xl card-table p-4">
+                            <div className="bg-shadow">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Education Details</h3>
                                     <div className='flex items-center'>
@@ -736,7 +767,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-white rounded-xl card-table p-4">
+                            <div className="bg-shadow">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Experience</h3>
                                     <div className='flex items-center'>
@@ -801,15 +832,20 @@ const ProfilePage = () => {
                     </Disclosure>
                 </div>
             </div>
-            {isModalOpenEmC && employee?.id !== undefined && (
+            {employee?.id !== undefined && (
                 <EmergencyContactForm
+                    open={isModalOpenEmC}
                     onClose={handleCloseEmergencyContact}
+                    onSaved={() => {
+                        fetchData();
+                        handleCloseEmergencyContact();
+                    }}
                     employeeId={employee.id}
-                    onSaved={fetchData}
                 />
             )}
             {isModalOpenPerIn && employee?.id !== undefined && (
                 <PersonalInfoForm
+                    isOpen={isModalOpenPerIn}
                     onClose={handleClosePersoalInfo}
                     key={selectedPersonalInfoId ?? "new"}
                     employeeId={employee.id}
@@ -817,36 +853,50 @@ const ProfilePage = () => {
                     onSaved={fetchData}
                 />
             )}
-            {isModalOpenBankIn && employee?.id !== undefined && (
+            {employee?.id !== undefined && (
                 <BankInfoForm
+                    open={isModalOpenBankIn}
                     onClose={handleCloseBankInfo}
-                    key={selectedBankInfoId ?? "new"}
+                    onSaved={() => {
+                        fetchData();
+                        handleCloseBankInfo();
+                    }}
                     employeeId={employee.id}
-                    bankInfoId={selectedBankInfoId} // pass if editing
-                    onSaved={fetchData}
+                    bankInfoId={selectedBankInfoId}
                 />
             )}
-            {isModalOpenFamilyIn && employee?.id !== undefined && (
+            {employee?.id !== undefined && (
                 <FamilyInfoForm
+                    open={isModalOpenFamilyIn}
                     onClose={handleCloseFamilyInfo}
-                    key={selectedFamilyInfoId ?? "new"}
+                    onSaved={() => {
+                        fetchData();
+                        handleCloseFamilyInfo();
+                    }}
                     employeeId={employee.id}
-                    familyInfoId={selectedFamilyInfoId} // pass if editing
-                    onSaved={fetchData}
+                    familyInfoId={selectedFamilyInfoId}
                 />
             )}
-            {isModalOpenEduDetail && employee?.id !== undefined && (
+            {employee?.id !== undefined && (
                 <EducationDetailsForm
+                    open={isModalOpenEduDetail}
                     onClose={handleCloseEduDetail}
+                    onSaved={() => {
+                        fetchData();
+                        handleCloseEduDetail();
+                    }}
                     employeeId={employee.id}
-                    onSaved={fetchData}
                 />
             )}
-            {isModalOpenExperience && employee?.id !== undefined && (
+            {employee?.id !== undefined && (
                 <ExperienceForm
+                    open={isModalOpenExperience}
                     onClose={handleCloseExperience}
+                    onSaved={() => {
+                        fetchData();
+                        handleCloseExperience();
+                    }}
                     employeeId={employee.id}
-                    onSaved={fetchData}
                 />
             )}
             {isChangePasswordModalOpen && employee && (
