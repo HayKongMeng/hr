@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // --- Ant Design Components ---
 import { Button, Card, Col, DatePicker, Form, Input, List, message, Modal, Radio, Row, Select, Space, Spin, Switch, Table, Tag, Upload } from "antd";
@@ -17,7 +20,8 @@ import { fetchEmployees, fetchAllEmployees, createEmployee, updateEmployee, dele
 import { fetchAllPositions } from "@/lib/api/position";
 import { fetchAllDepartments } from "@/lib/api/department";
 import { fetchEmploymentTypes, fetchWorkStation } from "@/lib/api/status";
-import { FaUpload } from "react-icons/fa";
+import {FaFileExcel, FaUpload} from "react-icons/fa";
+import {FaFilePdf} from "react-icons/fa6";
 
 // --- Type Definitions ---
 type Position = { id: number; title: string };
@@ -37,6 +41,8 @@ const useIsMobile = (breakpoint = 768) => {
     }, [breakpoint]);
     return isMobile;
 };
+
+
 
 // --- Reusable Form Component ---
 const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { form: any; onFinish: (values: any) => void; dropdownData: any; loading: boolean; isEditMode: boolean; }) => (
@@ -208,8 +214,78 @@ const EmployeeManagementPage = () => {
     if (!isClient) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
+    const handleExportExcel = (data: Employee[]) => {
+        const headers = ["Employee ID", "Name", "Email", "Department", "Designation", "Joining Date"];
 
-    // --- 5. All other functions (event handlers) ---
+        const body = data.map(employee => [
+            employee.employee_code,
+            employee.name,
+            employee.email,
+            employee.department?.name || 'N/A',
+            employee.position?.title || 'N/A',
+            dayjs(employee.hire_date).format("DD MMM YYYY")
+        ]);
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+
+        XLSX.writeFile(workbook, "Employee_List.xlsx");
+        message.success("Exported to Excel successfully!");
+    };
+
+    const handleExportPdf = (data: Employee[]) => {
+        const doc = new jsPDF();
+
+        const tableHead = [["Employee ID", "Name", "Email", "Department", "Designation", "Joining Date"]];
+        const tableBody = data.map(employee => [
+            employee.employee_code,
+            employee.name,
+            employee.email,
+            employee.department?.name || 'N/A',
+            employee.position?.title || 'N/A',
+            dayjs(employee.hire_date).format("DD MMM YYYY")
+        ]);
+
+        doc.text("Employee List", 14, 15);
+
+        autoTable(doc, {
+            head: tableHead,
+            body: tableBody,
+            startY: 20,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [22, 160, 133] }
+        });
+
+        doc.save('Employee_List.pdf');
+        message.success("Exported to PDF successfully!");
+    };
+
+    const handleExport = async (format: 'excel' | 'pdf') => {
+        message.loading({ content: `Exporting all employees to ${format.toUpperCase()}...`, key: 'export' });
+        try {
+            const allEmployees = await fetchAllEmployees();
+            if (!allEmployees || allEmployees.length === 0) {
+                message.warning({ content: "No employee data to export.", key: 'export' });
+                return;
+            }
+
+            if (format === 'excel') {
+                handleExportExcel(allEmployees);
+            } else if (format === 'pdf') {
+                handleExportPdf(allEmployees);
+            }
+
+            // Clear the loading message on success
+            message.destroy('export');
+
+        } catch (error) {
+            console.error(`Failed to export to ${format}:`, error);
+            message.error({ content: `Failed to export to ${format.toUpperCase()}.`, key: 'export' });
+        }
+    };
+
     const handleModalOpen = (record: Employee | null) => {
         setSelectedEmployee(record);
         fetchDropdowns();
@@ -333,7 +409,12 @@ const EmployeeManagementPage = () => {
                         <MdKeyboardArrowRight /><span>Employees</span>
                     </div>
                 </div>
-                <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Employee</Button>
+                <Space>
+                    {/* --- NEW: Export Buttons --- */}
+                    <Button icon={<FaFileExcel />} onClick={() => handleExport('excel')}>Export Excel</Button>
+                    <Button icon={<FaFilePdf />} onClick={() => handleExport('pdf')}>Export PDF</Button>
+                    <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Employee</Button>
+                </Space>
             </div>
 
             <Card>
@@ -361,7 +442,6 @@ const EmployeeManagementPage = () => {
                 confirmLoading={isSubmitting}
                 width={isMobile ? '100%' : 900}
                 style={isMobile ? { top: 0, padding: 0, height: '100vh', maxWidth: '100vw' } : {}}
-                // Re-applying the fix for the bodyStyle deprecation warning
                 styles={isMobile ? { body: { overflowY: 'auto', height: 'calc(100vh - 108px)' } } : {}}
             >
                 <div className={isMobile ? 'p-4' : ''}>

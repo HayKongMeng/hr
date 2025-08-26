@@ -1,7 +1,7 @@
 import api from './index';
 
 export const fetchAttendances = async (page: number = 1, limit: number = 10) => {
-    const response = await api.get(`api/employee/attendances?page=${page}&limit=${limit}`);
+    const response = await api.get(`api/employee/find-attendances?page=${page}&limit=${limit}`);
     return response.data.result;
 };
 
