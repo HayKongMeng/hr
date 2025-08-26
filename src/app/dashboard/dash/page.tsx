@@ -282,6 +282,8 @@ import { formattedDate, MappedAttendanceItem, processFullAttendanceData } from "
 import { getEmployeeById } from "@/lib/api/employee";
 import Link from "next/link";
 import moment from "moment";
+import Cookies from "js-cookie";
+import {useAuth} from "@/lib/AuthContext";
 
 type Employee = {
     name: string;
@@ -308,9 +310,11 @@ type PendingAttendanceData = {
 const HomePage = () => {
     // --- STATE MANAGEMENT ---
     const [isClient, setIsClient] = useState(false);
-    const [employeeId, setEmployeeId] = useState<number | null>(null);
-    const [userRole, setUserRole] = useState<string | null>(null);
-
+    const { user, loading: authLoading, isAuthenticated } = useAuth();
+    const [employeefId, setEmployeeId] = useState<number | null>(null);
+    const [userRolef, setUserRole] = useState<string | null>(null);
+    const employeeId = Cookies.get("employee_id");
+    const userRole = Cookies.get("user_role");
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [items, setItems] = useState<MappedAttendanceItem[]>([]); // "My Space" attendance
@@ -336,30 +340,20 @@ const HomePage = () => {
     const [selectedOption, setSelectedOption] = useState("MySpace");
     const [checkedIds, setCheckedIds] = useState<string[]>([]);
 
-    // --- INITIAL SETUP (Client-side only) ---
-    useEffect(() => {
-        setIsClient(true);
-        const storedEmployeeId = localStorage.getItem('employee_id');
-        const storedUserRole = localStorage.getItem('user_role');
-
-        if (storedEmployeeId) setEmployeeId(Number(storedEmployeeId));
-        if (storedUserRole) setUserRole(storedUserRole);
-
-        if (storedUserRole === 'Employee') {
-            setSelectedOption('MySpace');
-        }
-    }, []);
+    const isEmployeeRole = user?.roles.includes('Employee');
+    const isAdminRole = user?.roles.includes('Admin');
+    const currentEmployeeId = user?.emp_id;
 
     // --- CONSOLIDATED DATA FETCHING ---
     const fetchData = useCallback(async () => {
-        if (!employeeId || !userRole) return;
+        if (!isAuthenticated || !currentEmployeeId) return;
 
         setLoadingProfile(true);
         try {
             // --- Fetch data for EVERYONE (personal profile and attendance) ---
             const [employeeRes, personalAttendanceRes] = await Promise.all([
-                getEmployeeById(Number(employeeId)),
-                findEmployeesById(employeeId)
+                getEmployeeById(currentEmployeeId),
+                findEmployeesById(currentEmployeeId)
             ]);
 
             if (employeeRes.data.result) setEmployee(employeeRes.data.result.data);
@@ -368,8 +362,8 @@ const HomePage = () => {
             setItems(mappedItems);
             setTodayAttendance(todayDetails);
 
-            // --- CONDITIONAL FETCH: Only fetch organization data if NOT an Employee ---
-            if (userRole !== 'Employee') {
+            // --- CONDITIONAL FETCH: Only fetch organization data for Admins ---
+            if (isAdminRole) {
                 const orgAttendanceRes = await findEmployees();
                 const { mappedItems: orgMappedItems } = processFullAttendanceData(orgAttendanceRes.data || []);
                 setItemsEmployee(orgMappedItems);
@@ -380,13 +374,13 @@ const HomePage = () => {
         } finally {
             setLoadingProfile(false);
         }
-    }, [employeeId, userRole]);
+    }, [isAuthenticated, currentEmployeeId, isAdminRole]);
 
     useEffect(() => {
-        if (isClient && employeeId && userRole) {
+        if (!authLoading) {
             fetchData();
         }
-    }, [isClient, employeeId, userRole, fetchData]);
+    }, [authLoading, fetchData]);
 
     const checkStatus = getTodayCheckStatus(items);
 
@@ -469,7 +463,7 @@ const HomePage = () => {
         setIsQrModalOpen(false);
         setButtonLoading(true);
 
-        if (!employeeId) {
+        if (!currentEmployeeId) {
             message.error("Employee ID not found.");
             setButtonLoading(false);
             return;
@@ -492,7 +486,7 @@ const HomePage = () => {
             }
 
             const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
-            const res = await checkInAndOut({ employee_id: employeeId, type, latitude, longitude, scan_code, ip });
+            const res = await checkInAndOut({ employee_id: currentEmployeeId, type, latitude, longitude, scan_code, ip });
 
             if (res.success) {
                 message.success(type === "checkin" ? "Check-in successful!" : "Check-out successful!");
@@ -531,7 +525,7 @@ const HomePage = () => {
     };
 
     const handleReasonSubmit = async (values: { reason: string }) => {
-        if (!pendingAttendanceData || !employeeId) {
+        if (!pendingAttendanceData || !currentEmployeeId) {
             message.error("Could not submit. Pending data is missing.");
             return;
         }
@@ -539,7 +533,7 @@ const HomePage = () => {
         setButtonLoading(true);
         try {
             const finalPayload = {
-                employee_id: employeeId,
+                employee_id: currentEmployeeId,
                 ...pendingAttendanceData,
                 reason: values.reason,
             };
@@ -597,7 +591,7 @@ const HomePage = () => {
     };
     const buttonConfig = getButtonConfig();
 
-    if (!isClient) {
+    if (authLoading) {
         return <div className="min-h-screen w-full flex justify-center items-center"><Spin size="large" /></div>;
     }
 
@@ -635,7 +629,7 @@ const HomePage = () => {
                     )}
                 </div>
                 <div className="pl-4">
-                    {userRole !== 'Employee' && (
+                    {isAdminRole && (
                         <div>
                             <Flex vertical gap="middle">
                                 <Radio.Group
@@ -722,12 +716,12 @@ const HomePage = () => {
                                 <LeaveStatus
                                     showActions={false}
                                     userRole={userRole}
-                                    employeeId={employeeId}
+                                    employeeId={currentEmployeeId}
                                 />
                             </div>
                         </>
                     )}
-                    {userRole !== 'Employee' && selectedOption === "Organization" && (
+                    {isAdminRole && selectedOption === "Organization" && (
                         <>
                             <div className="bg-shadow p-4">
                                 <h2 className="text-[20px] font-medium text-black mb-4">
@@ -816,7 +810,7 @@ const HomePage = () => {
                             </div>
                         </>
                     )}{" "}
-                    {userRole !== 'Employee' && selectedOption === "Annoucement" && (
+                    {isAdminRole && selectedOption === "Annoucement" && (
                         <>
                             <div className="bg-shadow">
                                 <ButtonCustom

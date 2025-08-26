@@ -23,9 +23,7 @@ import {
 import { fetchEmployees, Employee } from "@/lib/api/employee";
 import { fetchAllLeaveTypes, LeaveType } from "@/lib/api/leave";
 import { useAuth } from "@/lib/AuthContext";
-import { role } from '@/lib/data';
 
-// --- Type Definitions ---
 type LeaveEntitlement = {
     id: number;
     employee_id: number;
@@ -45,7 +43,12 @@ type GroupedEntitlementFromApi = {
     employee_id: number;
     entitlements: LeaveEntitlement[];
 };
-
+type GroupedEntitlements = {
+    [employeeId: string]: {
+        employeeName: string;
+        entitlements: LeaveEntitlement[];
+    }
+};
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
     const [isMobile, setIsMobile] = useState(false);
@@ -70,92 +73,103 @@ const EntitlementForm = ({ form, onFinish, employees, leaveTypes }: { form: any;
 
 // --- Main Page Component ---
 const LeaveEntitlementPage = () => {
-    const [role, setRole] = useState("");
-    
-    const isAuthLoading = !role; 
-    
     const isMobile = useIsMobile();
-    const [isClient, setIsClient] = useState(false);
     const [form] = Form.useForm();
     const router = useRouter();
 
-    const [allEntitlements, setAllEntitlements] = useState<GroupedEntitlementFromApi[]>([]);
-    const [myEntitlements, setMyEntitlements] = useState<LeaveEntitlement[]>([]);
+    const { user, loading: authLoading, isAuthenticated } = useAuth();
 
+    // State for data
+    const [myEntitlements, setMyEntitlements] = useState<LeaveEntitlement[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-
     const [groupedEntitlements, setGroupedEntitlements] = useState<{ [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } }>({});
 
+    // State for UI
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedEntitlement, setSelectedEntitlement] = useState<LeaveEntitlement | null>(null);
 
-    useEffect(() => {
-        const storedRole = localStorage.getItem('user_role');
-        if (storedRole) {
-            setRole(storedRole);
-        }
-    },[]);
+    // --- DERIVED VALUES from context ---
+    const isEmployee = user?.roles.includes('Employee');
+    const isAdmin = user?.roles.includes('Admin');
+    const currentEmployeeId = user?.emp_id;
+
 
     const fetchData = useCallback(async () => {
+        if (!isAuthenticated || !user) return; // Guard clause
         setLoading(true);
         try {
-            const employeeId = localStorage.getItem('employee_id');
+            // --- REFACTORED ADMIN & EMPLOYEE LOGIC ---
 
-            if (role === 'Employee') {
-                if (employeeId) {
-                    const res = await fetchEmployeesEntitlements(Number(employeeId));
-                    setMyEntitlements(res.result.data || []);
+            // Employees ONLY fetch their own entitlements and the leave types
+            if (isEmployee && !isAdmin) {
+                if (currentEmployeeId) {
+                    const [myEntitlementsRes, leaveTypesRes] = await Promise.all([
+                        fetchEmployeesEntitlements(currentEmployeeId),
+                        fetchAllLeaveTypes()
+                    ]);
+                    setMyEntitlements(myEntitlementsRes.result.data || []);
+                    setLeaveTypes(leaveTypesRes || []);
                 }
-            } else { // For Admin/Manager
-                let employeeList = employees;
-                if (employees.length === 0) {
-                    const [empRes, ltRes] = await Promise.all([fetchEmployees(1, 1000), fetchAllLeaveTypes()]);
-                    employeeList = empRes.data || [];
-                    setEmployees(employeeList);
-                    setLeaveTypes(ltRes || []);
-                }
-                
-                const [allRes, myRes] = await Promise.all([
-                    fetchEntitlements(),
-                    employeeId ? fetchEmployeesEntitlements(Number(employeeId)) : Promise.resolve({ result: { data: [] } }) // Ensure consistent promise shape
+            } else { // Admins and Managers fetch everything
+                // 1. Fetch all necessary data in one go.
+                const [empRes, ltRes, allEntitlementsRes] = await Promise.all([
+                    fetchEmployees(1, 1000),
+                    fetchAllLeaveTypes(),
+                    fetchEntitlements()
                 ]);
-                
-                const groupedDataFromApi = allRes.result.data || [];
-                setPagination(prev => ({ ...prev, total: allRes.result.total_items || groupedDataFromApi.length }));
-                
+
+                const employeeList = empRes.data || [];
+                setEmployees(employeeList);
+                setLeaveTypes(ltRes || []);
+
+                // 2. Process the "All Employees" data for the main tab
+                const groupedDataFromApi: GroupedEntitlementFromApi[] = allEntitlementsRes.result.data || [];
+                setPagination(prev => ({ ...prev, total: allEntitlementsRes.result.total_items || groupedDataFromApi.length }));
+
                 const uiReadyGroupedData = groupedDataFromApi.reduce((
-                    acc: { [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } }, 
-                    group: GroupedEntitlementFromApi 
+                    acc: GroupedEntitlements,
+                    group: GroupedEntitlementFromApi
                 ) => {
                     const empId = group.employee_id.toString();
-                    const empName = employeeList.find(e => e.id === group.employee_id)?.name || `Employee ID: ${empId}`;
+                    const empName = employeeList.find((e: Employee) => e.id === group.employee_id)?.name || `Employee ID: ${empId}`;
                     acc[empId] = { employeeName: empName, entitlements: group.entitlements };
                     return acc;
-                }, {} as { [employeeId: string]: { employeeName: string; entitlements: LeaveEntitlement[] } });
+                }, {} as GroupedEntitlements);
                 setGroupedEntitlements(uiReadyGroupedData);
 
-                setMyEntitlements(myRes.result.data || []);
+                // 3. Find the Admin's own entitlements from the full list
+                if (currentEmployeeId) {
+                    const adminEntitlementGroup = groupedDataFromApi.find(
+                        (group: GroupedEntitlementFromApi) => group.employee_id === currentEmployeeId
+                    );
+
+                    if (adminEntitlementGroup) {
+                        setMyEntitlements(adminEntitlementGroup.entitlements);
+                    } else {
+                        setMyEntitlements([]);
+                    }
+                }
             }
         } catch (error: any) {
-            console.error("Error fetching entitlement data:", error);
             message.error(error?.response?.data?.message || "Failed to fetch entitlement data.");
         } finally {
             setLoading(false);
         }
-    }, [role, employees, pagination.current, pagination.pageSize]);
+    }, [isAuthenticated, user, isEmployee, isAdmin, currentEmployeeId]);
 
-    useEffect(() => { setIsClient(true); }, []);
     useEffect(() => {
-        if (isClient && !isAuthLoading) {
+        // Fetch data only after authentication is resolved
+        if (!authLoading) {
             fetchData();
         }
-    }, [isClient, isAuthLoading, role, pagination.current, pagination.pageSize]);
+    }, [authLoading, fetchData]);
 
-    if (!isClient || isAuthLoading) {
+    // --- Show a loading spinner while AuthContext is initializing ---
+    if (authLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
@@ -217,30 +231,20 @@ const LeaveEntitlementPage = () => {
             return <div className="text-center p-10"><Spin /></div>;
         }
 
-        if (role === 'Employee') {
-            // Employees see a simple, direct view of their entitlements
+        if (isEmployee && !isAdmin){
             return <EmployeeEntitlementView entitlements={myEntitlements} isMobile={isMobile} />;
         }
 
-        // Admins and Managers see a tabbed interface
         const tabItems = [
             {
                 key: 'all',
                 label: 'All Employees',
-                children: <AdminEntitlementView
-                    groupedData={groupedEntitlements}
-                    onEdit={handleModalOpen}
-                    onDelete={handleDelete}
-                    isMobile={isMobile}
-                />,
+                children: <AdminEntitlementView groupedData={groupedEntitlements} onEdit={handleModalOpen} onDelete={handleDelete} isMobile={isMobile} />,
             },
             {
                 key: 'my',
                 label: 'My Entitlements',
-                children: <EmployeeEntitlementView
-                    entitlements={myEntitlements}
-                    isMobile={isMobile}
-                />,
+                children: <EmployeeEntitlementView entitlements={myEntitlements} isMobile={isMobile} />,
             },
         ];
 
@@ -257,14 +261,15 @@ const LeaveEntitlementPage = () => {
                         <MdKeyboardArrowRight /><span>Entitlements</span>
                     </div>
                 </div>
-                {role !== 'Employee' && (
+                {/* --- SIMPLIFIED permission check --- */}
+                {isAdmin && (
                     <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Assign Entitlement</Button>
                 )}
             </div>
             <Card>
                 {renderContent()}
             </Card>
-            {role !== 'Employee' && (
+            {isAdmin && (
                 <Modal title={selectedEntitlement ? "Edit Entitlement" : "Assign New Entitlement"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
                     <EntitlementForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} />
                 </Modal>

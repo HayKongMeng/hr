@@ -41,6 +41,8 @@ import {
   updateHoliday,
   deleteHoliday,
 } from "@/lib/api/holidays";
+import Cookies from "js-cookie";
+import {useAuth} from "@/lib/AuthContext";
 
 // --- Type Definitions ---
 type HolidayType = "Public" | "Optional" | "Company" | "Regional";
@@ -69,6 +71,9 @@ const useIsMobile = (breakpoint = 768) => {
 // --- Main Component ---
 const HolidayPage = () => {
   const isMobile = useIsMobile();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
+  // const [userRole, setUserRole] = useState<string | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
@@ -97,9 +102,11 @@ const HolidayPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    getHolidays(pagination.current, pagination.pageSize);
-  }, [pagination.current, pagination.pageSize, getHolidays]);
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            getHolidays(pagination.current, pagination.pageSize);
+        }
+    }, [authLoading, isAuthenticated, pagination.current, pagination.pageSize, getHolidays]);
 
   // --- Handlers ---
   const refreshData = () => {
@@ -161,6 +168,15 @@ const HolidayPage = () => {
     });
   };
 
+  const isAdmin = user?.roles.includes('Admin');
+    if (authLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Spin size="large" />
+            </div>
+        );
+    }
+
   return (
     <div className="p-4">
       {isMobile ? (
@@ -171,6 +187,7 @@ const HolidayPage = () => {
           onEdit={handleOpenModal}
           onDelete={handleDelete}
           pagination={pagination}
+          isAdmin={isAdmin}
           onPageChange={() => setPagination(prev => ({...prev}))}
         />
       ) : (
@@ -182,57 +199,67 @@ const HolidayPage = () => {
           onDelete={handleDelete}
           router={router}
           pagination={pagination}
+          isAdmin={isAdmin}
           onTableChange={handleTableChange}
         />
       )}
 
-      <HolidayFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleSubmit}
-        initialData={selectedHoliday}
-      />
+        {isAdmin && (
+            <HolidayFormModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSubmit={handleSubmit}
+                initialData={selectedHoliday}
+            />
+        )}
     </div>
   );
 };
 
 // --- Desktop View ---
-const DesktopView = ({ holidays, loading, onAdd, onEdit, onDelete, router, pagination, onTableChange }: any) => {
-  const columns: TableProps<Holiday>['columns'] = [
-    { title: "Occasion", dataIndex: "name", key: "name", sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: "Start Date", dataIndex: "start_date", key: "start_date", render: (date) => moment(date).format("DD MMM YYYY") },
-    { title: "End Date", dataIndex: "end_date", key: "end_date", render: (date) => moment(date).format("DD MMM YYYY") },
-    {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      render: (type: HolidayType) => {
-        let color = 'default';
-        if (type === 'Public') color = 'blue';
-        if (type === 'Company') color = 'purple';
-        if (type === 'Optional') color = 'gold';
-        if (type === 'Regional') color = 'magenta';
-        return <Tag color={color}>{type}</Tag>;
-      },
-    },
-    {
-      title: "Recurring",
-      dataIndex: "is_recurring",
-      key: "is_recurring",
-      render: (isRecurring) => isRecurring ? <Tag color="green">Yes</Tag> : <Tag color="default">No</Tag>,
-    },
-    {
-      title: "Actions",
-      key: "action",
-      align: 'right',
-      render: (_, record: Holiday) => (
-        <Space>
-          <Button icon={<FaEdit />} onClick={() => onEdit(record)}>Edit</Button>
-          <Button icon={<FaTrash />} danger onClick={() => onDelete(record.id)}>Delete</Button>
-        </Space>
-      ),
-    },
-  ];
+const DesktopView = ({ holidays, loading, onAdd, onEdit, onDelete, router, pagination, onTableChange, isAdmin }: any) => {
+    const baseColumns: TableProps<Holiday>['columns'] = [
+        { title: "Occasion", dataIndex: "name", key: "name", sorter: (a, b) => a.name.localeCompare(b.name) },
+        { title: "Start Date", dataIndex: "start_date", key: "start_date", render: (date) => moment(date).format("DD MMM YYYY") },
+        { title: "End Date", dataIndex: "end_date", key: "end_date", render: (date) => moment(date).format("DD MMM YYYY") },
+        {
+            title: "Type",
+            dataIndex: "type",
+            key: "type",
+            render: (type: HolidayType) => {
+                let color = 'default';
+                if (type === 'Public') color = 'blue';
+                if (type === 'Company') color = 'purple';
+                if (type === 'Optional') color = 'gold';
+                if (type === 'Regional') color = 'magenta';
+                return <Tag color={color}>{type}</Tag>;
+            },
+        },
+        {
+            title: "Recurring",
+            dataIndex: "is_recurring",
+            key: "is_recurring",
+            render: (isRecurring) => isRecurring ? <Tag color="green">Yes</Tag> : <Tag color="default">No</Tag>,
+        },
+    ];
+
+    // 2. Create a variable for the final columns array
+    let columns = [...baseColumns];
+
+    // 3. Conditionally add the "Actions" column ONLY if the user is an admin.
+    if (isAdmin) {
+        columns.push({
+            title: "Actions",
+            key: "action",
+            align: 'right',
+            render: (_, record: Holiday) => (
+                <Space>
+                    <Button icon={<FaEdit />} onClick={() => onEdit(record)}>Edit</Button>
+                    <Button icon={<FaTrash />} danger onClick={() => onDelete(record.id)}>Delete</Button>
+                </Space>
+            ),
+        });
+    }
 
   return (
     <>
@@ -247,7 +274,9 @@ const DesktopView = ({ holidays, loading, onAdd, onEdit, onDelete, router, pagin
         <Space>
           <Button icon={<BsSortDown />} />
           <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/holidays/calendar")} />
-          <Button type="primary" icon={<IoMdAdd />} onClick={onAdd}>Add Holiday</Button>
+            {isAdmin && (
+                <Button type="primary" icon={<IoMdAdd />} onClick={onAdd}>Add Holiday</Button>
+            )}
         </Space>
       </div>
       <Card>
@@ -268,11 +297,13 @@ const DesktopView = ({ holidays, loading, onAdd, onEdit, onDelete, router, pagin
 };
 
 // --- Mobile View ---
-const MobileView = ({ holidays, loading, onAdd, onEdit, onDelete, pagination, onPageChange }: any) => (
+const MobileView = ({ holidays, loading, onAdd, onEdit, onDelete, pagination, onPageChange, isAdmin }: any) => (
     <Card title="Holidays">
         <Space direction="vertical" style={{width: '100%'}}>
             <Input.Search placeholder="Search holidays..." />
-            <Button type="primary" icon={<IoMdAdd />} onClick={onAdd} block>Add Holiday</Button>
+            {isAdmin && (
+                <Button type="primary" icon={<IoMdAdd />} onClick={onAdd} block>Add Holiday</Button>
+            )}
         </Space>
         <List
             className="mt-4"
@@ -280,10 +311,10 @@ const MobileView = ({ holidays, loading, onAdd, onEdit, onDelete, pagination, on
             dataSource={holidays}
             renderItem={(item: Holiday) => (
                 <List.Item
-                    actions={[
+                    actions={isAdmin ? [
                         <Button key="edit" type="text" shape="circle" icon={<FaEdit />} onClick={() => onEdit(item)} />,
                         <Button key="delete" type="text" shape="circle" danger icon={<FaTrash />} onClick={() => onDelete(item.id)} />
-                    ]}
+                    ] : []}
                 >
                     <List.Item.Meta
                         title={item.name}

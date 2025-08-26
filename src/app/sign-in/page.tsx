@@ -10,17 +10,21 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import axios from "axios";
+import {jwtDecode} from "jwt-decode";
 
 type LoginFormData = {
     email: string;
     password: string;
 };
-
+interface TokenPayload {
+    roles: string[];
+}
 const LoginPage = () => {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
-    const { setRole } = useAuth();
+    // const { setRole } = useAuth();
+    const { login } = useAuth();
 
     const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -45,27 +49,23 @@ const LoginPage = () => {
 
     const handleLogin = async (data: LoginFormData) => {
         setIsLoading(true);
-
         try {
             const response = await axios.post('/api/auth/login', data);
 
-            const { user,employee, token } = response.data;
+            const { token } = response.data;
 
-            // localStorage.setItem('access_token', token);
-            localStorage.setItem('user_role', user.roles);
-            localStorage.setItem('user_id', user.id);
-            localStorage.setItem('user_name', user.name);
-            setRole(user.role);
-
-            if (employee?.data) {
-                localStorage.setItem('company_id', employee.data.company_id.toString());
-                localStorage.setItem('employee_id', employee.data.id.toString());
-            } else {
-                console.warn('Employee or Company data not found in login response.');
+            if (!token || typeof token !== 'string') {
+                throw new Error("Invalid token received from server.");
             }
 
+            login(token);
+
+            const decoded = jwtDecode<TokenPayload>(token);
+            const userRole = decoded.roles[0];
+
             toast.success('Login successful!');
-            if (user.roles[0] === 'Employee') {
+
+            if (userRole === 'Employee') {
                 router.push('/dashboard/dash');
             } else {
                 router.push('/dashboard/admin');
@@ -73,11 +73,8 @@ const LoginPage = () => {
 
         } catch (error: any) {
             setIsLoading(false);
-            if (error.response?.data?.error) {
-                toast.error(error.response.data.error);
-            } else {
-                toast.error(error.message || 'Login failed');
-            }
+            const errorMessage = error.response?.data?.message || error.message || "An unknown login error occurred.";
+            toast.error(errorMessage);
         }
     };
 

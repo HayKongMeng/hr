@@ -29,62 +29,9 @@ export async function POST(request: Request) {
             sameSite: 'lax',
         });
 
-        const roleCookie = serialize('user_role', JSON.stringify(user.roles), {
-            // httpOnly: true,
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7,
-            sameSite: 'lax',
-        });
-
-        const employeeIdCookie = serialize('employee_id', JSON.stringify(employee.data.id), {
-            // httpOnly: true,
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7,
-            sameSite: 'lax',
-        });
-
-        const userIdCookie = serialize('user_id', JSON.stringify(user.id), {
-            // httpOnly: true,
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7,
-            sameSite: 'lax',
-        });
-
-        const userNameCookie = serialize('user_name', JSON.stringify(user.name), {
-            // httpOnly: true,
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7,
-            sameSite: 'lax',
-        });
-
-        const companyIdCookie = serialize('company_id', JSON.stringify(employee.data.company_id), {
-            // httpOnly: true,
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7,
-            sameSite: 'lax',
-        });
-
-        const responsePayload = {
-            success: true,
-            user: {
-                id: user.id,
-                name: user.name,
-                roles: user.roles,
-            },
-            employee: employee?.data ? {
-                id: employee.data.id,
-                company_id: employee.data.company_id,
-            } : null,
-        };
-
+        const responsePayload = { token };
         const response = NextResponse.json(responsePayload);
-
-        response.headers.append('Set-Cookie', tokenCookie);
-        response.headers.append('Set-Cookie', roleCookie);
-        response.headers.append('Set-Cookie', employeeIdCookie);
-        response.headers.append('Set-Cookie', userIdCookie);
-        response.headers.append('Set-Cookie', userNameCookie);
-        response.headers.append('Set-Cookie', companyIdCookie);
+        response.headers.set('Set-Cookie', tokenCookie);
 
 
         return response;

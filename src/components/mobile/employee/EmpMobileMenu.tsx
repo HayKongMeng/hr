@@ -4,11 +4,12 @@ import { GoHome } from "react-icons/go";
 import { HiOutlineCalendarDays } from "react-icons/hi2";
 import { LiaUserCircle } from "react-icons/lia";
 import { TbReportAnalytics } from "react-icons/tb";
+import Cookies from "js-cookie";
 
 
 const EmpMobileMenu = () => {
 
-    const employeeId = typeof window !== 'undefined' ? localStorage.getItem('employee_id') : null;
+    const employeeId = Cookies.get("employee_id");
 
     return (
         <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-100 z-50">

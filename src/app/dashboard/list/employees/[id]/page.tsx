@@ -43,6 +43,8 @@ import EducationDetailsForm from '@/components/forms/EducationDetailsForm';
 import { getExperienceByEmployeeId } from '@/lib/api/experience';
 import ExperienceForm from '@/components/forms/ExperienceForm';
 import ChangePasswordModal from "@/components/ChangePasswordModal";
+import Cookies from "js-cookie";
+import {useAuth} from "@/lib/AuthContext";
 
 interface EmergencyContact {
     id: number;
@@ -81,6 +83,7 @@ const ProfilePage = () => {
     const router = useRouter();
     const { id } = useParams();
     const pageIdAsNumber = Number(id);
+    const { user, loading: authLoading, isAuthenticated } = useAuth();
     const [employee, setEmployee] = useState<any>(null);
     const [imgSrc, setImgSrc] = useState('');
     const [selectedPersonalInfoId, setSelectedPersonalInfoId] = useState<number | undefined>();
@@ -94,6 +97,11 @@ const ProfilePage = () => {
     const [experience, setExperience] = useState<Experience[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+    const loggedInUserRoles = user?.roles || [];
+    const loggedInEmployeeId = user?.emp_id;
+    const isViewingOwnProfile = loggedInEmployeeId === pageIdAsNumber;
+    const isAdmin = loggedInUserRoles.includes('Admin');
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -150,7 +158,18 @@ const ProfilePage = () => {
     const handleCloseExperience = () => setIsModalOpenExperience(false);
     const handleCloseChangePassword = () => setIsChangePasswordModalOpen(false);
 
+    useEffect(() => {
+        if (!authLoading) {
+            if (isAdmin || (isAuthenticated && isViewingOwnProfile)) {
+                setIsAuthorized(true);
+            } else {
+                setIsAuthorized(false);
+            }
+        }
+    }, [authLoading, isAdmin, isAuthenticated, isViewingOwnProfile]);
+
     const fetchData = async () => {
+        console.log("Fetching Data..."+ id);
         if (!id) return;
         try {
             setLoading(true);
@@ -185,53 +204,54 @@ const ProfilePage = () => {
         }
     };
 
+    // useEffect(() => {
+    //     const loggedInUserRole = Cookies.get('user_role');
+    //     const loggedInEmployeeId = Cookies.get('employee_id');
+    //
+    //     if (loggedInUserRole && loggedInUserRole !== 'Employee') {
+    //         setIsAuthorized(true);
+    //         return;
+    //     }
+    //
+    //     if (loggedInUserRole === 'Employee') {
+    //         if (loggedInEmployeeId && Number(loggedInEmployeeId) === pageIdAsNumber) {
+    //             setIsAuthorized(true);
+    //         } else {
+    //             // Mismatch found, block access
+    //             setIsAuthorized(false);
+    //         }
+    //     }
+    // }, [pageIdAsNumber]);
+
     useEffect(() => {
-        const loggedInUserRole = localStorage.getItem('user_role');
-        const loggedInEmployeeId = localStorage.getItem('employee_id');
-
-        if (loggedInUserRole && loggedInUserRole !== 'Employee') {
-            setIsAuthorized(true);
-            return;
-        }
-
-        if (loggedInUserRole === 'Employee') {
-            if (loggedInEmployeeId && Number(loggedInEmployeeId) === pageIdAsNumber) {
-                setIsAuthorized(true);
-            } else {
-                // Mismatch found, block access
-                setIsAuthorized(false);
-            }
-        }
-    }, [pageIdAsNumber]);
-
-    useEffect(() => {
-        if (isAuthorized) {
+        if (isAuthorized === true) {
             fetchData();
         }
     }, [isAuthorized]);
 
-    useEffect(() => {
-        if (employee?.image_url) {
-            setImgSrc(employee.image_url);
-        } else {
-            setImgSrc('/avatar.png');
-        }
-    }, [employee?.image_url]);
+    // useEffect(() => {
+    //     if (employee?.image_url) {
+    //         setImgSrc(employee.image_url);
+    //     } else {
+    //         setImgSrc('/avatar.png');
+    //     }
+    // }, [employee?.image_url]);
 
     const goBackToList = () => {
         router.push('/dashboard/list/employees');
     };
 
-    if (isAuthorized === null) {
+    if (authLoading || isAuthorized === null) {
         return <LoadingRollerSpinner />;
     }
 
-    // If authorization check failed, show the Not Found page
     if (isAuthorized === false) {
         return notFound();
     }
 
-    if (loading) return <LoadingRollerSpinner />;
+    if (loading) {
+        return <LoadingRollerSpinner />;
+    }
 
     // Filter contacts by type
     const primaryContacts = emergencyContacts.filter(c => c.contact_type === 'primary');
@@ -250,7 +270,7 @@ const ProfilePage = () => {
         return `${Math.floor(diffInYears)}+ years`;
     };
 
-    if (loading) return <LoadingRollerSpinner />;
+    const canEdit = isAdmin || isViewingOwnProfile;
 
     return (
         <div className="min-h-screen p-6">
@@ -338,15 +358,15 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Basic Information</p>
-                            <FormModal
-                                table="Employee"
-                                type="update"
-                                data={employee}
-                                onSuccess={() => {
-                                    setShowModal(false);
-                                }}
-                                onCancel={() => setShowModal(false)}
-                            />
+                            {canEdit && (
+                                <FormModal
+                                    table="Employee"
+                                    type="update"
+                                    data={employee}
+                                    onSuccess={() => setShowModal(false)}
+                                    onCancel={() => setShowModal(false)}
+                                />
+                            )}
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -394,18 +414,18 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Personal Information</p>
-                            <button
-                                onClick={() => {
-                                    if (employee?.id !== undefined && personalInformation?.[0]?.id) {
-                                        handleOpenPersoalInfo(employee.id, personalInformation[0].id); // Edit
-                                    } else if (employee?.id !== undefined) {
-                                        handleOpenPersoalInfo(employee.id); // Add
-                                    }
-                                }}
-                                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
-                            >
-                                <RiEdit2Line size={16} />
-                            </button>
+                            {canEdit && ( // <-- Apply the check here
+                                <button
+                                    onClick={() => {
+                                        if (employee?.id !== undefined) {
+                                            handleOpenPersoalInfo(employee.id, personalInformation?.[0]?.id);
+                                        }
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
+                                >
+                                    <RiEdit2Line size={16} />
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -468,6 +488,7 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Emergency Contact Number</p>
+                            {canEdit && (
                             <button
                                 onClick={() => {
                                     if (employee?.id !== undefined) {
@@ -478,6 +499,7 @@ const ProfilePage = () => {
                             >
                                 <RiEdit2Line size={16} />
                             </button>
+                                )}
                         </div>
                         {primaryContacts.length > 0 ? (
                                 primaryContacts.map(contact => (
@@ -832,80 +854,18 @@ const ProfilePage = () => {
                     </Disclosure>
                 </div>
             </div>
-            {employee?.id !== undefined && (
-                <EmergencyContactForm
-                    open={isModalOpenEmC}
-                    onClose={handleCloseEmergencyContact}
-                    onSaved={() => {
-                        fetchData();
-                        handleCloseEmergencyContact();
-                    }}
-                    employeeId={employee.id}
-                />
-            )}
-            {isModalOpenPerIn && employee?.id !== undefined && (
-                <PersonalInfoForm
-                    isOpen={isModalOpenPerIn}
-                    onClose={handleClosePersoalInfo}
-                    key={selectedPersonalInfoId ?? "new"}
-                    employeeId={employee.id}
-                    personalInfoId={selectedPersonalInfoId} // pass if editing
-                    onSaved={fetchData}
-                />
-            )}
-            {employee?.id !== undefined && (
-                <BankInfoForm
-                    open={isModalOpenBankIn}
-                    onClose={handleCloseBankInfo}
-                    onSaved={() => {
-                        fetchData();
-                        handleCloseBankInfo();
-                    }}
-                    employeeId={employee.id}
-                    bankInfoId={selectedBankInfoId}
-                />
-            )}
-            {employee?.id !== undefined && (
-                <FamilyInfoForm
-                    open={isModalOpenFamilyIn}
-                    onClose={handleCloseFamilyInfo}
-                    onSaved={() => {
-                        fetchData();
-                        handleCloseFamilyInfo();
-                    }}
-                    employeeId={employee.id}
-                    familyInfoId={selectedFamilyInfoId}
-                />
-            )}
-            {employee?.id !== undefined && (
-                <EducationDetailsForm
-                    open={isModalOpenEduDetail}
-                    onClose={handleCloseEduDetail}
-                    onSaved={() => {
-                        fetchData();
-                        handleCloseEduDetail();
-                    }}
-                    employeeId={employee.id}
-                />
-            )}
-            {employee?.id !== undefined && (
-                <ExperienceForm
-                    open={isModalOpenExperience}
-                    onClose={handleCloseExperience}
-                    onSaved={() => {
-                        fetchData();
-                        handleCloseExperience();
-                    }}
-                    employeeId={employee.id}
-                />
-            )}
-            {isChangePasswordModalOpen && employee && (
-                <ChangePasswordModal
-                    open={isChangePasswordModalOpen}
-                    employee={employee}
-                    onCancel={handleCloseChangePassword}
-                    onSuccess={fetchData}
-                />
+            {canEdit && employee?.id !== undefined && (
+                <>
+                    <EmergencyContactForm open={isModalOpenEmC} onClose={handleCloseEmergencyContact} onSaved={fetchData} employeeId={employee.id} />
+                    <PersonalInfoForm isOpen={isModalOpenPerIn} onClose={handleClosePersoalInfo} employeeId={employee.id} personalInfoId={selectedPersonalInfoId} onSaved={fetchData} />
+                    <BankInfoForm open={isModalOpenBankIn} onClose={handleCloseBankInfo} onSaved={fetchData} employeeId={employee.id} bankInfoId={selectedBankInfoId} />
+                    <FamilyInfoForm open={isModalOpenFamilyIn} onClose={handleCloseFamilyInfo} onSaved={fetchData} employeeId={employee.id} familyInfoId={selectedFamilyInfoId} />
+                    <EducationDetailsForm open={isModalOpenEduDetail} onClose={handleCloseEduDetail} onSaved={fetchData} employeeId={employee.id} />
+                    <ExperienceForm open={isModalOpenExperience} onClose={handleCloseExperience} onSaved={fetchData} employeeId={employee.id} />
+                    {isChangePasswordModalOpen && employee && (
+                        <ChangePasswordModal open={isChangePasswordModalOpen} employee={employee} onCancel={handleCloseChangePassword} onSuccess={fetchData} />
+                    )}
+                </>
             )}
         </div>
     );

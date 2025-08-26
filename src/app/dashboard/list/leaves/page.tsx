@@ -31,6 +31,8 @@ import {
     Approval
 } from "@/lib/api/leave";
 import { Employee, fetchEmployees } from "@/lib/api/employee";
+import Cookies from "js-cookie";
+import {useAuth} from "@/lib/AuthContext";
 
 // --- Type Definitions ---
 type Leave = {
@@ -54,22 +56,27 @@ const useIsMobile = (breakpoint = 768) => {
 };
 
 // --- Reusable Form Component ---
-const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMobile }: { form: any, onFinish: (v: any) => void, employees: Employee[], leaveTypes: LeaveType[], loading: boolean, isMobile: boolean }) => {
+const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMobile, user }: { form: any, onFinish: (v: any) => void, employees: Employee[], leaveTypes: LeaveType[], loading: boolean, isMobile: boolean, user: any; }) => {
 
-    const [role, setRole] = useState<string | null>(null);
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
-    const [employeeName, setEmployeeName] = useState<string | null>(null);
+    const [rodle, setRole] = useState<string | null>(null);
+    const [employeeIdd, setEmployeeId] = useState<string | null>(null);
+    const [employefdeName, setEmployeeName] = useState<string | null>(null);
 
-    useEffect(() => {
-        setRole(localStorage.getItem('user_role'));
-        setEmployeeId(localStorage.getItem('employee_id'));
-        setEmployeeName(localStorage.getItem('user_name'));
-    }, []);
+    const role = Cookies.get("user_role");
+    const employeeId = Cookies.get("employee_id");
+    const employeeName = Cookies.get("user_name");
+
+    // useEffect(() => {
+    //     setRole(localStorage.getItem('user_role'));
+    //     setEmployeeId(localStorage.getItem('employee_id'));
+    //     setEmployeeName(localStorage.getItem('user_name'));
+    // }, []);
 
     const [startDateValue, setStartDateValue] = useState<dayjs.Dayjs | null>(null);
+    const isEmployeeRole = user?.roles.includes('Employee');
 
-    const employeeOptions = (role === 'Employee' && employeeId && employeeName)
-        ? [{ label: employeeName, value: Number(employeeId) }]
+    const employeeOptions = (isEmployeeRole === 'Employee' && user)
+        ? [{ label: user.name, value: user.emp_id }]
         : employees.map(e => ({ label: e.name, value: e.id }));
 
     return (
@@ -175,25 +182,26 @@ const ApprovalHistory = ({ approvals, employeeMap }: { approvals: Approval[], em
 };
 
 // --- View for Team Leave Requests
-const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onTableChange, onEdit, onManage, onDelete, onView }: { isMobile: boolean, leaves: Leave[], loading: boolean, pagination: any, employeeMap: { [id: number]: Employee }, onTableChange: (p: any) => void, onEdit: (r: Leave) => void, onManage: (r: Leave) => void, onDelete: (id: number) => void, onView: (r: Leave) => void; }) => {
+const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onTableChange, onEdit, onManage, onDelete, onView, isAdmin }: { isMobile: boolean, leaves: Leave[], loading: boolean, pagination: any, employeeMap: { [id: number]: Employee }, onTableChange: (p: any) => void, onEdit: (r: Leave) => void, onManage: (r: Leave) => void, onDelete: (id: number) => void, onView: (r: Leave) => void, isAdmin: Boolean; }) => {
 
     const columns: TableProps<Leave>['columns'] = [
+        // Base columns
         { title: 'Employee', key: 'employee', render: (_, record) => employeeMap[record.employee_id]?.name || 'Unknown' },
         { title: 'Leave Type', dataIndex: ['leave_type', 'type_name'], key: 'leave_type' },
         { title: 'Applied On', dataIndex: 'applied_on', key: 'applied', render: (d) => moment(d).format("DD MMM YYYY") },
         { title: 'Dates', key: 'dates', render: (_, r) => `${moment(r.start_date).format("DD MMM")} - ${moment(r.end_date).format("DD MMM YYYY")}` },
         { title: 'Days', key: 'days', render: (_, r) => `${moment(r.end_date).diff(moment(r.start_date), 'days') + 1}d` },
         { title: 'Status', key: 'status', render: (_, record) => getStatusTag(record.status) },
-        {
+    ];
+
+    if (isAdmin) {
+        columns.push({
             title: 'Actions',
             key: 'actions',
             render: (_, record) => {
                 const status = record.status?.status_name;
-
                 const isEditable = status === 'Pending';
-
                 const isManageable = status === 'Pending' || status === 'Approved';
-
                 return (
                     <Space>
                         <Button icon={<MdRemoveRedEye />} onClick={() => onView(record)}>View</Button>
@@ -203,8 +211,8 @@ const TeamLeaveView = ({ isMobile, leaves, loading, pagination, employeeMap, onT
                     </Space>
                 )
             }
-        },
-    ];
+        });
+    }
 
     if (isMobile) {
         return <List
@@ -313,9 +321,8 @@ const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel, onView }: 
 
 // --- Main Page Component ---
 const LeaveManagementPage = () => {
-    const [role, setRole] = useState<string | null>(null);
-    useEffect(() => { setRole(localStorage.getItem('user_role')); }, []);
-
+    // const role = Cookies.get("user_role");
+    const { user, loading: authLoading, isAuthenticated } = useAuth();
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
     const [form] = Form.useForm();
@@ -335,11 +342,19 @@ const LeaveManagementPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dropdownLoading, setDropdownLoading] = useState(false);
     const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
-    const [activeTabKey, setActiveTabKey] = useState(role === 'Employee' ? 'my' : 'team');
+    // const [activeTabKey, setActiveTabKey] = useState(role === 'Employee' ? 'my' : 'team');
 
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
-    const [companyId, setCompanyId] = useState<string | null>(null);
+    // const [employedeId, setEmployeeId] = useState<string | null>(null);
+    // const [compadnyId, setCompanyId] = useState<string | null>(null);
+    //
+    // const employeeId = Cookies.get("employee_id");
+    // const companyId = Cookies.get("company_id");
+
     const [approvalForm] = Form.useForm();
+
+    const isEmployee = user?.roles.includes('Employee');
+    const isAdmin = user?.roles.includes('Admin');
+    const currentEmployeeId = user?.emp_id;
 
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
@@ -369,48 +384,35 @@ const LeaveManagementPage = () => {
     };
 
     const fetchData = useCallback(async () => {
+        if (!isAuthenticated || !user) return; // Guard against running when not authenticated
         setLoading(true);
         try {
-            const currentEmployeeId = localStorage.getItem('employee_id');
+            // --- SIMPLIFIED data fetching ---
+            const typesRes = await fetchAllLeaveTypes();
+            setLeaveTypes(typesRes || []);
 
-            // --- Role-specific data fetching ---
-            if (role === 'Employee') {
-                if (currentEmployeeId) {
-                    const [myLeavesRes, typesRes] = await Promise.all([
-                        fetchEmployeesLeave(Number(currentEmployeeId)),
-                        fetchAllLeaveTypes() // Fetch types if not already loaded
-                    ]);
+            // Employees ONLY fetch their own leave
+            if (isEmployee && !isAdmin) {
+                if(currentEmployeeId) {
+                    const myLeavesRes = await fetchEmployeesLeave(currentEmployeeId);
                     setMyLeaves(myLeavesRes.data || []);
-                    if (leaveTypes.length === 0) {
-                        setLeaveTypes(typesRes || []);
-                    }
                 }
-            } else { // For Admin/Manager
-                if (employees.length === 0) {
-                    const [empRes, typesRes] = await Promise.all([
-                        fetchEmployees(1, 1000),
-                        fetchAllLeaveTypes()
-                    ]);
-                    const allEmployees = empRes.data || [];
-                    setEmployees(allEmployees);
-                    setLeaveTypes(typesRes || []);
+            } else { // Admins fetch everything
+                const [empRes, teamRes, myRes] = await Promise.all([
+                    fetchEmployees(1, 1000), // Fetch full employee list for dropdowns
+                    fetchLeaves(teamPagination.current, teamPagination.pageSize),
+                    currentEmployeeId ? fetchEmployeesLeave(currentEmployeeId) : Promise.resolve({ data: [] })
+                ]);
 
-                    // Build the employee map
-                    const newEmployeeMap: { [id: number]: Employee } = {};
-                    allEmployees.forEach((emp: Employee) => { newEmployeeMap[emp.id] = emp; });
-                    setEmployeeMap(newEmployeeMap);
-                }
+                const allEmployees = empRes.data || [];
+                setEmployees(allEmployees);
+                const newEmployeeMap: { [id: number]: Employee } = {};
+                allEmployees.forEach((emp: Employee) => { newEmployeeMap[emp.id] = emp; });
+                setEmployeeMap(newEmployeeMap);
 
-                // Fetch team and personal leave data
-                if (currentEmployeeId) {
-                    const [teamRes, myRes] = await Promise.all([
-                        fetchLeaves(teamPagination.current, teamPagination.pageSize),
-                        fetchEmployeesLeave(Number(currentEmployeeId))
-                    ]);
-                    setTeamLeaves(teamRes.data || []);
-                    setMyLeaves(myRes.data || []);
-                    setTeamPagination(prev => ({...prev, total: teamRes.total_items}));
-                }
+                setTeamLeaves(teamRes.data || []);
+                setMyLeaves(myRes.data || []);
+                setTeamPagination(prev => ({...prev, total: teamRes.total_items}));
             }
         } catch (error) {
             message.error("Failed to fetch leave data.");
@@ -418,25 +420,25 @@ const LeaveManagementPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [role, employeeId, employees.length, leaveTypes.length, teamPagination.current, teamPagination.pageSize]);
-
+    }, [isAuthenticated, user, isEmployee, isAdmin, currentEmployeeId, teamPagination.current, teamPagination.pageSize]);
 
     useEffect(() => {
-        if (isClient && role) {
+        // Fetch data only after authentication is resolved
+        if (!authLoading) {
             fetchData();
         }
-    }, [isClient, role, teamPagination.current, fetchData]);
+    }, [authLoading, fetchData]);
 
-    useEffect(() => {
-        setEmployeeId(localStorage.getItem('employee_id'));
-        setCompanyId(localStorage.getItem('company_id'));
-    }, []);
+    // useEffect(() => {
+    //     setEmployeeId(localStorage.getItem('employee_id'));
+    //     setCompanyId(localStorage.getItem('company_id'));
+    // }, []);
 
     const handleAddLeave = () => {
         setSelectedLeave(null);
         form.resetFields();
-        if (role === 'Employee' && employeeId) {
-            form.setFieldsValue({ employee_id: Number(employeeId) });
+        if (isEmployee && user) {
+            form.setFieldsValue({ employee_id: user.emp_id });
         }
         setIsModalOpen(true);
     };
@@ -526,7 +528,7 @@ const LeaveManagementPage = () => {
 
     const handleFormSubmit = async (values: any) => {
         setIsSubmitting(true);
-        if (!companyId) {
+        if (!user?.company_id) {
             message.error("Company ID not found. Please log in again.");
             setIsSubmitting(false);
             return;
@@ -536,7 +538,7 @@ const LeaveManagementPage = () => {
             const endDate = values.date_range ? values.date_range[1] : values.end_date;
             const payload = {
                 ...values,
-                company_id: Number(companyId),
+                company_id: Number(user?.company_id),
                 start_date: startDate.format("YYYY-MM-DD"),
                 end_date: endDate.format("YYYY-MM-DD")
             };
@@ -597,15 +599,16 @@ const LeaveManagementPage = () => {
                 onEdit={handleEditLeave}
                 onManage={handleManageLeave}
                 onDelete={handleDelete}
+                isAdmin={!!isAdmin}
             />
         };
-        if (role && role !== 'Employee') {
+        if (isAdmin) {
             return [teamLeaveTab, myLeaveTab];
         }
         return [myLeaveTab];
     }
 
-    if (!isClient) {
+    if (authLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
@@ -628,10 +631,9 @@ const LeaveManagementPage = () => {
 
             <Card>
                 <Tabs
-                    key={role}
-                    defaultActiveKey={role === 'Employee' ? 'my' : 'team'}
+                    key={user?.roles.join('-')}
+                    defaultActiveKey={isEmployee && !isAdmin ? 'my' : 'team'}
                     items={getTabItems()}
-                    onChange={setActiveTabKey}
                 />
             </Card>
 
@@ -665,7 +667,7 @@ const LeaveManagementPage = () => {
 
             {/* Edit/Create Modal */}
             <Modal title={selectedLeave ? "Edit Leave Request" : "New Leave Request"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
-                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} loading={dropdownLoading} isMobile={isMobile}/>
+                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} loading={false} isMobile={isMobile} user={user}/>
             </Modal>
 
             {/* Manage/Approve Modal */}

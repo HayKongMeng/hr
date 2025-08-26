@@ -47,6 +47,7 @@ export default function UserDropdown() {
         try {
             await api.post('/auth/logout');
             toast.success('Logged out successfully!');
+            document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
             router.push('/sign-in');
         } catch (error: any) {
             toast.error('Logout failed. Try again.');

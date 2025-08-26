@@ -17,6 +17,7 @@ import AttendanceCard from "@/components/mobile/employee/AttendanceCard";
 import LeaveChart from "@/components/mobile/LeaveChart";
 import { fetchAttendances, findEmployees, findEmployeesById } from "@/lib/api/attendances";
 import { MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
+import {useAuth} from "@/lib/AuthContext";
 
 // --- Type Definitions ---
 type Attendance = {
@@ -46,20 +47,19 @@ const useIsMobile = (breakpoint = 768) => {
 
 // --- Main Combined Component ---
 const AttendancePage = () => {
-    const [role, setRole] = useState<string | null>(null);
+    const { user, loading: authLoading, isAuthenticated } = useAuth();
 
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
 
-    useEffect(() => { setIsClient(true); }, []);
-    useEffect(() => {
-        setRole(localStorage.getItem('user_role'));
-    }, []);
-    if (!isClient ) {
+    const isEmployee = user?.roles.includes('Employee');
+    const isAdmin = user?.roles.includes('Admin');
+
+    if (authLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
 
-     if (role !== 'Employee') {
+    if (isAdmin) {
         const tabItems = [
             {
                 key: 'team',
@@ -214,44 +214,42 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
 
 // --- My Attendance View (Refactored from MobileView) ---
 const MyAttendanceView = () => {
-    const [employeeId, setEmployeeId] = useState<number | null>(null);
+    const { user, isAuthenticated } = useAuth();
+
     const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState({ presents: 0, absents: 0, lates: 0, leave: 0 }); 
-    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 }); 
+    const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 });
 
     useEffect(() => {
-        const storedId = localStorage.getItem('employee_id');
-        if (!storedId) return;
+        const employeeId = user?.emp_id;
 
-        const numericId = Number(storedId);
-        setEmployeeId(numericId);
-
-        if (!employeeId) return; 
+        if (!isAuthenticated || !employeeId) {
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         findEmployeesById(employeeId).then((result) => {
-            // Use the data processing function you already have
             const { mappedItems, presentsCount, lateCount } = processFullAttendanceData(result.data || []);
             setItems(mappedItems);
 
-            // Calculate stats for the current month
             let workingDaysSoFar = 0;
             const startOfMonth = moment().startOf('month');
             const today = moment();
             for (let m = moment(startOfMonth); m.isSameOrBefore(today, 'day'); m.add(1, 'days')) {
-                if (m.isoWeekday() <= 5) workingDaysSoFar++; 
+                if (m.isoWeekday() <= 5) workingDaysSoFar++;
             }
             const absentsCount = workingDaysSoFar - presentsCount;
-            
+
             setChartData({ presents: presentsCount, absents: absentsCount > 0 ? absentsCount : 0, lates: lateCount, leave: 0 });
-            setSummaryStats({ workingDays: presentsCount, lateArrivals: lateCount, earlyLeavers: 0 }); // Placeholder for earlyLeavers
+            setSummaryStats({ workingDays: presentsCount, lateArrivals: lateCount, earlyLeavers: 0 });
         }).catch(err => {
             message.error("Failed to load your attendance data.");
         }).finally(() => {
             setLoading(false);
         });
-    }, [employeeId]);
+    }, [user, isAuthenticated]);
 
     return (
         <div className="p-4">
