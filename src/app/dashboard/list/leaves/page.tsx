@@ -4,11 +4,15 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import moment from "moment";
 import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { FaFileExcel, FaFilePdf, FaEllipsisV } from "react-icons/fa";
 
 // --- Ant Design Components ---
 import {
     Card, Button, DatePicker, message, Select, Space, Input, Modal, Form, Table, Tag, Spin, List, Tabs, Descriptions,
-    Collapse
+    Collapse, MenuProps, Dropdown
 } from "antd";
 import type { TableProps } from 'antd';
 
@@ -57,33 +61,18 @@ const useIsMobile = (breakpoint = 768) => {
 
 // --- Reusable Form Component ---
 const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMobile, user }: { form: any, onFinish: (v: any) => void, employees: Employee[], leaveTypes: LeaveType[], loading: boolean, isMobile: boolean, user: any; }) => {
-
-    const [rodle, setRole] = useState<string | null>(null);
-    const [employeeIdd, setEmployeeId] = useState<string | null>(null);
-    const [employefdeName, setEmployeeName] = useState<string | null>(null);
-
-    const role = Cookies.get("user_role");
-    const employeeId = Cookies.get("employee_id");
-    const employeeName = Cookies.get("user_name");
-
-    // useEffect(() => {
-    //     setRole(localStorage.getItem('user_role'));
-    //     setEmployeeId(localStorage.getItem('employee_id'));
-    //     setEmployeeName(localStorage.getItem('user_name'));
-    // }, []);
-
     const [startDateValue, setStartDateValue] = useState<dayjs.Dayjs | null>(null);
     const isEmployeeRole = user?.roles.includes('Employee');
 
-    const employeeOptions = (isEmployeeRole === 'Employee' && user)
+    const employeeOptions = (isEmployeeRole && user)
         ? [{ label: user.name, value: user.emp_id }]
-        : employees.map(e => ({ label: e.name, value: e.id }));
+        : employees.map((e: Employee) => ({ label: e.name, value: e.id }));
 
     return (
         <Form form={form} layout="vertical" name="leave_request_form" onFinish={onFinish}>
             <Spin spinning={loading} tip="Loading data...">
                 <Form.Item name="employee_id" label="Employee Name" rules={[{ required: true }]}>
-                    <Select placeholder="Select employee" options={employeeOptions} showSearch filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} disabled={role === 'Employee'} />
+                    <Select placeholder="Select employee" options={employeeOptions} showSearch filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} disabled={isEmployeeRole} />
                 </Form.Item>
                 <Form.Item name="leave_type_id" label="Leave Type" rules={[{ required: true }]}>
                     <Select placeholder="Select leave type" options={leaveTypes.map(t => ({ label: t.type_name, value: t.id }))} />
@@ -321,10 +310,8 @@ const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel, onView }: 
 
 // --- Main Page Component ---
 const LeaveManagementPage = () => {
-    // const role = Cookies.get("user_role");
     const { user, loading: authLoading, isAuthenticated } = useAuth();
     const isMobile = useIsMobile();
-    const [isClient, setIsClient] = useState(false);
     const [form] = Form.useForm();
     const router = useRouter();
 
@@ -340,15 +327,7 @@ const LeaveManagementPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [dropdownLoading, setDropdownLoading] = useState(false);
     const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
-    // const [activeTabKey, setActiveTabKey] = useState(role === 'Employee' ? 'my' : 'team');
-
-    // const [employedeId, setEmployeeId] = useState<string | null>(null);
-    // const [compadnyId, setCompanyId] = useState<string | null>(null);
-    //
-    // const employeeId = Cookies.get("employee_id");
-    // const companyId = Cookies.get("company_id");
 
     const [approvalForm] = Form.useForm();
 
@@ -359,19 +338,112 @@ const LeaveManagementPage = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
 
-    useEffect(() => { setIsClient(true); }, []);
+    const [activeTabKey, setActiveTabKey] = useState(
+        user?.roles.includes('Admin') ? 'team' : 'my'
+    );
+    const [exporting, setExporting] = useState(false);
 
+    const handleExportExcel = (data: Leave[], employeeMap: { [id: number]: Employee }, fileName: string) => {
+        const headers = ["Employee", "Leave Type", "Applied On", "Start Date", "End Date", "Days", "Status", "Reason"];
+        const body = data.map(leave => [
+            employeeMap[leave.employee_id]?.name || `ID: ${leave.employee_id}`,
+            leave.leave_type.type_name,
+            moment(leave.applied_on).format("DD MMM YYYY"),
+            moment(leave.start_date).format("DD MMM YYYY"),
+            moment(leave.end_date).format("DD MMM YYYY"),
+            moment(leave.end_date).diff(moment(leave.start_date), 'days') + 1,
+            leave.status.status_name,
+            leave.reason
+        ]);
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Leave Data");
+        XLSX.writeFile(workbook, `${fileName}.xlsx`);
+    };
+
+    const handleExportPdf = (data: Leave[], employeeMap: { [id: number]: Employee }, fileName: string, title: string) => {
+        const doc = new jsPDF();
+        const tableHead = [["Employee", "Leave Type", "Applied", "Start Date", "End Date", "Days", "Status"]];
+        const tableBody = data.map(leave => [
+            employeeMap[leave.employee_id]?.name || `ID: ${leave.employee_id}`,
+            leave.leave_type.type_name,
+            moment(leave.applied_on).format("DD-MM-YY"),
+            moment(leave.start_date).format("DD-MM-YY"),
+            moment(leave.end_date).format("DD-MM-YY"),
+            moment(leave.end_date).diff(moment(leave.start_date), 'days') + 1,
+            leave.status.status_name
+        ]);
+
+        doc.text(title, 14, 15);
+        autoTable(doc, { head: tableHead, body: tableBody, startY: 20 });
+        doc.save(`${fileName}.pdf`);
+    };
+
+    const handleExport = async (format: 'excel' | 'pdf') => {
+        setExporting(true);
+        message.loading({ content: `Exporting data...`, key: 'exporting' });
+
+        try {
+            // Determine which dataset to use based on the active tab
+            const isTeamView = activeTabKey === 'team';
+            const dataToExport = isTeamView ? teamLeaves : myLeaves;
+
+            if (dataToExport.length === 0) {
+                message.warning({ content: "No data to export.", key: 'exporting' });
+                setExporting(false);
+                return;
+            }
+
+            // --- IMPORTANT ---
+            // For team view, we need a complete employee map.
+            // For "My Leave", we only need the current user.
+            let exportEmployeeMap = employeeMap;
+            if (!isTeamView && user) {
+                exportEmployeeMap = { [user.emp_id]: { id: user.emp_id,  } as Employee };
+            }
+
+            const fileName = isTeamView ? "Team_Leave_Report" : "My_Leave_Report";
+            const title = isTeamView ? "Team Leave Report" : "My Leave Report";
+
+            if (format === 'excel') {
+                handleExportExcel(dataToExport, exportEmployeeMap, fileName);
+            } else {
+                handleExportPdf(dataToExport, exportEmployeeMap, title, fileName);
+            }
+            message.success({ content: "Export successful!", key: 'exporting' });
+        } catch (error) {
+            console.error("Export failed:", error);
+            message.error({ content: "Export failed.", key: 'exporting' });
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const menuItems: MenuProps['items'] = [
+        {
+            key: 'excel',
+            label: 'Export to Excel',
+            icon: <FaFileExcel />,
+            onClick: () => handleExport('excel'),
+        },
+        {
+            key: 'pdf',
+            label: 'Export to PDF',
+            icon: <FaFilePdf />,
+            onClick: () => handleExport('pdf'),
+        },
+    ];
     const handleViewDetails = async (record: Leave) => {
         setIsViewModalOpen(true);
         setViewLoading(true);
-        setSelectedLeave(record); // Set basic data immediately
+        setSelectedLeave(record);
         try {
             const res = await getLeaveById(record.id);
-            // API response has data nested under `result.data`
             setSelectedLeave(res.data.result.data);
         } catch {
             message.error("Failed to fetch leave details.");
-            setIsViewModalOpen(false); // Close modal on error
+            setIsViewModalOpen(false);
         } finally {
             setViewLoading(false);
         }
@@ -423,16 +495,10 @@ const LeaveManagementPage = () => {
     }, [isAuthenticated, user, isEmployee, isAdmin, currentEmployeeId, teamPagination.current, teamPagination.pageSize]);
 
     useEffect(() => {
-        // Fetch data only after authentication is resolved
         if (!authLoading) {
             fetchData();
         }
     }, [authLoading, fetchData]);
-
-    // useEffect(() => {
-    //     setEmployeeId(localStorage.getItem('employee_id'));
-    //     setCompanyId(localStorage.getItem('company_id'));
-    // }, []);
 
     const handleAddLeave = () => {
         setSelectedLeave(null);
@@ -459,7 +525,7 @@ const LeaveManagementPage = () => {
 
     const handleCancel = (id: number) => {
         const recordToCancel = myLeaves.find(leave => leave.id === id);
-        if (!recordToCancel) {
+        if (!recordToCancel || !user?.company_id) {
             message.error("Could not find the leave request to cancel.");
             return;
         }
@@ -479,9 +545,9 @@ const LeaveManagementPage = () => {
                     const payload = {
                         id: recordToCancel.id,
                         employee_id: recordToCancel.employee_id,
-                        company_id: Number(companyId),
+                        company_id: user.company_id,
                         leave_type_id: recordToCancel.leave_type.id,
-                        status_id: 4, // Assuming 4 is 'Cancelled' status
+                        status_id: 4,
                         start_date: recordToCancel.start_date,
                         end_date: recordToCancel.end_date,
                         reason: recordToCancel.reason,
@@ -623,7 +689,15 @@ const LeaveManagementPage = () => {
                         <span>Leave</span>
                     </div>
                 </div>
-                <Space>
+                <Space className="flex items-center gap-2">
+                    <Dropdown menu={{ items: menuItems }} placement="bottomRight" disabled={exporting}>
+                        <Button>
+                            <Space>
+                                Export
+                                <FaEllipsisV />
+                            </Space>
+                        </Button>
+                    </Dropdown>
                     <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/leaves/calender")}>Calendar</Button>
                     <Button type="primary" icon={<MdAdd />} onClick={handleAddLeave}>Request Leave</Button>
                 </Space>
@@ -634,6 +708,7 @@ const LeaveManagementPage = () => {
                     key={user?.roles.join('-')}
                     defaultActiveKey={isEmployee && !isAdmin ? 'my' : 'team'}
                     items={getTabItems()}
+                    onChange={(key) => setActiveTabKey(key)}
                 />
             </Card>
 

@@ -3,9 +3,30 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import moment from "moment";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // --- Ant Design Components ---
-import { Table, Tag, Spin, Pagination, Select, Input, Card, Row, Col, Statistic, Calendar, Space, Button, message, Tabs, List } from 'antd';
+import {
+    Table,
+    Tag,
+    Spin,
+    Pagination,
+    Select,
+    Input,
+    Card,
+    Row,
+    Col,
+    Statistic,
+    Calendar,
+    Space,
+    Button,
+    message,
+    Tabs,
+    List,
+    MenuProps, Dropdown
+} from 'antd';
 import type { TableProps } from 'antd';
 
 // --- Icons ---
@@ -18,6 +39,8 @@ import LeaveChart from "@/components/mobile/LeaveChart";
 import { fetchAttendances, findEmployees, findEmployeesById } from "@/lib/api/attendances";
 import { MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
 import {useAuth} from "@/lib/AuthContext";
+import {FaEllipsisV, FaFileExcel} from "react-icons/fa";
+import {FaFilePdf} from "react-icons/fa6";
 
 // --- Type Definitions ---
 type Attendance = {
@@ -30,6 +53,7 @@ type Attendance = {
         clock_out?: string;
         late_minutes?: number;
     };
+    reason: string;
 };
 
 // --- Responsive Hook ---
@@ -82,7 +106,92 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
     const router = useRouter();
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+
+    const handleExportExcel = (data: Attendance[]) => {
+        const headers = ["Employee", "Date", "Status", "Check In", "Check Out"];
+        const body = data.map(att => [
+            att.employee.name,
+            moment(att.date).format("DD MMM YYYY"),
+            att.attendance_data.status || 'Absent',
+            att.attendance_data.clock_in ? moment(att.attendance_data.clock_in, "HH:mm:ss").format("h:mm A") : '--:--',
+            att.attendance_data.clock_out ? moment(att.attendance_data.clock_out, "HH:mm:ss").format("h:mm A") : '--:--'
+        ]);
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Team Attendance");
+        XLSX.writeFile(workbook, "Team_Attendance.xlsx");
+    };
+
+    // Handler for PDF Export
+    const handleExportPdf = (data: Attendance[]) => {
+        const doc = new jsPDF();
+        const tableHead = [["Employee", "Date", "Status", "Check In", "Check Out"]];
+        const tableBody = data.map(att => [
+            att.employee.name,
+            moment(att.date).format("DD MMM YYYY"),
+            att.attendance_data.status || 'Absent',
+            att.attendance_data.clock_in ? moment(att.attendance_data.clock_in, "HH:mm:ss").format("h:mm A") : '--:--',
+            att.attendance_data.clock_out ? moment(att.attendance_data.clock_out, "HH:mm:ss").format("h:mm A") : '--:--'
+        ]);
+
+        doc.text("Team Attendance Report", 14, 15);
+        autoTable(doc, { head: tableHead, body: tableBody, startY: 20 });
+        doc.save('Team_Attendance.pdf');
+    };
+
+    const handleExport = async (format: 'excel' | 'pdf') => {
+        setExporting(true);
+        message.loading({ content: `Exporting all attendance data...`, key: 'exporting' });
+        try {
+            const allDataRes = await fetchAttendances(1, 10000); // Fetch a large number for now
+            const allData = allDataRes.data.map((item: any) => {
+                let parsedData: any = {};
+                try {
+                    if (item.attendance_data) parsedData = JSON.parse(item.attendance_data);
+                } catch (e) { parsedData = {}; }
+
+                return {
+                    ...item,
+                    attendance_data: {
+                        status: parsedData.checkin?.status || 'Absent',
+                        clock_in: parsedData.checkin?.time,
+                        clock_out: parsedData.checkout?.time,
+                        late_minutes: 0,
+                    },
+                    reason: parsedData.checkin?.reason || parsedData.checkout?.reason || item.reason || null
+                };
+            });
+
+            if (format === 'excel') {
+                handleExportExcel(allData);
+            } else {
+                handleExportPdf(allData);
+            }
+            message.success({ content: `Exported to ${format.toUpperCase()} successfully!`, key: 'exporting' });
+        } catch (error) {
+            message.error({ content: `Failed to export data.`, key: 'exporting' });
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const menuItems: MenuProps['items'] = [
+        {
+            key: 'excel',
+            label: 'Export to Excel',
+            icon: <FaFileExcel />,
+            onClick: () => handleExport('excel'),
+        },
+        {
+            key: 'pdf',
+            label: 'Export to PDF',
+            icon: <FaFilePdf />,
+            onClick: () => handleExport('pdf'),
+        },
+    ];
 
     const getAttendances = useCallback(async (page: number, pageSize: number) => {
         setLoading(true);
@@ -101,7 +210,9 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
                         clock_in: parsedData.checkin?.time,
                         clock_out: parsedData.checkout?.time,
                         late_minutes: 0,
-                    } 
+                    },
+                    reason: parsedData.checkin?.reason || parsedData.checkout?.reason || item.reason || null
+
                 };
             });
 
@@ -154,6 +265,11 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
                                                 In: {item.attendance_data.clock_in ? moment(item.attendance_data.clock_in, "HH:mm:ss").format("h:mm A") : '--:--'} | 
                                                 Out: {item.attendance_data.clock_out ? moment(item.attendance_data.clock_out, "HH:mm:ss").format("h:mm A") : '--:--'}
                                             </p>
+                                            {item.reason && (
+                                                <p style={{ color: '#888', fontStyle: 'italic', marginTop: '4px' }}>
+                                                    Reason: {item.reason}
+                                                </p>
+                                            )}
                                         </div>
                                     }
                                 />
@@ -181,6 +297,13 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
         { title: "Status", dataIndex: ['attendance_data', 'status'], key: 'status', render: getStatusTag },
         { title: "Check In", dataIndex: ['attendance_data', 'clock_in'], key: 'check_in', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
         { title: "Check Out", dataIndex: ['attendance_data', 'clock_out'], key: 'check_out', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
+        {
+            title: "Reason",
+            dataIndex: ['reason'],
+            key: 'reason',
+            ellipsis: true,
+            render: (reason) => reason || 'N/A'
+        },
     ];
 
     return (
@@ -193,6 +316,14 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
                         <MdKeyboardArrowRight /><span>Attendance</span>
                     </div>
                 </div>
+                 <Dropdown menu={{ items: menuItems }} placement="bottomRight" disabled={exporting}>
+                     <Button>
+                         <Space>
+                             Export
+                             <FaEllipsisV />
+                         </Space>
+                     </Button>
+                 </Dropdown>
             </div>
             <Card>
                 <Row justify="end" className="mb-4">
@@ -205,6 +336,10 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
                     loading={loading}
                     pagination={pagination}
                     onChange={handleTableChange}
+                    expandable={{
+                        expandedRowRender: record => <p style={{ margin: 0 }}><strong>Reason:</strong> {record.reason || 'No reason provided.'}</p>,
+                        rowExpandable: record => !!record.reason,
+                    }}
                 />
             </Card>
         </div>

@@ -301,7 +301,7 @@ const ProfilePage = () => {
                             height={80}
                             unoptimized
                             className="rounded-full border object-cover absolute top-0 left-1/2 translate-x-[-50%] translate-y-[62%]"
-                            onError={() => setImgSrc( employee?.image || '/avatar.png')}
+                            onError={() => setImgSrc( employee?.image_url || '/avatar.png')}
                         />
                     </div>
 

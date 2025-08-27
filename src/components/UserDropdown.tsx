@@ -1,91 +1,95 @@
-'use client'
+'use client';
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { Spin } from 'antd';
+
+// --- Icons ---
 import { LuUser } from "react-icons/lu";
 import { IoMdPower } from "react-icons/io";
-import Link from 'next/link';
 
-const api = {
-    post: async (url: string) => {
-        if (url === '/auth/logout') {
-            return new Promise((resolve) => setTimeout(resolve, 500));
-        }
-        throw new Error('Unknown endpoint');
-    },
-};
+
+import { useAuth } from '@/lib/AuthContext';
+
 
 export default function UserDropdown() {
-    const router = useRouter();
     const [open, setOpen] = useState(false);
-    const [userName, setUserName] = useState<string>('')
     const dropdownRef = useRef<HTMLDivElement | null>(null);
-    const employeeId = typeof window !== 'undefined' ? localStorage.getItem('employee_id') : null;
 
-    useEffect(() => {
-        const storedName = localStorage.getItem('user_name')
-        if (storedName) {
-            setUserName(storedName)
-        }
-    }, [])
+    // --- Use the AuthContext for all user data ---
+    const { user, loading: authLoading, logout } = useAuth();
+    const userName = user?.emp_username || 'User';
+    const userRole = user?.roles[0] || 'Employee';
+    const employeeId = user?.emp_id;
 
+    // --- Click outside handler (no changes needed) ---
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) { 
+        function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setOpen(false)
+                setOpen(false);
             }
         }
-
-        document.addEventListener('mousedown', handleClickOutside)
+        document.addEventListener('mousedown', handleClickOutside);
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await api.post('/auth/logout');
-            toast.success('Logged out successfully!');
-            document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
-            router.push('/sign-in');
-        } catch (error: any) {
-            toast.error('Logout failed. Try again.');
-        }
+    const handleLogout = () => {
+        toast.success('Logging out...');
+        logout();
     };
 
+    if (authLoading) {
+        return <div className="w-10 h-10 flex items-center justify-center"><Spin size="small" /></div>;
+    }
+
     return (
-        <div className="relative inline-block text-left w-full" ref={dropdownRef}>
+        <div className=" inline-block text-left" ref={dropdownRef}>
             <button
                 onClick={() => setOpen(!open)}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border ring-gray-300 text-xs md:w-auto md:h-auto md:gap-2 md:rounded-xl md:ring-[1.5px] md:py-1.5 md:px-2"
+                className="inline-flex items-center gap-2 bg-light-card border border-light-border rounded-lg p-1 shadow-sm hover:bg-light-bg transition-colors duration-200"
             >
                 <img
-                    src="/avatar.png"
-                    alt="User"
-                    className="w-8 h-8 rounded-lg md:rounded-full md:border-2 border-green-400"
+                    src={user?.emp_profile || "/avatar.png"}
+                    alt="User Avatar"
+                    className="w-8 h-8 rounded-md object-cover"
                 />
-                <div className="hidden md:inline text-blue-600 font-normal">Hi, {userName}!</div>
-                <svg
-                    className="hidden md:inline w-4 h-4 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
+                <div className="hidden md:flex flex-col items-start">
+                    <span className="text-sm font-semibold text-text-primary">{userName}</span>
+                    <span className="text-xs bg-accent-purple/10 text-accent-purple px-1.5 py-0.5 rounded-md font-medium">
+                        {userRole}
+                    </span>
+                </div>
             </button>
+
             {open && (
-                <div className="absolute left-0 mt-2 w-48 bg-white rounded-2xl card-table z-10">
-                    <ul className="py-2">
-                        <li className='px-4 py-4  text-sm font-normal text-[#293240] cursor-pointer hover:bg-gray-100'>
-                           <Link href={`/dashboard/list/employees/${employeeId}`} className="gap-2 flex items-center">
-                                <LuUser size={20} /> My Profile
-                            </Link>
-                        </li>
-                        <li onClick={handleLogout} className="px-4 py-4 text-sm font-normal text-[#293240] hover:bg-gray-100 flex items-center gap-2 cursor-pointer">
-                            <IoMdPower size={20} /> Logout
+                <div
+                    className="absolute mt-2 w-56 bg-light-card border border-light-border rounded-xl shadow-lg z-20"
+                    // Add animation for a smoother feel
+                    style={{ animation: 'fadeIn 0.2s ease-out' }}
+                >
+                    <ul className="pt-2">
+                        {employeeId && (
+                            <li className='px-2 py-1'>
+                                <Link
+                                    href={`/dashboard/list/employees/${employeeId}`}
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-text-secondary hover:bg-light-bg hover:text-text-primary transition-colors"
+                                >
+                                    <LuUser size={18} /> My Profile
+                                </Link>
+                            </li>
+                        )}
+                        <li className='px-2 py-1'>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+                            >
+                                <IoMdPower size={18} /> Logout
+                            </button>
                         </li>
                     </ul>
                 </div>

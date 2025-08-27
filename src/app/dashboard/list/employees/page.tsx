@@ -201,6 +201,25 @@ const EmployeeManagementPage = () => {
         finally { setDropdownLoading(false); }
     }, [dropdownData.positions.length]);
 
+    useEffect(() => {
+        if (selectedEmployee && isModalOpen) {
+            if (dropdownData.employees.length > 0) {
+                const imageFileList: UploadFile[] = selectedEmployee.image ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image }] : [];
+
+                form.setFieldsValue({
+                    ...selectedEmployee,
+                    date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
+                    hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
+                    position_id: selectedEmployee.position?.id,
+                    department_id: selectedEmployee.department?.id,
+                    work_station_id: selectedEmployee.work_station?.id,
+                    employment_type_id: selectedEmployee.employment_type?.id,
+                    image: imageFileList,
+                });
+            }
+        }
+    }, [selectedEmployee, isModalOpen, dropdownData.employees, form]);
+
     useEffect(() => { setIsClient(true); }, []);
     
     useEffect(() => {
@@ -289,19 +308,7 @@ const EmployeeManagementPage = () => {
     const handleModalOpen = (record: Employee | null) => {
         setSelectedEmployee(record);
         fetchDropdowns();
-        if (record) {
-            const imageFileList: UploadFile[] = record.image ? [{ uid: '-1', name: 'profile.png', status: 'done', url: record.image }] : [];
-            form.setFieldsValue({
-                ...record,
-                date_of_birth: record.date_of_birth ? dayjs(record.date_of_birth) : null,
-                hire_date: record.hire_date ? dayjs(record.hire_date) : null,
-                position_id: record.position?.id,
-                department_id: record.department?.id,
-                work_station_id: record.work_station?.id,
-                employment_type_id: record.employment_type?.id,
-                image: imageFileList,
-            });
-        } else {
+        if (!record) {
             form.resetFields();
         }
         setIsModalOpen(true);
@@ -347,8 +354,6 @@ const EmployeeManagementPage = () => {
                 );
                 message.success({ content: "Employee updated successfully!", key, duration: 2 });
             } else {
-                const test = await createEmployee(payload);
-                console.log("Created Employee:", test);
                 message.success({ content: "Employee created successfully!", key, duration: 2 });
             }
 

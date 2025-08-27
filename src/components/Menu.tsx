@@ -19,6 +19,7 @@ import {Menu as AntdMenu, Spin} from 'antd';
 import type { IconType } from 'react-icons';
 import { MenuItemType } from 'antd/es/menu/interface';
 import {useAuth} from "@/lib/AuthContext";
+import {FaUserCheck} from "react-icons/fa6";
 
 
 const api = {
@@ -100,11 +101,6 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                                     href: "/dashboard/list/report/leave",
                                     visible: ["Admin", "Super Admin"],
                                 },
-                                {
-                                    iconComponent: TbPoint,
-                                    label: "Timesheet",
-                                    visible: ["Admin", "Super Admin"],
-                                },
                             ],
                         },
                     ]
@@ -142,7 +138,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                             iconComponent: TbPoint,
                             label: "Role",
                             href: "/dashboard/list/roles",
-                            visible: ["Admin", "Super Admin"],
+                            visible: ["Super Admin"],
                         },
                     ],
                 },
@@ -161,7 +157,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                 {
                     iconComponent: MdAccessTime,
                     label: "Timesheet",
-                    visible: ["Admin", "Super Admin", "Employee"],
+                    visible: ["Admin", "Super Admin"],
                     children: [
                         {
                             iconComponent: TbPoint,
@@ -183,6 +179,18 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                             ],
                         },
                     ],
+                },
+                {
+                    iconComponent: MdAccessTime,
+                    href: "/dashboard/list/leaves",
+                    label: "Manage Leave",
+                    visible: ["Employee"],
+                },
+                {
+                    iconComponent: FaUserCheck,
+                    label: "Marked Attendance",
+                    href: "/dashboard/list/attendance/markedattendance",
+                    visible: ["Employee"],
                 },
                 {
                     iconComponent: LuUserCog,

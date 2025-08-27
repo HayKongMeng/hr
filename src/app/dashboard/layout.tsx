@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* --- Main Content Area --- */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Desktop Navbar */}
-                <div className="hidden md:block">
+                <div className="hidden md:block z-40">
                     <Navbar toggleCollapsed={toggleCollapsed} collapsed={collapsed} />
                 </div>
 

@@ -309,16 +309,11 @@ type PendingAttendanceData = {
 
 const HomePage = () => {
     // --- STATE MANAGEMENT ---
-    const [isClient, setIsClient] = useState(false);
     const { user, loading: authLoading, isAuthenticated } = useAuth();
-    const [employeefId, setEmployeeId] = useState<number | null>(null);
-    const [userRolef, setUserRole] = useState<string | null>(null);
-    const employeeId = Cookies.get("employee_id");
-    const userRole = Cookies.get("user_role");
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [employee, setEmployee] = useState<Employee | null>(null);
-    const [items, setItems] = useState<MappedAttendanceItem[]>([]); // "My Space" attendance
-    const [itemsEmployee, setItemsEmployee] = useState<MappedAttendanceItem[]>([]); // "Organization" attendance
+    const [items, setItems] = useState<MappedAttendanceItem[]>([]);
+    const [itemsEmployee, setItemsEmployee] = useState<MappedAttendanceItem[]>([]);
     const [todayAttendance, setTodayAttendance] = useState({
         checkIn: "--:--", checkInStatus: "-", checkOut: "--:--", checkOutStatus: "-",
     });
@@ -620,11 +615,13 @@ const HomePage = () => {
                             <p className="text-sm opacity-80 z-10">
                                 {employee?.position?.title || "Employee"}
                             </p>
-                            <p className="text-sm underline mt-2 z-10">
-                                <Link href="/dashboard/mobile/employee/profile">
-                                    View profile
-                                </Link>
-                            </p>
+                            {currentEmployeeId && (
+                                <p className="text-sm underline mt-2 z-10">
+                                    <Link href={`/dashboard/list/employees/${currentEmployeeId}`}>
+                                        View profile
+                                    </Link>
+                                </p>
+                            )}
                         </>
                     )}
                 </div>
@@ -715,7 +712,7 @@ const HomePage = () => {
                                 </div>
                                 <LeaveStatus
                                     showActions={false}
-                                    userRole={userRole}
+                                    userRole={user?.roles[0]}
                                     employeeId={currentEmployeeId}
                                 />
                             </div>

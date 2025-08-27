@@ -14,6 +14,20 @@ const config: Config = {
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
       colors: {
+          // --- Light Theme Palette ---
+          'light-bg': '#F7F8FC',      // Soft off-white background
+          'light-card': '#FFFFFF',    // Pure white for cards
+          'light-border': '#EAEBF1',  // Subtle border color
+          'text-primary': '#1A202C',  // Dark grey for main text
+          'text-secondary': '#718096',// Lighter grey for descriptions
+
+          // --- Accent Colors (can remain the same) ---
+          'accent-purple': '#4A3AFF',
+          'accent-yellow': '#FAE27C',
+          'accent-skyblue': '#C3EBFA',
+          'accent-green': '#00F5A0',
+
+
         kungkeaSky: "#C3EBFA",
         kungkeaSkyLight: "#EDF9FD",
         kungkeaPurple: "#CFCEFF",

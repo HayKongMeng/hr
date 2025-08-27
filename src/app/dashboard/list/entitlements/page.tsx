@@ -6,11 +6,31 @@ import moment from "moment";
 import dayjs from 'dayjs';
 
 // --- Ant Design Components ---
-import { Button, Card, Form, InputNumber, List, message, Modal, Select, Space, Spin, Table, DatePicker, Progress, Tag, Row, Col, Collapse, Tabs } from "antd";
+import {
+    Button,
+    Card,
+    Form,
+    InputNumber,
+    List,
+    message,
+    Modal,
+    Select,
+    Space,
+    Spin,
+    Table,
+    DatePicker,
+    Progress,
+    Tag,
+    Row,
+    Col,
+    Collapse,
+    Tabs,
+    Popconfirm
+} from "antd";
 import type { CollapseProps, TableProps } from 'antd';
 
 // --- Icons (from react-icons) ---
-import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
+import {MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete, MdRefresh} from "react-icons/md";
 
 // --- API & Data ---
 import {
@@ -18,7 +38,7 @@ import {
     createEntitlement,
     // updateEntitlement, 
     deleteEntitlement,
-    fetchEmployeesEntitlements, generateEntitlementToEmployee,
+    fetchEmployeesEntitlements, generateEntitlementToEmployee, createAllEntitlement,
 } from "@/lib/api/leave";
 import { fetchEmployees, Employee } from "@/lib/api/employee";
 import { fetchAllLeaveTypes, LeaveType } from "@/lib/api/leave";
@@ -78,6 +98,8 @@ const LeaveEntitlementPage = () => {
     const router = useRouter();
 
     const { user, loading: authLoading, isAuthenticated } = useAuth();
+
+    const [isRenewing, setIsRenewing] = useState(false);
 
     // State for data
     const [myEntitlements, setMyEntitlements] = useState<LeaveEntitlement[]>([]);
@@ -225,6 +247,25 @@ const LeaveEntitlementPage = () => {
         });
     };
 
+    const handleRenewAll = async () => {
+        setIsRenewing(true);
+        message.loading({ content: 'Renewing entitlements for all employees...', key: 'renew' });
+        try {
+            await createAllEntitlement();
+            message.success({ content: 'Successfully renewed all entitlements!', key: 'renew', duration: 3 });
+
+            fetchData();
+        } catch (error: any) {
+            message.error({
+                content: error?.response?.data?.message || "Failed to renew entitlements.",
+                key: 'renew',
+                duration: 5
+            });
+        } finally {
+            setIsRenewing(false);
+        }
+    };
+
     // This function will now decide whether to render tabs or a single view
     const renderContent = () => {
         if (loading) {
@@ -257,21 +298,53 @@ const LeaveEntitlementPage = () => {
                 <div>
                     <h1 className="text-lg font-semibold">Leave Entitlements</h1>
                     <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
-                        <MdKeyboardArrowRight /><span>Entitlements</span>
+                        {/* ... (breadcrumbs) ... */}
                     </div>
                 </div>
-                {/* --- SIMPLIFIED permission check --- */}
                 {isAdmin && (
-                    <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Assign Entitlement</Button>
+                    <Space>
+                        <Popconfirm
+                            title="Renew All Entitlements?"
+                            description="This will generate new leave balances for all employees for the current period. Are you sure?"
+                            onConfirm={handleRenewAll}
+                            okText="Yes, Renew All"
+                            cancelText="Cancel"
+                        >
+                            <Button
+                                icon={<MdRefresh />}
+                                loading={isRenewing}
+                            >
+                                Renew All
+                            </Button>
+                        </Popconfirm>
+
+                        <Button
+                            type="primary"
+                            icon={<MdAdd />}
+                            onClick={() => handleModalOpen(null)}
+                        >
+                            Assign to Employee
+                        </Button>
+                    </Space>
                 )}
             </div>
             <Card>
                 {renderContent()}
             </Card>
             {isAdmin && (
-                <Modal title={selectedEntitlement ? "Edit Entitlement" : "Assign New Entitlement"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
-                    <EntitlementForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} />
+                <Modal
+                    title="Assign New Entitlement to Employee"
+                    open={isModalOpen}
+                    onCancel={handleModalCancel}
+                    onOk={form.submit}
+                    confirmLoading={isSubmitting}
+                >
+                    <EntitlementForm
+                        form={form}
+                        onFinish={handleFormSubmit}
+                        employees={employees}
+                        leaveTypes={leaveTypes}
+                    />
                 </Modal>
             )}
         </div>
@@ -282,7 +355,7 @@ const AdminEntitlementView = ({ groupedData, onEdit, onDelete, isMobile }: {
     groupedData: { [key: string]: { employeeName: string; entitlements: LeaveEntitlement[] } };
     onEdit: (record: LeaveEntitlement) => void;
     onDelete: (record: LeaveEntitlement) => void;
-    isMobile: boolean; // Accept isMobile prop
+    isMobile: boolean;
 }) => {
     
     // Convert the groupedData object into an array for easier mapping

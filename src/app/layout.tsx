@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body className={inter.className}>
+            <body className={`${inter.className} bg-light-bg text-text-primary`}>
                 <AuthProvider>
                     <ScrollToTop />
                     <Toaster richColors position='top-center' />

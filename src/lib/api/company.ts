@@ -105,11 +105,32 @@ export const deleteCompany = async (id: number) => {
     return response;
 }
 
+
+export type UpcomingBirthday = {
+    id: number;
+    name: string;
+    date_of_birth: string;
+    age: number;
+};
+
+export type WeeklySummary = {
+    [day: string]: {
+        date: string;
+        present: number;
+        absent: number;
+        leaves: number;
+    };
+};
+
 export interface DashboardSummary {
     total_employees: number;
+    total_employees_change: number;
     checkins_today: number;
+    checkins_change: number;
     checkouts_today: number;
+    checkouts_change: number;
     leave_requests_today: number;
+    leave_requests_change: number;
     employee_gender: {
         male: number;
         female: number;
@@ -120,13 +141,20 @@ export interface DashboardSummary {
     };
     present_today: number;
     absent_today: number;
+    weekly_summary: WeeklySummary;
+    line_chart_data: {
+        total_employees: number[];
+        checkins: number[];
+        checkouts: number[];
+        leave_requests: number[];
+    };
+    upcoming_birthdays: UpcomingBirthday[];
 }
 
 export const fetchDashboardSummary = async (date?: string): Promise<DashboardSummary> => {
     const queryDate = date || dayjs().format('YYYY-MM-DD');
     try {
         const response = await api.get(`/api/employee/summary?date=${queryDate}`);
-        console.log("tttttttttttttttttttttt")
         return response.data.result;
     } catch (error) {
         console.error("Failed to fetch dashboard summary:", error);

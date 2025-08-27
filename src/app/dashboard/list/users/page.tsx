@@ -172,30 +172,12 @@ const UserManagementPage = () => {
         }
     };
     
-    const handleDelete = (id: number) => {
-        Modal.confirm({
-            title: 'Delete User?',
-            content: 'This will permanently delete the user.',
-            okText: 'Delete',
-            okType: 'danger',
-            onOk: async () => {
-                try {
-                    // await deleteUser(id);
-                    message.success("User deleted.");
-                    fetchData(pagination.current);
-                } catch (error) {
-                    message.error("Failed to delete user.");
-                }
-            },
-        });
-    };
-    
     const handleTableChange: TableProps<User>['onChange'] = (p) => {
         setPagination(prev => ({ ...prev, current: p.current!, pageSize: p.pageSize! }));
     };
 
     // Shared props for views
-    const viewProps = { users, loading, pagination, handleTableChange, handleModalOpen, handleDelete };
+    const viewProps = { users, loading, pagination, handleTableChange, handleModalOpen };
 
     return (
         <div className="p-4">
@@ -208,7 +190,7 @@ const UserManagementPage = () => {
                         <span>Users</span>
                     </div>
                 </div>
-                <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add User</Button>
+                {/*<Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add User</Button>*/}
             </div>
 
             <Card>
@@ -246,7 +228,6 @@ const DesktopView = ({ users, loading, pagination, handleTableChange, handleModa
         { title: 'Actions', key: 'actions', render: (_, record: User) => (
             <Space>
                 <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)}>Edit</Button>
-                <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)}>Delete</Button>
             </Space>
         )}
     ];

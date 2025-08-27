@@ -176,7 +176,7 @@ export const updateEmployee = async (
             authServicePayload.password = authPayload.password;
         }
 
-        await api.put(`/auth/update-register-employee/${userId}`, authServicePayload);
+        await api.put(`/api/auth/update-register-employee/${userId}`, authServicePayload);
 
         // Step 2: FormData for employee update
         const formData = new FormData();

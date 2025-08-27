@@ -216,6 +216,12 @@ export const createEntitlement = async (payload: {
     return response.data.result;
 };
 
+export const createAllEntitlement = async () => {
+    const response = await api.post(`api/leave/entitlements/renew`)
+    return response.data;
+}
+
+
 export const generateEntitlementToEmployee = async (employee_id: number) => {
     const response = await api.post(`api/leave/generate-entitlements/${employee_id}`)
     return response.data.result;

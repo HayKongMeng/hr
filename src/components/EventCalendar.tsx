@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import {UpcomingBirthday} from "@/lib/api/company";
+import moment from "moment";
 
 type ValuePiece = Date | null;
 
@@ -31,29 +33,33 @@ const events = [
     },
 ];
 
-const EventCalendar = () => {
+const EventCalendar = ({ birthdays }: { birthdays: UpcomingBirthday[] }) => {
     const [value, onChange] = useState<Value>(new Date());
 
     return (
-        <div className="bg-white p-4 rounded-md">
+        <div className="bg-light-card border border-light-border shadow-sm p-4 rounded-xl">
             <Calendar onChange={onChange} value={value} />
-            <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold my-4">Events</h1>
+            <div className="flex items-center justify-between mt-4">
+                <h1 className="text-xl font-semibold text-text-primary">Up Comming birthday</h1>
                 <Image src="/moreDark.png" alt="" width={20} height={20} />
             </div>
-            <div className="flex flex-col gap-4">
-                {events.map((event) => (
+            <div className="flex flex-col gap-4 mt-4">
+                {birthdays.length > 0 ? birthdays.map((birthday) => (
                     <div
-                        className="p-5 rounded-md border-2 border-gray-100 border-t-4 odd:border-t-lamaSky even:border-t-lamaPurple"
-                        key={event.id}
+                        className="p-4 rounded-lg border border-light-border"
+                        key={birthday.id}
                     >
                         <div className="flex items-center justify-between">
-                            <h1 className="font-semibold text-gray-600">{event.title}</h1>
-                            <span className="text-gray-300 text-xs">{event.time}</span>
+                            <h1 className="font-semibold text-gray-700">{birthday.name}</h1>
+                            <span className="text-gray-400 text-sm font-medium">
+                                {moment(birthday.date_of_birth).format("MMMM Do")}
+                            </span>
                         </div>
-                        <p className="mt-2 text-gray-400 text-sm">{event.description}</p>
+                        <p className="mt-1 text-gray-500 text-sm">Turning {birthday.age} this year!</p>
                     </div>
-                ))}
+                )) : (
+                    <p className="text-text-secondary text-center py-4">No upcoming birthdays.</p>
+                )}
             </div>
         </div>
     );

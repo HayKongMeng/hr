@@ -31,7 +31,7 @@ import type { TableProps } from "antd";
 import { BsSortDown } from "react-icons/bs";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { BiCalendar } from "react-icons/bi";
-import { IoMdAdd } from "react-icons/io";
+import {IoIosClose, IoMdAdd} from "react-icons/io";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 // --- API functions ---
@@ -43,6 +43,7 @@ import {
 } from "@/lib/api/holidays";
 import Cookies from "js-cookie";
 import {useAuth} from "@/lib/AuthContext";
+import OptionCard from "@/components/ui/OptionCard";
 
 // --- Type Definitions ---
 type HolidayType = "Public" | "Optional" | "Company" | "Regional";
@@ -271,13 +272,15 @@ const DesktopView = ({ holidays, loading, onAdd, onEdit, onDelete, router, pagin
             <MdKeyboardArrowRight /><span >Holidays List</span>
           </div>
         </div>
-        <Space>
-          <Button icon={<BsSortDown />} />
-          <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/holidays/calendar")} />
-            {isAdmin && (
-                <Button type="primary" icon={<IoMdAdd />} onClick={onAdd}>Add Holiday</Button>
-            )}
-        </Space>
+          <Space size="middle">
+              <Button icon={<BsSortDown />} className="text-text-secondary">Sort</Button>
+              <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/holidays/calendar")}>Calendar View</Button>
+              {isAdmin && (
+                  <Button type="primary" icon={<IoMdAdd />} onClick={onAdd} size="large">
+                      Add Holiday
+                  </Button>
+              )}
+          </Space>
       </div>
       <Card>
         <Row justify="end" className="mb-4">
@@ -336,77 +339,146 @@ const MobileView = ({ holidays, loading, onAdd, onEdit, onDelete, pagination, on
 
 // --- Shared Form Modal ---
 const HolidayFormModal = ({ isOpen, onClose, onSubmit, initialData }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (values: any) => void;
-  initialData: Holiday | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (values: any) => void;
+    initialData: Holiday | null;
 }) => {
-  const [form] = Form.useForm();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [form] = Form.useForm();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && initialData) {
-      form.setFieldsValue({
-        ...initialData,
-        date_range: [dayjs(initialData.start_date), dayjs(initialData.end_date)],
-      });
-    } else {
-      form.resetFields();
-    }
-  }, [initialData, form, isOpen]);
+    // NEW state to manage the selected holiday type card
+    const [selectedType, setSelectedType] = useState<HolidayType | null>(null);
 
-  const handleOk = async () => {
-    try {
-      setIsSubmitting(true);
-      const values = await form.validateFields();
-      const payload = {
-        ...values,
-        is_recurring: values.is_recurring || false,
-        start_date: values.date_range[0].format('YYYY-MM-DD'),
-        end_date: values.date_range[1].format('YYYY-MM-DD'),
-      };
-      delete payload.date_range;
-      await onSubmit(payload);
-    } catch (info) {
-      console.log('Validation Failed:', info);
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-  
-  return (
-    <Modal
-      title={initialData ? "Edit Holiday" : "Add Holiday"}
-      open={isOpen}
-      onOk={handleOk}
-      onCancel={onClose}
-      confirmLoading={isSubmitting}
-      destroyOnClose
-    >
-      <Form form={form} layout="vertical" name="holiday_form" className="mt-4">
-        <Form.Item name="name" label="Occasion" rules={[{ required: true }]}>
-          <Input placeholder="e.g., New Year's Day" />
-        </Form.Item>
-        <Form.Item name="date_range" label="Date Range" rules={[{ required: true }]}>
-          <DatePicker.RangePicker className="w-full" />
-        </Form.Item>
-        <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-          <Select placeholder="Select type">
-            <Select.Option value="Public">Public</Select.Option>
-            <Select.Option value="Optional">Optional</Select.Option>
-            <Select.Option value="Company">Company</Select.Option>
-            <Select.Option value="Regional">Regional</Select.Option>
-          </Select>
-        </Form.Item>
-        <Form.Item name="description" label="Description">
-          <Input.TextArea showCount maxLength={150} />
-        </Form.Item>
-        <Form.Item name="is_recurring" valuePropName="checked">
-          <Checkbox>Is this a recurring holiday?</Checkbox>
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                form.setFieldsValue({
+                    ...initialData,
+                    date_range: [dayjs(initialData.start_date), dayjs(initialData.end_date)],
+                });
+                setSelectedType(initialData.type); // Set the selected card
+            } else {
+                form.resetFields();
+                setSelectedType(null); // Reset the selected card
+            }
+        }
+    }, [initialData, form, isOpen]);
+
+    const handleOk = async () => {
+        try {
+            setIsSubmitting(true);
+            const values = await form.validateFields();
+            const payload = {
+                ...values,
+                type: selectedType, // Use the state for the type
+                is_recurring: values.is_recurring || false,
+                start_date: values.date_range[0].format('YYYY-MM-DD'),
+                end_date: values.date_range[1].format('YYYY-MM-DD'),
+            };
+            if (!payload.type) {
+                message.error("Please select a holiday type.");
+                setIsSubmitting(false);
+                return;
+            }
+            delete payload.date_range;
+            await onSubmit(payload);
+        } catch (info) {
+            console.log('Validation Failed:', info);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <Modal
+            // --- Style Customizations ---
+            open={isOpen}
+            onCancel={onClose}
+            footer={null} // We will create a custom footer
+            title={null} // We will create a custom header
+            width={640} // A wider modal
+            closable={false} // Hide default close button
+            destroyOnClose
+            centered // Vertically center the modal
+        >
+            <div className="p-2">
+                {/* Custom Header */}
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-xl font-semibold text-text-primary">
+                            {initialData ? "Edit Holiday" : "Add Holiday"}
+                        </h2>
+                        <p className="text-text-secondary">
+                            Set the details for the company holiday.
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-light-bg">
+                        <IoIosClose size={24} className="text-text-secondary" />
+                    </button>
+                </div>
+
+                {/* Main Form Content */}
+                <Form form={form} layout="vertical" name="holiday_form">
+                    <Form.Item name="name" label="Occasion" rules={[{ required: true, message: "Please enter the occasion name." }]}>
+                        <Input placeholder="e.g., New Year's Day" size="large" />
+                    </Form.Item>
+                    <Form.Item name="date_range" label="Date Range" rules={[{ required: true, message: "Please select a date range." }]}>
+                        <DatePicker.RangePicker className="w-full" size="large" />
+                    </Form.Item>
+
+                    {/* --- NEW: Option Card Grid --- */}
+                    <div className="mb-6">
+                        <label className="ant-form-item-label">Type</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <OptionCard
+                                title="Public Holiday"
+                                description="Official national or public holiday."
+                                isSelected={selectedType === 'Public'}
+                                onClick={() => setSelectedType('Public')}
+                            />
+                            <OptionCard
+                                title="Company Holiday"
+                                description="A specific holiday for the company."
+                                isSelected={selectedType === 'Company'}
+                                onClick={() => setSelectedType('Company')}
+                            />
+                            <OptionCard
+                                title="Optional Holiday"
+                                description="Employees can choose to take this day off."
+                                isSelected={selectedType === 'Optional'}
+                                onClick={() => setSelectedType('Optional')}
+                            />
+                            <OptionCard
+                                title="Regional Holiday"
+                                description="Specific to a certain region or location."
+                                isSelected={selectedType === 'Regional'}
+                                onClick={() => setSelectedType('Regional')}
+                            />
+                        </div>
+                    </div>
+
+                    <Form.Item name="description" label="Description (Optional)">
+                        <Input.TextArea rows={2} showCount maxLength={150} />
+                    </Form.Item>
+                    <Form.Item name="is_recurring" valuePropName="checked">
+                        <Checkbox>This is a recurring holiday (yearly)</Checkbox>
+                    </Form.Item>
+                </Form>
+
+                {/* Custom Footer */}
+                <div className="flex justify-between items-center border-t border-light-border pt-4 mt-6">
+                    <a href="#" className="text-sm text-blue-600 hover:underline">Need help?</a>
+                    <Space>
+                        <Button size="large" onClick={onClose}>Cancel</Button>
+                        <Button type="primary" size="large" onClick={handleOk} loading={isSubmitting}>
+                            {initialData ? "Save Changes" : "Create Holiday"}
+                        </Button>
+                    </Space>
+                </div>
+            </div>
+        </Modal>
+    );
 };
 
 export default HolidayPage;

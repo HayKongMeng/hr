@@ -11,7 +11,9 @@ interface DecodedToken {
     roles: string[];
     company_id: number;
     emp_id: number;
-    exp: number; // Expiration time
+    exp: number;
+    emp_username: string;
+    emp_profile: string;
 }
 
 // Define the shape of your context

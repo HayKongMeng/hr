@@ -19,6 +19,48 @@ html {
 }
 
 @layer components {
+    /* Update your calendar styles for a light theme */
+
+    .react-calendar {
+        border-radius: 12px;
+        border: 1px solid #EAEBF1 !important; /* light-border */
+        background-color: #FFFFFF !important; /* light-card */
+        color: #1A202C; /* text-primary */
+        width: 100%; /* Make it responsive */
+    }
+
+    .react-calendar__navigation button {
+        color: #1A202C !important;
+        border-radius: 8px;
+    }
+    .react-calendar__navigation button:hover,
+    .react-calendar__navigation button:focus {
+        background-color: #F7F8FC !important; /* light-bg */
+    }
+
+    .react-calendar__month-view__weekdays__weekday {
+        color: #718096; /* text-secondary */
+    }
+    .react-calendar__month-view__weekdays__weekday abbr {
+        text-decoration: none; /* remove underline */
+    }
+
+    .react-calendar__tile {
+        color: #1A202C;
+        border-radius: 8px;
+    }
+    .react-calendar__tile:hover,
+    .react-calendar__tile:focus {
+        background-color: #F7F8FC !important;
+    }
+    .react-calendar__tile--now {
+        background: #EAEBF1 !important; /* a subtle highlight */
+        color: #1A202C !important;
+    }
+    .react-calendar__tile--active {
+        background: #4A3AFF !important; /* accent-purple */
+        color: white !important;
+    }
     .glass-form-container {
         @apply relative bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300;
     }

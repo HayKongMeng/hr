@@ -1,12 +1,15 @@
 'use client';
 
+import React from 'react';
 import Image from 'next/image';
-import React, { useState } from 'react';
-import UserDropdown from './UserDropdown';
-import { CiMenuBurger } from 'react-icons/ci';
-import { Button } from 'antd';
+import { Button, Input, Badge } from 'antd'; // Import Input and Badge
 import { AiOutlineMenuUnfold } from 'react-icons/ai';
-import { RiMenuUnfold2Fill } from 'react-icons/ri';
+import { RiMenuUnfoldFill } from 'react-icons/ri'; // A filled icon for consistency
+import { CiSearch } from "react-icons/ci";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import { FiSettings } from "react-icons/fi";
+
+import UserDropdown from './UserDropdown';
 
 interface NavbarProps {
     toggleCollapsed: () => void;
@@ -14,36 +17,50 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ toggleCollapsed, collapsed }) => {
-    const [rotated, setRotated] = useState(false);
-
-    const handleClick = () => {
-        setRotated((prev) => !prev);
-        // toggleMenu();
-    };
 
     return (
-        <div className="flex items-center justify-between p-4 border-b md:border-b-0 z-10 relative">
-            <div className="flex items-center">
-                <Button
-                    className="hidden md:block mr-2"
-                    type="text"
-                    icon={collapsed ? <AiOutlineMenuUnfold /> : <RiMenuUnfold2Fill />}
-                    onClick={toggleCollapsed} 
-                />
+        // --- UPDATED: Main container with padding and border ---
+        <div className="flex items-center justify-between bg-light-card p-3 border-b border-light-border shadow-sm">
 
+            {/* --- Left Section: Logo (optional) and Menu Toggle --- */}
+            <div className="flex items-center gap-4">
+                {/* You could add your logo here if you have one */}
+                {/* <Image src="/logo.svg" alt="Logo" width={120} height={30} /> */}
+
+                <Button
+                    className="hidden md:flex items-center justify-center text-text-secondary hover:text-text-primary"
+                    type="text"
+                    icon={collapsed ? <AiOutlineMenuUnfold size={20} /> : <RiMenuUnfoldFill size={20} />}
+                    onClick={toggleCollapsed}
+                />
                 <UserDropdown />
+
             </div>
 
-            <div className="flex items-center gap-6 justify-end w-full pr-1">
-                <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer">
-                    <Image src="/message.png" alt="" width={20} height={20} />
+            {/* --- Right Section: Search, Actions, and User --- */}
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Badge count={2} size="small">
+                        <Button
+                            type="text"
+                            shape="circle"
+                            className="flex items-center justify-center text-text-secondary hover:text-text-primary"
+                            icon={<IoMdNotificationsOutline size={22} />}
+                        />
+                    </Badge>
+
+                    <Button
+                        type="text"
+                        shape="circle"
+                        className="flex items-center justify-center text-text-secondary hover:text-text-primary"
+                        icon={<FiSettings size={20} />}
+                    />
                 </div>
-                <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer relative">
-                    <Image src="/announcement.png" alt="" width={20} height={20} />
-                    <div className="absolute -top-3 -right-3 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-xs">
-                        1
-                    </div>
-                </div>
+
+                {/* Divider */}
+                <div className="w-px h-8 bg-light-border mx-2 hidden md:block"></div>
+
+                {/* User Dropdown */}
             </div>
         </div>
     );
