@@ -11,28 +11,29 @@ import React, { useEffect, useState } from 'react';
 import { Spin, message } from 'antd';
 import {toast} from "sonner";
 import {Simulate} from "react-dom/test-utils";
-import load = Simulate.load; // Import message for error feedback
+
+const calculatePeriodChange = (data: number[]): number => {
+    if (!data || data.length < 2) {
+        return 0; // No change can be calculated
+    }
+
+    const initialValue = data[0];
+    const currentValue = data[data.length - 1];
+
+    if (initialValue === 0) {
+        return currentValue > 0 ? 100 : 0;
+    }
+
+    const change = ((currentValue - initialValue) / initialValue) * 100;
+
+    return change;
+};
 
 const AdminPage = () => {
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const calculatePeriodChange = (data: number[]): number => {
-        if (!data || data.length < 2) {
-            return 0; // No change can be calculated
-        }
 
-        const initialValue = data[0];
-        const currentValue = data[data.length - 1];
-
-        if (initialValue === 0) {
-            return currentValue > 0 ? 100 : 0;
-        }
-
-        const change = ((currentValue - initialValue) / initialValue) * 100;
-
-        return change;
-    };
     useEffect(() => {
         const getSummary = async () => {
             try {
@@ -70,10 +71,10 @@ const AdminPage = () => {
     };
 
 
-    if (loading || !summaryData) {
+    if (loading) {
         return (
             <div className='bg-light-bg p-4 flex justify-center items-center h-[80vh]'>
-                {loading ? <Spin size="large" /> : <div className="text-text-secondary">Failed to load data.</div>}
+                <Spin size="large" />
             </div>
         );
     }

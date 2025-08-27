@@ -284,7 +284,7 @@ const EmployeeManagementPage = () => {
     const handleExport = async (format: 'excel' | 'pdf') => {
         message.loading({ content: `Exporting all employees to ${format.toUpperCase()}...`, key: 'export' });
         try {
-            const allEmployees = await fetchAllEmployees();
+            const allEmployees = await fetchEmployees(1,100000);
             if (!allEmployees || allEmployees.length === 0) {
                 message.warning({ content: "No employee data to export.", key: 'export' });
                 return;
