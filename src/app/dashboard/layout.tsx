@@ -9,20 +9,30 @@ import Menu from '@/components/Menu';
 import Navbar from '@/components/Navbar';
 import MobileNavbar from '@/components/mobile/MobileNavbar';
 import EmpMobileMenu from '@/components/mobile/employee/EmpMobileMenu';
+import {MdLogout} from "react-icons/md";
+import {toast} from "sonner";
+import {useAuth} from "@/lib/AuthContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
-    
-    // Using a placeholder role. Replace with your actual auth context.
-    const { role } = typeof window !== 'undefined' ? { role: localStorage.getItem('user_role') } : { role: null };
-    
+
+
     const toggleCollapsed = () => setCollapsed((prev) => !prev);
     const toggleMenu = () => setIsMenuOpen((prev) => !prev);
     const closeMenu = () => setIsMenuOpen(false);
 
+    const { user, logout } = useAuth();
+    // Corrected role check
+    const userRole = user?.roles?.[0];
+
+    const handleLogout = () => {
+        logout();
+        toast.success('Logged out successfully!');
+    };
+
     // Conditionally render the mobile footer menu
-    const MobileFooterMenu = role === 'Admin' || 'Employee' ? EmpMobileMenu : null; // or MobileMenu if you have one for admins
+    const MobileFooterMenu = userRole === 'Admin' || 'Employee' ? EmpMobileMenu : null;
 
     return (
         <div className="h-screen w-full flex overflow-hidden">
@@ -51,6 +61,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="flex-grow overflow-y-auto">
                         <Menu collapsed={collapsed} closeMenu={closeMenu} />
                     </div>
+
+                    <div className="flex-shrink-0 p-2 border-t border-gray-200">
+                        <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-3 px-3 py-3 rounded-lg transition text-sm font-medium text-red-600 hover:bg-red-50"
+                        >
+                            <MdLogout className="w-5 h-5 min-w-[20px]" />
+                            {!collapsed && <span>Logout</span>}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -72,12 +92,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {/* Mobile Navbar */}
                 <div className="block md:hidden">
                     <MobileNavbar toggleMenu={toggleMenu} />
+                    {/*<Navbar toggleCollapsed={toggleCollapsed} collapsed={collapsed} />*/}
                 </div>
-                
+
                 <main className="flex-1 overflow-y-auto bg-gray-50">
                     {children}
                 </main>
-                
+
                 {/* Mobile Footer Menu */}
                 {MobileFooterMenu && (
                     <div className="block md:hidden mt-10">

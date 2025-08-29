@@ -5,11 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/components/Header.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/employee.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/employee.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Navbar.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,7 +92,7 @@
       <workItem from="1755827011008" duration="22771000" />
       <workItem from="1755878867866" duration="1894000" />
       <workItem from="1756086469146" duration="82807000" />
-      <workItem from="1756440194436" duration="12164000" />
+      <workItem from="1756440194436" duration="17759000" />
     </task>
     <servers />
   </component>

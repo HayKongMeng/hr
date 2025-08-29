@@ -314,19 +314,6 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                 items={antdMenuItems}
                 style={{ borderRight: 0 }}
             />
-
-            {/* Logout Button */}
-            {isAuthenticated && (
-                <div className="p-2">
-                    <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 px-3 py-3 rounded-lg transition text-sm font-medium text-red-600 hover:bg-red-50"
-                    >
-                        <MdLogout className="w-5 h-5 min-w-[20px]" />
-                        {!collapsed && <span>Logout</span>}
-                    </button>
-                </div>
-            )}
         </div>
     );
 };

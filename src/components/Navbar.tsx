@@ -19,13 +19,9 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ toggleCollapsed, collapsed }) => {
 
     return (
-        // --- UPDATED: Main container with padding and border ---
         <div className="flex items-center justify-between bg-light-card p-3 border-b border-light-border shadow-sm">
 
-            {/* --- Left Section: Logo (optional) and Menu Toggle --- */}
             <div className="flex items-center gap-4">
-                {/* You could add your logo here if you have one */}
-                {/* <Image src="/logo.svg" alt="Logo" width={120} height={30} /> */}
 
                 <Button
                     className="hidden md:flex items-center justify-center text-text-secondary hover:text-text-primary"
@@ -37,7 +33,6 @@ const Navbar: React.FC<NavbarProps> = ({ toggleCollapsed, collapsed }) => {
 
             </div>
 
-            {/* --- Right Section: Search, Actions, and User --- */}
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                     <Badge count={2} size="small">
@@ -57,10 +52,8 @@ const Navbar: React.FC<NavbarProps> = ({ toggleCollapsed, collapsed }) => {
                     />
                 </div>
 
-                {/* Divider */}
-                <div className="w-px h-8 bg-light-border mx-2 hidden md:block"></div>
+                {/*<div className="w-px h-8 bg-light-border mx-2 hidden md:block"></div>*/}
 
-                {/* User Dropdown */}
             </div>
         </div>
     );
