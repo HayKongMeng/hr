@@ -19,6 +19,7 @@ import { Employee, fetchAllEmployees } from "@/lib/api/employee";
 import dayjs from "dayjs";
 import { createCompanyHistory } from "@/lib/api/companyHistory";
 import Link from "next/link";
+import {useAuth} from "@/lib/AuthContext";
 
 // --- Type Definitions ---
 type Company = {
@@ -402,18 +403,13 @@ const OrganizationSetupPage = () => {
     const router = useRouter();
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
-    const [role, setRole] = useState("");
-    const isAuth = !role;
-    
-    useEffect(() => {
-        const storedRole = localStorage.getItem('user_role');
-        if (storedRole) {
-            setRole(storedRole);
-        }
-    }, []);
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
+
     useEffect(() => { setIsClient(true); }, []);
+    const userRole = user?.roles?.[0];
 
     const getTabItems = () => {
+
         const items = [
             { 
                 key: 'departments', 
@@ -422,7 +418,7 @@ const OrganizationSetupPage = () => {
             },
         ];
 
-        if (role === 'Super Admin') {
+        if (userRole === 'Super Admin') {
             items.unshift({ 
                 key: 'companies', 
                 label: 'Companies', 
@@ -433,9 +429,10 @@ const OrganizationSetupPage = () => {
         return items;
     };
 
-    if (!isClient || isAuth) {
+    if (!isClient || authLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     }
+
 
     return (
         <div className="p-4">
@@ -450,8 +447,8 @@ const OrganizationSetupPage = () => {
                 </div>
             </div>
             <Tabs 
-                key={role} 
-                defaultActiveKey={role === 'Super Admin' ? 'companies' : 'departments'} 
+                key={userRole}
+                defaultActiveKey={userRole === 'Super Admin' ? 'companies' : 'departments'}
                 items={getTabItems()} 
             />
         </div>

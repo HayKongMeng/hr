@@ -18,6 +18,35 @@ html {
     animation: gradient-animation 15s ease infinite;
 }
 
+.disclosure-panel {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    max-height: 0;
+}
+.disclosure-panel.open {
+    max-height: 1000px; /* A large value to allow content to expand */
+}
+
+/* Custom styles for the info cards on the profile page */
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem; /* 8px */
+    font-size: 0.875rem; /* 14px */
+}
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* 8px */
+    color: #718096; /* text-secondary */
+}
+.info-value {
+    color: #1A202C; /* text-primary */
+    font-weight: 500;
+    text-align: right;
+}
+
 @layer components {
     /* Update your calendar styles for a light theme */
 

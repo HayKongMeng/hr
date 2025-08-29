@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
     }
 
     if (token && pathname.startsWith('/sign-in')) {
-        const destination = userRoles.includes('Admin') ? '/dashboard/admin' : '/dashboard/dash';
+        const destination = userRoles.includes('Admin', ) ? '/dashboard/admin' : '/dashboard/dash';
         return NextResponse.redirect(new URL(destination, request.url));
     }
 

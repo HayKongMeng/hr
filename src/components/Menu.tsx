@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { RxDashboard } from "react-icons/rx";
-import { LuUsers } from "react-icons/lu";
+import {LuQrCode, LuUsers} from "react-icons/lu";
 import { TbPoint } from "react-icons/tb";
 import { LuUserCog } from "react-icons/lu";
 import {FiUser, FiUserPlus} from "react-icons/fi";
@@ -20,6 +20,9 @@ import type { IconType } from 'react-icons';
 import { MenuItemType } from 'antd/es/menu/interface';
 import {useAuth} from "@/lib/AuthContext";
 import {FaUserCheck} from "react-icons/fa6";
+import {FaTree} from "react-icons/fa";
+import {GiPartyFlags} from "react-icons/gi";
+import {HiOutlineBadgeCheck} from "react-icons/hi";
 
 
 const api = {
@@ -112,13 +115,13 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     visible: ["Admin","Employee"],
                 },
                 {
-                    iconComponent: RxDashboard,
-                    label: "Dashboards",
+                    iconComponent: LuQrCode,
+                    label: "Check Attendance",
                     href: "/dashboard/dash",
                     visible: ["Admin", "Super Admin", "Employee"],
                 },
                 {
-                    iconComponent: RxDashboard,
+                    iconComponent: GiPartyFlags,
                     label: "Holidays",
                     href: "/dashboard/list/holidays",
                     visible: ["Admin", "Super Admin", "Employee"],
@@ -149,7 +152,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     visible: ["Admin", "Super Admin"],
                 },
                 {
-                    iconComponent: FiUserPlus,
+                    iconComponent: HiOutlineBadgeCheck,
                     label: "Entitlements",
                     href: "/dashboard/list/entitlements",
                     visible: ["Admin", "Super Admin","Employee"],
@@ -193,22 +196,9 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     visible: ["Employee"],
                 },
                 {
-                    iconComponent: LuUserCog,
-                    label: "HR Admin Setup",
-                    visible: ["Admin" ],
-                    children: [
-                        {
-                            iconComponent: TbPoint,
-                            label: "Holidays",
-                            href: "/dashboard/list/holidays",
-                            visible: ["Admin"],
-                        }
-                    ],
-                },
-                {
                     iconComponent: MdOutlineSpaceDashboard,
                     label: "HRM System Setup",
-                    visible: ["Admin"],
+                    visible: ["Admin","Super Admin"],
                     children: [
                         {
                             iconComponent: TbPoint,

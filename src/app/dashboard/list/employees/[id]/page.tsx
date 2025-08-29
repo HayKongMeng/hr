@@ -204,24 +204,6 @@ const ProfilePage = () => {
         }
     };
 
-    // useEffect(() => {
-    //     const loggedInUserRole = Cookies.get('user_role');
-    //     const loggedInEmployeeId = Cookies.get('employee_id');
-    //
-    //     if (loggedInUserRole && loggedInUserRole !== 'Employee') {
-    //         setIsAuthorized(true);
-    //         return;
-    //     }
-    //
-    //     if (loggedInUserRole === 'Employee') {
-    //         if (loggedInEmployeeId && Number(loggedInEmployeeId) === pageIdAsNumber) {
-    //             setIsAuthorized(true);
-    //         } else {
-    //             // Mismatch found, block access
-    //             setIsAuthorized(false);
-    //         }
-    //     }
-    // }, [pageIdAsNumber]);
 
     useEffect(() => {
         if (isAuthorized === true) {
@@ -229,13 +211,6 @@ const ProfilePage = () => {
         }
     }, [isAuthorized]);
 
-    // useEffect(() => {
-    //     if (employee?.image_url) {
-    //         setImgSrc(employee.image_url);
-    //     } else {
-    //         setImgSrc('/avatar.png');
-    //     }
-    // }, [employee?.image_url]);
 
     const goBackToList = () => {
         router.push('/dashboard/list/employees');
@@ -291,9 +266,9 @@ const ProfilePage = () => {
                 <MdKeyboardArrowRight />
                 <span className="text-gray-700 font-medium">Employee Details</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6">
-                <div className="bg-shadow p-0  overflow-hidden relative">
-                    <div className="bg-gradient-to-r h-24 from-[#392648] to-[#4A3AFF] p-4 text-center rounded-b-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-6 p-0  overflow-hidden relative bg-light-card border border-light-border rounded-xl">
+                    <div className=" shadow-sm p-6 text-center bg-gradient-to-r h-24 from-[#392648] to-[#4A3AFF] rounded-b-xl">
                         <Image
                             src={imgSrc}
                             alt="Avatar"
@@ -339,7 +314,7 @@ const ProfilePage = () => {
                         </div>
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
-                                <FaBuilding className="text-purple-600" />
+                                    <FaBuilding className="text-purple-600" />
                                 Report Office:
                             </p>
                             <p className="text-black">{employee?.posted_by_name}</p>
@@ -347,9 +322,11 @@ const ProfilePage = () => {
 
                         {/* Buttons with Icons */}
                         <div className="flex gap-2 mt-5">
-                            <button className="w-full bg-orange-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
-                                <FaCommentDots />
-                                Message
+                            <button
+                                onClick={() => setIsChangePasswordModalOpen(true)}
+                                className="w-full bg-orange-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
+                                <FaLock className="text-gray-500"/>
+                                Change password
                             </button>
                         </div>
                     </div>
@@ -414,7 +391,7 @@ const ProfilePage = () => {
                     <div className="p-4 space-y-2 text-sm text-gray-700 border-t">
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Personal Information</p>
-                            {canEdit && ( // <-- Apply the check here
+                            {canEdit && (
                                 <button
                                     onClick={() => {
                                         if (employee?.id !== undefined) {
@@ -549,7 +526,7 @@ const ProfilePage = () => {
                     {/* Sections */}
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-shadow">
+                            <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-6 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-md font-semibold">About Employee</h3>
                                     <div className="flex items-center">
@@ -580,20 +557,6 @@ const ProfilePage = () => {
                                     static
                                     className={`disclosure-panel ${open ? 'open' : ''} mt-2 text-sm text-gray-700`}
                                 >
-                                    <div className='border-t pt-4'>
-                                        <div className='flex items-center justify-between'>
-                                            <div className="flex items-center gap-2">
-                                                <FaLock className="text-gray-500"/>
-                                                <p className='text-gray-900 text-xs font-semibold'>Password</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setIsChangePasswordModalOpen(true)}
-                                                className='text-xs text-blue-600 hover:underline'
-                                            >
-                                                Change Password
-                                            </button>
-                                        </div>
-                                    </div>
                                 </Disclosure.Panel>
                                 <Disclosure.Panel
                                     static
@@ -610,7 +573,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-shadow">
+                            <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-6 space-y-3">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Bank Information</h3>
                                     <div className='flex items-center'>
@@ -671,7 +634,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-shadow">
+                            <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-6 space-y-3">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Family Information</h3>
                                     <div className='flex items-center'>
@@ -732,7 +695,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-shadow">
+                            <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-6 space-y-3">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Education Details</h3>
                                     <div className='flex items-center'>
@@ -789,7 +752,7 @@ const ProfilePage = () => {
                     </Disclosure>
                     <Disclosure>
                         {({ open }) => (
-                            <div className="bg-shadow">
+                            <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-6 space-y-3">
                                 <div className='flex items-center justify-between'>
                                     <h3 className="text-md font-semibold mb-4">Experience</h3>
                                     <div className='flex items-center'>

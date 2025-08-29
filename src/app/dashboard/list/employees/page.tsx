@@ -9,7 +9,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 // --- Ant Design Components ---
-import { Button, Card, Col, DatePicker, Form, Input, List, message, Modal, Radio, Row, Select, Space, Spin, Switch, Table, Tag, Upload } from "antd";
+import {
+    Button, Card, Col, DatePicker, Form, Input, List, message, Modal,
+    Pagination, Radio, Row, Select, Space, Spin, Switch, Table, Tag, Upload
+} from "antd";
 import type { TableProps, UploadFile } from 'antd';
 
 // --- Icons (from react-icons) ---
@@ -22,6 +25,7 @@ import { fetchAllDepartments } from "@/lib/api/department";
 import { fetchEmploymentTypes, fetchWorkStation } from "@/lib/api/status";
 import {FaFileExcel, FaUpload} from "react-icons/fa";
 import {FaFilePdf} from "react-icons/fa6";
+import EmployeeCard from "@/components/ui/EmployeeCard";
 
 // --- Type Definitions ---
 type Position = { id: number; title: string };
@@ -156,6 +160,7 @@ const EmployeeManagementPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
     const [dropdownLoading, setDropdownLoading] = useState(false);
 
@@ -421,7 +426,6 @@ const EmployeeManagementPage = () => {
                     <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Employee</Button>
                 </Space>
             </div>
-
             <Card>
                 <div className="flex justify-end mb-4"><Input.Search placeholder="Search employees..." onSearch={(value) => setSearchQuery(value)} style={{ width: 250 }} /></div>
                 {isMobile ? (

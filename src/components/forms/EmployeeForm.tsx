@@ -205,7 +205,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
                         <Col span={24}><Form.Item label="Address" help={errors.address?.message} validateStatus={errors.address ? 'error' : ''}><Input.TextArea {...register("address")} rows={3} /></Form.Item></Col>
                     </Row>
                 </div>
-                <div className="flex justify-end gap-3 pt-4 px-6 border-t">
+                <div className="flex justify-end gap-3 pt-4 px-6 border-t pb-4">
                     <Button onClick={onCancel}>Cancel</Button>
                     <Button type="primary" htmlType="submit" loading={loading}>
                         {type === "create" ? "Add Employee" : "Save Changes"}

@@ -18,7 +18,6 @@ import { CiSearch } from "react-icons/ci";
 import { IoIosArrowDown, IoMdAdd, IoMdRemove } from "react-icons/io";
 import Modal from "@/components/Modal";
 import { RangePickerProps } from "antd/es/date-picker";
-import InfoCard from "@/components/card/InfoCard";
 import {
   createEmployee,
   fetchAllEmployees,

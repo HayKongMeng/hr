@@ -288,7 +288,7 @@ import {useAuth} from "@/lib/AuthContext";
 type Employee = {
     name: string;
     email: string;
-    image: string | null;
+    image_url: string | null;
     position?: {
         title: string;
     };
@@ -599,13 +599,13 @@ const HomePage = () => {
     return (
         <div className="min-h-screen w-full max-h-[calc(100vh-62px)] pb-20">
             <main className="relative z-20 ">
-                <div className="flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
+                <div className="pt-6 flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
                     {loadingProfile ? (
                         <Spin />
                     ) : (
                         <>
                             <img
-                                src={employee?.image || "/avatar.png"}
+                                src={employee?.image_url || "/avatar.png"}
                                 alt="User Avatar"
                                 className="w-16 h-16 rounded-full border-white z-10 object-cover"
                             />
