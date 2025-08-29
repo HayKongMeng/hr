@@ -23,14 +23,14 @@ api.interceptors.request.use((config) => {
      return Promise.reject(error);
 });
 
-api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response && error.response.status === 401) {
-            window.location.href = '/sign-in'; // Redirect to login page
-        }
-        return Promise.reject(error);
-    }
-);
+// api.interceptors.response.use(
+//     response => response,
+//     error => {
+//         if (error.response && error.response.status === 401) {
+//             window.location.href = '/sign-in';
+//         }
+//         return Promise.reject(error);
+//     }
+// );
 
 export default api;

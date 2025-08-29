@@ -65,10 +65,10 @@ export const createEmployee = async (payload: {
     date_of_birth: string;
     hire_date: string;
     gender: string;
-    position_id: number;
-    department_id: number;
-    work_station_id: number;
-    employment_type_id: number;
+    position_id?: number;
+    department_id?: number;
+    work_station_id?: number;
+    employment_type_id?: number;
     image?: File | null;
     reporting_line1?: number | null;
     reporting_line2?: number | null;
@@ -99,10 +99,18 @@ export const createEmployee = async (payload: {
         formData.append('date_of_birth', payload.date_of_birth);
         formData.append('hire_date', payload.hire_date);
         formData.append('gender', payload.gender);
-        formData.append('position_id', payload.position_id.toString());
-        formData.append('department_id', payload.department_id.toString());
-        formData.append('work_station_id', payload.work_station_id.toString());
-        formData.append('employment_type_id', payload.employment_type_id.toString());
+        if (payload.position_id){
+            formData.append('position_id', payload.position_id.toString());
+        }
+        if (payload.department_id){
+            formData.append('department_id', payload.department_id.toString());
+        }
+        if (payload.work_station_id){
+            formData.append('work_station_id', payload.work_station_id.toString());
+        }
+        if (payload.employment_type_id){
+            formData.append('employment_type_id', payload.employment_type_id.toString());
+        }
 
         if (payload.address) {
             formData.append('address', payload.address);

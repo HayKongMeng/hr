@@ -5,7 +5,24 @@ import { useRouter } from "next/navigation";
 import moment from "moment";
 
 // --- Ant Design Components ---
-import { Button, Card, DatePicker, Form, Input, List, message, Modal, Select, Space, Spin, Switch, Table, Tabs, Tag } from "antd";
+import {
+    Button,
+    Card, Col,
+    DatePicker,
+    Form,
+    Input,
+    List,
+    message,
+    Modal,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Switch,
+    Table,
+    Tabs,
+    Tag
+} from "antd";
 import type { TableProps } from 'antd';
 
 // --- Icons (from react-icons) ---
@@ -17,9 +34,11 @@ import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/l
 import { fetchDepartments, createDepartment, updateDepartment, deleteDepartment } from "@/lib/api/department";
 import { Employee, fetchAllEmployees } from "@/lib/api/employee";
 import dayjs from "dayjs";
-import { createCompanyHistory } from "@/lib/api/companyHistory";
+import {createCompanyHistory, fetchCompanyHistories} from "@/lib/api/companyHistory";
 import Link from "next/link";
 import {useAuth} from "@/lib/AuthContext";
+import FormModal from "@/components/FormModal";
+import CompanyHistoryForm from "@/components/forms/CompanyHistoryForm";
 
 // --- Type Definitions ---
 type Company = {
@@ -113,6 +132,198 @@ const DepartmentForm = ({ form, onFinish }: { form: any; onFinish: (values: any)
         </Form.Item>
     </Form>
 );
+
+type CompanyHistory = {
+    id: number;
+    employee: { name: string; };
+    company: { name: string; };
+    start_date: string;
+    notes: string;
+};
+
+const CompanyHistoryView = () => {
+    const [form] = Form.useForm();
+    const [histories, setHistories] = useState<CompanyHistory[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // State for dropdowns
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [dropdownLoading, setDropdownLoading] = useState(false);
+
+    const fetchData = useCallback(async (page = 1, pageSize = 10) => {
+        setLoading(true);
+        try {
+            const res = await fetchCompanyHistories(page, pageSize);
+            setHistories(res.data || []);
+            setPagination({ current: page, pageSize, total: res.total_items });
+        } catch (error) {
+            message.error("Failed to fetch company history.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData(pagination.current, pagination.pageSize);
+    }, [fetchData, pagination.current, pagination.pageSize]);
+
+    const fetchDropdowns = async () => {
+        // Only fetch if data is not already loaded
+        if (employees.length === 0 || companies.length === 0) {
+            setDropdownLoading(true);
+            try {
+                const [empRes, compRes] = await Promise.all([
+                    fetchAllEmployees(),
+                    fetchCompanies(1, 1000)
+                ]);
+                setEmployees(empRes || []);
+                setCompanies(compRes.data || []);
+            } catch (error) {
+                message.error("Failed to load data for the form.");
+            } finally {
+                setDropdownLoading(false);
+            }
+        }
+    };
+
+    const handleModalOpen = () => {
+        fetchDropdowns();
+        form.resetFields();
+        form.setFieldsValue({
+            start_date: dayjs()
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleModalCancel = () => {
+        setIsModalOpen(false);
+    };
+
+
+
+    const handleFormSubmit = async (values: any) => {
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                ...values,
+                start_date: dayjs(values.start_date).format("YYYY-MM-DD"),
+                end_date: "9999-12-31",
+            };
+            await createCompanyHistory(payload);
+            message.success("Employee assigned to company successfully!");
+            handleModalCancel();
+            fetchData();
+        } catch (error: any) {
+            message.error(error?.response?.data?.message || "Operation failed.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const columns: TableProps<CompanyHistory>['columns'] = [
+        { title: "Employee", dataIndex: ['employee', 'name'], key: "employee" },
+        { title: "Company", dataIndex: ['company', 'name'], key: "company" },
+        { title: "Start Date", dataIndex: "start_date", key: "start_date", render: (date) => moment(date).format("DD MMM YYYY") },
+        { title: "Notes", dataIndex: "notes", key: "notes", ellipsis: true },
+    ];
+
+    return (
+        <>
+            <Card
+                title="Company Assignment History"
+                extra={<Button type="primary" icon={<MdAdd />} onClick={handleModalOpen}>Assign Employee</Button>}
+            >
+                <Table
+                    columns={columns}
+                    dataSource={histories}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={pagination}
+                    onChange={(p) => fetchData(p.current, p.pageSize)}
+                />
+            </Card>
+
+            {/* --- THE FIX IS HERE: Form is now directly inside the Modal --- */}
+            <Modal
+                title="Assign Employee to Company"
+                open={isModalOpen}
+                onCancel={handleModalCancel}
+                onOk={form.submit}
+                confirmLoading={isSubmitting}
+                width={700}
+            >
+                <Spin spinning={dropdownLoading} tip="Loading options...">
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        onFinish={handleFormSubmit}
+                        initialValues={{ notes: '' }}
+                    >
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item
+                                    name="employee_id"
+                                    label="Employee"
+                                    rules={[{ required: true, message: "Please select an employee." }]}
+                                >
+                                    <Select
+                                        showSearch
+                                        placeholder="Select an employee"
+                                        options={employees.map(e => ({ value: e.id, label: e.name }))}
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item
+                                    name="company_id"
+                                    label="Assign to Company"
+                                    rules={[{ required: true, message: "Please select a company." }]}
+                                >
+                                    <Select
+                                        showSearch
+                                        placeholder="Select a company"
+                                        options={companies.map(c => ({ value: c.id, label: c.name }))}
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item
+                                    name="start_date"
+                                    label="Assignment Start Date"
+                                    rules={[{ required: true, message: "Please set a start date." }]}
+                                >
+                                    <DatePicker className="w-full" format="YYYY-MM-DD" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col span={24}>
+                                <Form.Item
+                                    name="notes"
+                                    label="Notes (Optional)"
+                                >
+                                    <Input.TextArea rows={3} placeholder="e.g., Initial assignment, promotion, etc." />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Form>
+                </Spin>
+            </Modal>
+        </>
+    );
+};
 
 // --- View for Managing Companies ---
 const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
@@ -417,6 +628,14 @@ const OrganizationSetupPage = () => {
                 children: <DepartmentsView isMobile={isMobile} /> 
             },
         ];
+
+        if (userRole === 'Admin' || userRole === 'Super Admin') {
+            items.push({
+                key: 'history',
+                label: 'Company History',
+                children: <CompanyHistoryView />
+            });
+        }
 
         if (userRole === 'Super Admin') {
             items.unshift({ 

@@ -5,20 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/components/ui/EmployeeCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/mobile/employee/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/mobile/employee/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ChangePasswordModal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Menu.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ProfileImageUploader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ProfileImageUploader.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/middleware.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/employee.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/employee.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/index.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,7 +93,7 @@
       <workItem from="1755827011008" duration="22771000" />
       <workItem from="1755878867866" duration="1894000" />
       <workItem from="1756086469146" duration="82807000" />
-      <workItem from="1756440194436" duration="5347000" />
+      <workItem from="1756440194436" duration="12164000" />
     </task>
     <servers />
   </component>

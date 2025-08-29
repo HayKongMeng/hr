@@ -26,6 +26,8 @@ import { fetchEmploymentTypes, fetchWorkStation } from "@/lib/api/status";
 import {FaFileExcel, FaUpload} from "react-icons/fa";
 import {FaFilePdf} from "react-icons/fa6";
 import EmployeeCard from "@/components/ui/EmployeeCard";
+import {useAuth} from "@/lib/AuthContext";
+import {toast} from "sonner";
 
 // --- Type Definitions ---
 type Position = { id: number; title: string };
@@ -49,101 +51,142 @@ const useIsMobile = (breakpoint = 768) => {
 
 
 // --- Reusable Form Component ---
-const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode }: { form: any; onFinish: (values: any) => void; dropdownData: any; loading: boolean; isEditMode: boolean; }) => (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Spin spinning={loading} tip="Loading options...">
-            <h3 className="text-lg font-semibold border-b pb-2 mb-4">Employee Profile</h3>
-            <Row gutter={16}>
-                {/* Other fields remain the same */}
-                <Col xs={24} md={8}><Form.Item name="first_name" label="First Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                <Col xs={24} md={8}><Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                <Col xs={24} md={8}><Form.Item name="employee_code" label="Employee ID" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                <Col xs={24} md={8}><Form.Item name="date_of_birth" label="Birthday" rules={[{ required: true }]}><DatePicker className="w-full" /></Form.Item></Col>
-                <Col xs={24} md={8}><Form.Item name="hire_date" label="Joining Date" rules={[{ required: true }]}><DatePicker className="w-full" /></Form.Item></Col>
-                <Col xs={24} md={8}><Form.Item name="phone" label="Phone Number" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                <Col xs={24}><Form.Item name="gender" label="Gender"><Radio.Group><Radio value="Male">Male</Radio><Radio value="Female">Female</Radio><Radio value="Other">Other</Radio></Radio.Group></Form.Item></Col>
-                <Col xs={24}><Form.Item name="image" label="Profile Image" valuePropName="fileList" getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList}><Upload listType="picture" maxCount={1} beforeUpload={() => false}><Button icon={<FaUpload />}>Select Image</Button></Upload></Form.Item></Col>
-            </Row>
+const EmployeeForm = ({ form, onFinish, dropdownData, loading, isEditMode, userRole }: { form: any; onFinish: (values: any) => void; dropdownData: any; loading: boolean; isEditMode: boolean, userRole: string | null; }) => {
+    const isWorkInfoRequired = userRole !== 'Super Admin';
+    return (
+        <Form form={form} layout="vertical" onFinish={onFinish}>
+            <Spin spinning={loading} tip="Loading options...">
+                <h3 className="text-lg font-semibold border-b pb-2 mb-4">Employee Profile</h3>
+                <Row gutter={16}>
+                    {/* Other fields remain the same */}
+                    <Col xs={24} md={8}><Form.Item name="first_name" label="First Name"
+                                                   rules={[{required: true}]}><Input/></Form.Item></Col>
+                    <Col xs={24} md={8}><Form.Item name="last_name" label="Last Name"
+                                                   rules={[{required: true}]}><Input/></Form.Item></Col>
+                    <Col xs={24} md={8}><Form.Item name="employee_code" label="Employee ID"
+                                                   rules={[{required: true}]}><Input/></Form.Item></Col>
+                    <Col xs={24} md={8}><Form.Item name="date_of_birth" label="Birthday"
+                                                   rules={[{required: true}]}><DatePicker
+                        className="w-full"/></Form.Item></Col>
+                    <Col xs={24} md={8}><Form.Item name="hire_date" label="Joining Date"
+                                                   rules={[{required: true}]}><DatePicker
+                        className="w-full"/></Form.Item></Col>
+                    <Col xs={24} md={8}><Form.Item name="phone" label="Phone Number" rules={[{required: true}]}><Input/></Form.Item></Col>
+                    <Col xs={24}><Form.Item name="gender" label="Gender"><Radio.Group><Radio
+                        value="Male">Male</Radio><Radio value="Female">Female</Radio><Radio value="Other">Other</Radio></Radio.Group></Form.Item></Col>
+                    <Col xs={24}><Form.Item name="image" label="Profile Image" valuePropName="fileList"
+                                            getValueFromEvent={(e) => Array.isArray(e) ? e : e?.fileList}><Upload
+                        listType="picture" maxCount={1} beforeUpload={() => false}><Button icon={<FaUpload/>}>Select
+                        Image</Button></Upload></Form.Item></Col>
+                </Row>
 
-            <h3 className="text-lg font-semibold border-b pb-2 my-4">Login Credentials</h3>
-            <Row gutter={16}>
-                <Col xs={24} md={12}><Form.Item name="username" label="Username" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                <Col xs={24} md={12}><Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item></Col>
-                {/* CORRECTED: Use isEditMode to control password requirement */}
-                {!isEditMode && (
-                    <>
-                        <Col xs={24} md={12}><Form.Item name="password" label="Password" rules={[{ required: true, min: 6 }]}><Input.Password /></Form.Item></Col>
-                        <Col xs={24} md={12}><Form.Item name="confirm_password" label="Confirm Password" dependencies={['password']} hasFeedback rules={[{ required: true }, ({ getFieldValue }) => ({ validator(_, value) { if (!value || getFieldValue('password') === value) return Promise.resolve(); return Promise.reject(new Error('Passwords do not match!')); } })]}><Input.Password /></Form.Item></Col>
-                    </>
-                )}
-            </Row>
+                <h3 className="text-lg font-semibold border-b pb-2 my-4">Login Credentials</h3>
+                <Row gutter={16}>
+                    <Col xs={24} md={12}><Form.Item name="username" label="Username" rules={[{required: true}]}><Input/></Form.Item></Col>
+                    <Col xs={24} md={12}><Form.Item name="email" label="Email"
+                                                    rules={[{required: true, type: 'email'}]}><Input/></Form.Item></Col>
+                    {/* CORRECTED: Use isEditMode to control password requirement */}
+                    {!isEditMode && (
+                        <>
+                            <Col xs={24} md={12}><Form.Item name="password" label="Password" rules={[{
+                                required: true,
+                                min: 6
+                            }]}><Input.Password/></Form.Item></Col>
+                            <Col xs={24} md={12}><Form.Item name="confirm_password" label="Confirm Password"
+                                                            dependencies={['password']} hasFeedback
+                                                            rules={[{required: true}, ({getFieldValue}) => ({
+                                                                validator(_, value) {
+                                                                    if (!value || getFieldValue('password') === value) return Promise.resolve();
+                                                                    return Promise.reject(new Error('Passwords do not match!'));
+                                                                }
+                                                            })]}><Input.Password/></Form.Item></Col>
+                        </>
+                    )}
+                </Row>
 
-            <h3 className="text-lg font-semibold border-b pb-2 my-4">Work & Role Information</h3>
-            <Row gutter={16}>
-                <Col xs={24} md={12}>
-                    <Form.Item name="department_id" label="Department" rules={[{ required: true }]}>
-                        <Select placeholder="Select department..." options={dropdownData.departments.map((d: Department) => ({ value: d.id, label: d.name }))} />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item name="position_id" label="Designation" rules={[{ required: true }]}>
-                        <Select placeholder="Select designation..." options={dropdownData.positions.map((p: Position) => ({ value: p.id, label: p.title }))} />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item name="work_station_id" label="Work Station" rules={[{ required: true }]}>
-                        <Select placeholder="Select work station..." options={dropdownData.workStations.map((ws: WorkStation) => ({ value: ws.id, label: ws.name }))} />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item name="employment_type_id" label="Employment Status" rules={[{ required: true }]}>
-                        <Select placeholder="Select status..." options={dropdownData.employmentTypes.map((et: EmploymentType) => ({ value: et.id, label: et.status_name }))} />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Form.Item name="reporting_line1" label="Reporting Line 1">
-                        <Select
-                            showSearch
-                            allowClear
-                            placeholder="Select manager..."
-                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
-                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                        />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Form.Item name="reporting_line2" label="Reporting Line 2">
-                        <Select
-                            showSearch
-                            allowClear
-                            placeholder="Select manager..."
-                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
-                            // --- FIX APPLIED HERE ---
-                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                        />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Form.Item name="procurement_line" label="Procurement Line">
-                        <Select
-                            showSearch
-                            allowClear
-                            placeholder="Select manager..."
-                            options={dropdownData.employees.map((e: Employee) => ({ value: e.id, label: e.name }))}
-                            filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                        />
-                    </Form.Item>
-                </Col>
-                {/* Address is usually not required, so we leave it as is */}
-                <Col xs={24}>
-                    <Form.Item name="address" label="Address">
-                        <Input.TextArea rows={3} />
-                    </Form.Item>
-                </Col>
-            </Row>
-        </Spin>
-    </Form>
-);
+                <h3 className="text-lg font-semibold border-b pb-2 my-4">Work & Role Information</h3>
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <Form.Item name="department_id" label="Department" rules={[{required: isWorkInfoRequired}]}>
+                            <Select placeholder="Select department..."
+                                    options={dropdownData.departments.map((d: Department) => ({
+                                        value: d.id,
+                                        label: d.name
+                                    }))}/>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Form.Item name="position_id" label="Designation" rules={[{required: isWorkInfoRequired }]}>
+                            <Select placeholder="Select designation..."
+                                    options={dropdownData.positions.map((p: Position) => ({
+                                        value: p.id,
+                                        label: p.title
+                                    }))}/>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Form.Item name="work_station_id" label="Work Station" rules={[{required: isWorkInfoRequired }]}>
+                            <Select placeholder="Select work station..."
+                                    options={dropdownData.workStations.map((ws: WorkStation) => ({
+                                        value: ws.id,
+                                        label: ws.name
+                                    }))}/>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Form.Item name="employment_type_id" label="Employment Status" rules={[{required: isWorkInfoRequired }]}>
+                            <Select placeholder="Select status..."
+                                    options={dropdownData.employmentTypes.map((et: EmploymentType) => ({
+                                        value: et.id,
+                                        label: et.status_name
+                                    }))}/>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="reporting_line1" label="Reporting Line 1">
+                            <Select
+                                showSearch
+                                allowClear
+                                placeholder="Select manager..."
+                                options={dropdownData.employees.map((e: Employee) => ({value: e.id, label: e.name}))}
+                                filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="reporting_line2" label="Reporting Line 2">
+                            <Select
+                                showSearch
+                                allowClear
+                                placeholder="Select manager..."
+                                options={dropdownData.employees.map((e: Employee) => ({value: e.id, label: e.name}))}
+                                // --- FIX APPLIED HERE ---
+                                filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="procurement_line" label="Procurement Line">
+                            <Select
+                                showSearch
+                                allowClear
+                                placeholder="Select manager..."
+                                options={dropdownData.employees.map((e: Employee) => ({value: e.id, label: e.name}))}
+                                filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                            />
+                        </Form.Item>
+                    </Col>
+                    {/* Address is usually not required, so we leave it as is */}
+                    <Col xs={24}>
+                        <Form.Item name="address" label="Address">
+                            <Input.TextArea rows={3}/>
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </Spin>
+        </Form>
+    );
+};
 
 
 // --- Main Page Component ---
@@ -160,8 +203,8 @@ const EmployeeManagementPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-
+    const { user, loading: authLoading } = useAuth();
+    const userRole = user?.roles?.[0];
     const [dropdownLoading, setDropdownLoading] = useState(false);
 
     const [dropdownData, setDropdownData] = useState<{ 
@@ -181,6 +224,10 @@ const EmployeeManagementPage = () => {
         } catch (error) { message.error("Failed to fetch employees."); }
         finally { setLoading(false); }
     }, []);
+
+    if (userRole === undefined) {
+        return toast.error("No role found! Please relogin");
+    }
 
     const fetchDropdowns = useCallback(async () => {
         if (dropdownData.positions.length > 0) return; 
@@ -228,11 +275,11 @@ const EmployeeManagementPage = () => {
     useEffect(() => { setIsClient(true); }, []);
     
     useEffect(() => {
-        if (isClient) {
+        if (isClient && !authLoading) {
             const debounce = setTimeout(() => fetchData(pagination.current, pagination.pageSize), 300);
             return () => clearTimeout(debounce);
         }
-    }, [isClient, pagination.current, pagination.pageSize, fetchData]);
+    }, [isClient, authLoading, pagination.current, pagination.pageSize, fetchData]);
 
     // --- 4. THE CONDITIONAL RETURN NOW COMES AFTER ALL HOOKS ---
     if (!isClient) {
@@ -359,6 +406,11 @@ const EmployeeManagementPage = () => {
                 );
                 message.success({ content: "Employee updated successfully!", key, duration: 2 });
             } else {
+                const createPayload = {
+                    ...payload,
+                    username: payload.username,
+                };
+                await createEmployee(createPayload);
                 message.success({ content: "Employee created successfully!", key, duration: 2 });
             }
 
@@ -454,7 +506,7 @@ const EmployeeManagementPage = () => {
                 styles={isMobile ? { body: { overflowY: 'auto', height: 'calc(100vh - 108px)' } } : {}}
             >
                 <div className={isMobile ? 'p-4' : ''}>
-                    <EmployeeForm form={form} onFinish={handleFormSubmit} dropdownData={dropdownData} loading={dropdownLoading} isEditMode={!!selectedEmployee}/>
+                    <EmployeeForm form={form} onFinish={handleFormSubmit} dropdownData={dropdownData} loading={dropdownLoading} isEditMode={!!selectedEmployee}  userRole={userRole} />
                 </div>
             </Modal>
         </div>
