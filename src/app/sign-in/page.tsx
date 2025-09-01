@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react'; // Import useRef and useEffect for the effect
+import { useState } from 'react';
 import api from '../../lib/api/index';
 import { toast } from "sonner";
 import Textbox from "../../components/ui/Textbox";
@@ -10,7 +10,9 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import axios from "axios";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
+import Link from 'next/link'; // Import Link for navigation
+import { FaGoogle } from 'react-icons/fa'; // Example using react-icons for Google icon
 
 type LoginFormData = {
     email: string;
@@ -23,29 +25,7 @@ const LoginPage = () => {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
-    // const { setRole } = useAuth();
     const { login } = useAuth();
-
-    const formRef = useRef<HTMLFormElement | null>(null);
-
-    useEffect(() => {
-        const formElement = formRef.current;
-        if (!formElement) return;
-
-        const handleMouseMove = (e: MouseEvent) => {
-            const rect = formElement.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            formElement.style.setProperty('--mouse-x', `${x}px`);
-            formElement.style.setProperty('--mouse-y', `${y}px`);
-        };
-
-        formElement.addEventListener('mousemove', handleMouseMove);
-
-        return () => { // Cleanup function
-            formElement.removeEventListener('mousemove', handleMouseMove);
-        };
-    }, []);
 
     const handleLogin = async (data: LoginFormData) => {
         setIsLoading(true);
@@ -78,68 +58,96 @@ const LoginPage = () => {
         }
     };
 
+    // Google Sign-In handler (placeholder)
+    const handleGoogleSignIn = () => {
+        // TODO: Implement Google Sign-In logic here
+        toast.info("Google Sign-In is not yet implemented.");
+    };
+
     return (
-        <div className='w-full min-h-screen flex items-center justify-center flex-col lg:flex-row animated-gradient-bg'>
-            <div className='w-full md:w-auto flex gap-0 md:gap-40 flex-col md:flex-row items-center justify-center'>
-                <div className='h-full w-full lg:w-2/3 flex flex-col items-center justify-center'>
-                    <div className='w-full md:max-w-lg 2xl:max-w-3xl flex flex-col items-center justify-center gap-5 md:gap-y-10 2xl:-mt-20'>
-                        <p className='flex flex-col gap-0 md:gap-4 text-4xl md:text-6xl 2xl:text-7xl font-black text-center text-white'>
-                            <span>HR</span>
-                            <span>Management</span>
-                        </p>
+        <div
+            className='w-full min-h-screen flex items-center justify-center p-4 bg-cover bg-center'
+            style={{
+                backgroundImage: "url('https://images.unsplash.com/photo-1535957998253-26ae1ef29506?q=80&w=1920&auto=format&fit=crop')",
+            }}
+        >
+            <div className='w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-20'>
+                {/* Left Side: Branding and Text */}
+                <div className='text-white text-center lg:text-left'>
+                    <div className='flex items-center justify-center lg:justify-start gap-2 mb-4'>
+                        <span className='text-2xl font-bold tracking-wider'>Welcome</span>
+                        {/* A simple SVG to replicate the plane icon and dashed line */}
+                        <svg width="40" height="24" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+                            <path d="M1 12H15" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4"/>
+                            <path d="M38.5 12.5L25 18V7L38.5 12.5Z" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
                     </div>
+                    <h1 className='text-5xl md:text-6xl font-extrabold leading-tight'>
+                        NEW DAY WITH YOUR WORK
+                    </h1>
+                    <p className='mt-6 text-lg'>
+                        We're glad you're here. Log in to access your dashboard, manage your information, and stay connected with your team
+                    </p>
                 </div>
 
-                <div className='w-full md:w-1/3 p-4 md:p-1 flex flex-col justify-center items-center'>
+                {/* Right Side: Login Form */}
+                <div className='w-full max-w-md mx-auto'>
                     <form
-                        ref={formRef}
                         onSubmit={handleSubmit(handleLogin)}
-                        className='glass-form-container w-full md:w-[400px] flex flex-col gap-y-8 px-8 sm:px-10 pt-12 pb-10'
+                        className='bg-gray-900/40 backdrop-blur-lg shadow-2xl rounded-2xl p-8 space-y-6'
                     >
-                        <div>
-                            <p className='text-white text-3xl font-bold text-center'>
-                                Welcome Back
-                            </p>
-                            <p className='text-center text-base text-gray-300'>
-                                Securely sign in to your account.
-                            </p>
-                        </div>
                         <div className='flex flex-col gap-y-5'>
-                            <Textbox
-                                placeholder='you@example.com'
-                                type='email'
-                                name='email'
-                                label='Email Address'
-                                labelClass="text-white"
-                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-200 dark:text-gray-300 focus:border-white/50 rounded-lg'
-                                register={register("email", {
-                                    required: "Email Address is required!",
-                                })}
-                                error={errors.email ? errors.email.message : ""}
-                            />
-                            <Textbox
-                                placeholder='••••••••'
-                                type='password'
-                                name='password'
-                                label='Password'
-                                labelClass="text-white"
-                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-200 dark:text-gray-300 focus:border-white/50 rounded-lg'
-                                register={register("password", {
-                                    required: "Password is required!",
-                                })}
-                                error={errors.password ? errors.password?.message : ""}
-                            />
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">Email</label>
+                                <Textbox
+                                    placeholder='Enter your email'
+                                    type='email'
+                                    name='email'
+                                    className='w-full rounded-md p-2.5 text-gray-800 dark:text-white'
+                                    register={register("email", {
+                                        required: "Email Address is required!",
+                                    })}
+                                    error={errors.email ? errors.email.message : ""}
+                                />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label htmlFor="password" className="block text-sm font-medium text-gray-200">Password</label>
+                                </div>
+                                <Textbox
+                                    placeholder='••••••••'
+                                    type='password'
+                                    name='password'
+                                    className='w-full rounded-md p-2.5 text-gray-800 dark:text-white'
+                                    register={register("password", {
+                                        required: "Password is required!",
+                                    })}
+                                    error={errors.password ? errors.password?.message : ""}
+                                />
+                            </div>
                         </div>
+
                         {isLoading ? (
                             <Loading />
                         ) : (
                             <Button
                                 type='submit'
-                                label='Log In'
-                                // --- STYLE UPDATE: ClassName for glass button ---
-                                className='w-full h-11 bg-white/90 text-black font-semibold hover:bg-white transition-all duration-300 rounded-lg'
+                                label='SIGN IN'
+                                className='w-full h-11 bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all duration-300 rounded-md'
                             />
                         )}
+
+                        <div className="flex items-center gap-4">
+                            <hr className="w-full border-gray-500" />
+                            <span className="text-gray-400 text-sm">or</span>
+                            <hr className="w-full border-gray-500" />
+                        </div>
+
+
+
+                        <p className="text-center text-sm text-gray-300">
+                            Are you new?{" "} Please contact your supervisor.
+                        </p>
                     </form>
                 </div>
             </div>
