@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import {useEffect, useState, useCallback, useRef} from "react";
 import { useRouter } from "next/navigation";
 import moment from "moment";
 
@@ -10,7 +10,7 @@ import {
     Card, Col,
     DatePicker,
     Form,
-    Input,
+    Input, InputNumber,
     List,
     message,
     Modal,
@@ -21,16 +21,17 @@ import {
     Switch,
     Table,
     Tabs,
-    Tag
+    Tag,
+    TimePicker
 } from "antd";
 import type { TableProps } from 'antd';
 
 // --- Icons (from react-icons) ---
-import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete, MdRemoveRedEye } from "react-icons/md";
+import {MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete, MdRemoveRedEye, MdPrint} from "react-icons/md";
 import { FiEye } from "react-icons/fi";
 
 // --- API & Data ---
-import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/lib/api/company";
+import {fetchCompanies, createCompany, updateCompany, deleteCompany, getCompanyById} from "@/lib/api/company";
 import { fetchDepartments, createDepartment, updateDepartment, deleteDepartment } from "@/lib/api/department";
 import { Employee, fetchAllEmployees } from "@/lib/api/employee";
 import dayjs from "dayjs";
@@ -39,6 +40,9 @@ import Link from "next/link";
 import {useAuth} from "@/lib/AuthContext";
 import FormModal from "@/components/FormModal";
 import CompanyHistoryForm from "@/components/forms/CompanyHistoryForm";
+import {FaCrosshairs} from "react-icons/fa";
+import {useReactToPrint} from "react-to-print";
+import PrintableQrCode from "@/components/PrintableQrCode";
 
 // --- Type Definitions ---
 type Company = {
@@ -60,6 +64,7 @@ type Company = {
     latitude: number;
     posted_by: number;
     created_at: string;
+    scan_code: string;
 };
 
 type Department = {
@@ -84,39 +89,143 @@ const useIsMobile = (breakpoint = 768) => {
     return isMobile;
 };
 
-// --- Reusable Form for Company ---
-const CompanyForm = ({ form, onFinish, isEditMode, employees }: { form: any; onFinish: (values: any) => void; isEditMode: boolean; employees: Employee[] }) => (
+// --- Reusable Form for Company (EXPANDED) ---
+const CompanyForm = ({ form, onFinish, isEditMode, employees }: { form: any; onFinish: (values: any) => void; isEditMode: boolean; employees: Employee[] }) => {
+    const handleCaptureLocation = () => {
+        if (navigator.geolocation) {
+            message.loading({content: 'Fetching location...', key: 'geo'});
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const {latitude, longitude} = position.coords;
+                    form.setFieldsValue({
+                        latitude: latitude.toFixed(6), // Set form value for latitude
+                        longitude: longitude.toFixed(6) // Set form value for longitude
+                    });
+                    message.success({content: 'Location captured!', key: 'geo', duration: 2});
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    message.error({
+                        content: 'Could not get location. Please ensure you have given permission.',
+                        key: 'geo',
+                        duration: 4
+                    });
+                }
+            );
+        } else {
+            message.error("Geolocation is not supported by your browser.");
+        }
+    };
+    return (
     <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item name="name" label="Company Name" rules={[{ required: true }]}>
-            <Input />
-        </Form.Item>
-        <Form.Item name="company_code" label="Company Code" rules={[{ required: true }]}>
-            <Input />
-        </Form.Item>
-        <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input />
-        </Form.Item>
-        <Form.Item name="account_url" label="Account URL" rules={[{ required: true }]}>
-            <Input />
-        </Form.Item>
-        <Form.Item name="status" label="Status" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" defaultChecked />
-        </Form.Item>
+        <Row gutter={16}>
+            <Col span={12}>
+                <Form.Item name="name" label="Company Name" rules={[{required: true}]}>
+                    <Input placeholder="e.g., DPD Data Center"/>
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="company_code" label="Company Code" rules={[{required: true}]}>
+                    <Input placeholder="e.g., DPDC001"/>
+                </Form.Item>
+            </Col>
+        </Row>
+        <Row gutter={16}>
+            <Col span={12}>
+                <Form.Item name="scan_code" label="Scan Code (for QR)">
+                    <Input placeholder="e.g., QLM-HR-001" />
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="work_time" label="Work Hours">
+                    <TimePicker.RangePicker className="w-full" format="h:mm a" use12Hours />
+                </Form.Item>
+            </Col>
+        </Row>
+        <Row gutter={16}>
+            <Col span={12}>
+                <Form.Item name="email" label="Email" rules={[{required: true, type: 'email'}]}>
+                    <Input placeholder="e.g., contact@company.com"/>
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="phone" label="Phone Number">
+                    <Input placeholder="e.g., +85512345678"/>
+                </Form.Item>
+            </Col>
+        </Row>
+        <Row gutter={16}>
+            <Col span={12}>
+                <Form.Item name="website" label="Website URL">
+                    <Input placeholder="e.g., https://company.com"/>
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="account_url" label="Account URL" rules={[{required: true}]}>
+                    <Input placeholder="e.g., company.account.com"/>
+                </Form.Item>
+            </Col>
+        </Row>
 
-        {/* --- CHANGE: Conditional fields for assigning an employee on create --- */}
-        {!isEditMode && (
-            <>
-                <h3 className="text-md font-semibold border-t pt-4 mt-4 mb-2">Assign to Employee</h3>
-                <Form.Item name="employee_id" label="Assign to Employee" rules={[{ required: true, message: "Please select an employee to manage this company." }]}>
-                    <Select showSearch placeholder="Select an employee" options={employees.map(e => ({ value: e.id, label: e.name }))} filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+        <h3 className="text-md font-semibold border-t pt-4 mt-2 mb-2">Location Details</h3>
+        <Row gutter={16}>
+            <Col span={24}>
+                <Form.Item name="address" label="Address">
+                    <Input.TextArea rows={2} placeholder="Enter full address"/>
                 </Form.Item>
-                <Form.Item name="start_date" label="Assignment Start Date" rules={[{ required: true, message: "Please set a start date." }]}>
-                    <DatePicker className="w-full" />
+            </Col>
+            <Col span={12}>
+                <Form.Item name="city" label="City">
+                    <Input placeholder="e.g., Phnom Penh"/>
                 </Form.Item>
-            </>
-        )}
+            </Col>
+            <Col span={12}>
+                <Form.Item name="province" label="Province / State">
+                    <Input placeholder="e.g., Phnom Penh"/>
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="country" label="Country">
+                    <Input placeholder="e.g., Cambodia"/>
+                </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item name="zip_code" label="Zip / Postal Code">
+                    <Input placeholder="e.g., 120100"/>
+                </Form.Item>
+            </Col>
+        </Row>
+
+        <Row gutter={16} align="bottom">
+            <Col span={9}>
+                <Form.Item name="latitude" label="Latitude">
+                    <InputNumber style={{ width: '100%' }} placeholder="e.g., 11.556370" />
+                </Form.Item>
+            </Col>
+            <Col span={9}>
+                <Form.Item name="longitude" label="Longitude">
+                    <InputNumber style={{ width: '100%' }} placeholder="e.g., 104.888535" />
+                </Form.Item>
+            </Col>
+            <Col span={6}>
+                <Form.Item>
+                    <Button
+                        icon={<FaCrosshairs />}
+                        onClick={handleCaptureLocation}
+                        className="w-full"
+                    >
+                        Capture
+                    </Button>
+                </Form.Item>
+            </Col>
+        </Row>
+
+        <Form.Item name="status" label="Status" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="Active" unCheckedChildren="Inactive"/>
+        </Form.Item>
     </Form>
-);
+    );
+};
 
 // --- Reusable Form for Department ---
 const DepartmentForm = ({ form, onFinish }: { form: any; onFinish: (values: any) => void; }) => (
@@ -374,7 +483,7 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
         setIsSubmitting(true);
         try {
             if (selected) {
-                await updateCompany(selected.id, values); 
+                await updateCompany(selected.id, values);
                 message.success("Company updated successfully!");
             } else {
                 const companyPayload = {
@@ -383,6 +492,17 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
                     email: values.email,
                     account_url: values.account_url,
                     status: values.status,
+
+                    type: values.type,
+                    phone: values.phone,
+                    country: values.country,
+                    province: values.province,
+                    city: values.city,
+                    zip_code: values.zip_code,
+                    address: values.address,
+                    website: values.website,
+                    // longitude and latitude are typically set via a map picker,
+                    // so we'll omit them for a manual text form for now.
                 };
 
                 const newCompanyResponse = await createCompany(companyPayload);
@@ -391,14 +511,14 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
                 if (!newCompanyId) {
                     throw new Error("Failed to get ID of the new company.");
                 }
-                
+
                 message.success("Company created! Now assigning to employee...");
 
                 const historyPayload = {
                     company_id: newCompanyId,
                     employee_id: values.employee_id,
                     start_date: dayjs(values.start_date).format("YYYY-MM-DD"),
-                    end_date: "9999-12-31", 
+                    end_date: "9999-12-31",
                     notes: "Initial assignment on creation.",
                 };
                 await createCompanyHistory(historyPayload);
@@ -406,8 +526,11 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
             }
             handleModalCancel();
             fetchData();
-        } catch (error: any) { message.error(error?.response?.data?.message || "Operation failed."); }
-        finally { setIsSubmitting(false); }
+        } catch (error: any) {
+            message.error(error?.response?.data?.message || "Operation failed.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     const handleDelete = (id: number) => {
@@ -476,7 +599,7 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
 };
 
 // --- View for Managing Departments ---
-const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
+const DepartmentsView = ({ isMobile,canManage  }: { isMobile: boolean , canManage: boolean}) => {
     const [form] = Form.useForm();
     const [data, setData] = useState<Department[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]); // For dropdown
@@ -485,30 +608,26 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selected, setSelected] = useState<Department | null>(null);
-    const [companyId, setCompanyId] = useState<number | null>(null);
 
-    useEffect(() => {
-        const storedCompanyId = localStorage.getItem('company_id');
-        if (storedCompanyId) {
-            setCompanyId(Number(storedCompanyId));
-        }
-    }, []);
+    const { user } = useAuth();
+    const companyId = user?.company_id;
 
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
-            const [deptRes, compRes] = await Promise.all([
-                fetchDepartments(page, pageSize),
-                fetchCompanies(1, 500) // Fetch all companies for the select dropdown
-            ]);
+            const deptRes = await fetchDepartments(page, pageSize);
             setData(deptRes.data || []);
             setPagination({ current: page, pageSize, total: deptRes.total_items });
-            setCompanies(compRes.data || []);
-        } catch (error) { message.error("Failed to fetch data."); }
-        finally { setLoading(false); }
+        } catch (error) {
+            message.error("Failed to fetch departments.");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        fetchData(pagination.current, pagination.pageSize);
+    }, [fetchData, pagination.current, pagination.pageSize]);
 
     const handleModalOpen = (record: Department | null) => {
         setSelected(record);
@@ -567,26 +686,33 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
         { title: "Code", dataIndex: "code", key: "code" },
         { title: "Company", dataIndex: ['company', 'name'], key: "company" },
         { title: "Created", dataIndex: "created_at", key: "created_at", render: (date) => moment(date).format("DD MMM YYYY") },
-        { title: "Actions", key: "actions", render: (_, record) => (
-            <Space>
-                <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)}>Edit</Button>
-                <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)}>Delete</Button>
-            </Space>
-        )}
     ];
 
+    if (canManage) {
+        columns.push({
+            title: "Actions",
+            key: "actions",
+            render: (_, record) => (
+                <Space>
+                    <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)}>Edit</Button>
+                    <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)}>Delete</Button>
+                </Space>
+            )
+        });
+    }
+
     return (
-        <Card title="All Departments" extra={<Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Department</Button>}>
+        <Card title="All Departments" extra={canManage && <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Department</Button>}>
              {isMobile ? (
                 <List
                     loading={loading}
                     dataSource={data}
                     renderItem={(item) => (
                         <List.Item
-                            actions={[
+                            actions={canManage ? [
                                 <Button type="text" shape="circle" icon={<MdEdit />} onClick={() => handleModalOpen(item)} />,
                                 <Button type="text" shape="circle" danger icon={<MdDelete />} onClick={() => handleDelete(item.id)} />,
-                            ]}
+                            ]: []}
                         >
                             <List.Item.Meta title={item.name} description={`Company: ${item.company.name}`} />
                         </List.Item>
@@ -602,9 +728,11 @@ const DepartmentsView = ({ isMobile }: { isMobile: boolean }) => {
                     onChange={(p) => fetchData(p.current, p.pageSize)}
                 />
             )}
-             <Modal title={selected ? "Edit Department" : "Add Department"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting} width={isMobile ? '100%' : 520} style={isMobile ? { top: 0, padding: 0, height: '100vh' } : {}}>
-                <DepartmentForm form={form} onFinish={handleFormSubmit} />
-             </Modal>
+            {canManage && (
+                 <Modal title={selected ? "Edit Department" : "Add Department"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting} width={isMobile ? '100%' : 520} style={isMobile ? { top: 0, padding: 0, height: '100vh' } : {}}>
+                    <DepartmentForm form={form} onFinish={handleFormSubmit} />
+                 </Modal>
+            )}
         </Card>
     );
 };
@@ -616,35 +744,85 @@ const OrganizationSetupPage = () => {
     const [isClient, setIsClient] = useState(false);
     const { user, isAuthenticated, loading: authLoading } = useAuth();
 
+    const printComponentRef = useRef<HTMLDivElement>(null);
+    const [companyToPrint, setCompanyToPrint] = useState<Company | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false);
+
+    const printTrigger = useReactToPrint({
+        onAfterPrint: () => setCompanyToPrint(null), // Clean up after printing
+    });
+
     useEffect(() => { setIsClient(true); }, []);
     const userRole = user?.roles?.[0];
 
-    const getTabItems = () => {
+    const handlePrintRequest = async () => {
+        const companyId = user?.company_id;
 
-        const items = [
-            { 
-                key: 'departments', 
-                label: 'Departments', 
-                children: <DepartmentsView isMobile={isMobile} /> 
-            },
-        ];
-
-        if (userRole === 'Admin' || userRole === 'Super Admin') {
-            items.push({
-                key: 'history',
-                label: 'Company History',
-                children: <CompanyHistoryView />
-            });
+        if (!companyId) {
+            message.error("Your account is not associated with a company.");
+            return;
         }
+
+        setIsPrinting(true);
+        message.loading({ content: 'Preparing QR Code...', key: 'print' });
+
+        try {
+            const companyData = await getCompanyById(companyId);
+
+            if (companyData && companyData.scan_code) {
+                setCompanyToPrint(companyData);
+            } else {
+                message.error({ content: 'This company does not have a QR scan code configured.', key: 'print' });
+            }
+        } catch (error) {
+            console.error("Failed to fetch company details for printing:", error);
+            message.error({ content: 'Failed to retrieve company details.', key: 'print' });
+        } finally {
+        }
+    };
+
+    useEffect(() => {
+        if (companyToPrint && printComponentRef.current) {
+            message.success({ content: 'QR Code ready!', key: 'print', duration: 1 });
+            printTrigger();
+            setIsPrinting(false);
+        }
+    }, [companyToPrint, printTrigger]);
+
+    const getTabItems = () => {
+        const items = [];
 
         if (userRole === 'Super Admin') {
-            items.unshift({ 
-                key: 'companies', 
-                label: 'Companies', 
-                children: <CompaniesView isMobile={isMobile} /> 
+            items.push(
+                {
+                    key: 'companies',
+                    label: 'Companies',
+                    children: <CompaniesView isMobile={isMobile} />
+                },
+                {
+                    key: 'history',
+                    label: 'Company History',
+                    children: <CompanyHistoryView />
+                }
+            );
+        }
+        else if (userRole === 'Admin') {
+            items.push(
+                {
+                    key: 'departments',
+                    label: 'Departments',
+                    children: <DepartmentsView isMobile={isMobile} canManage={true} />
+                }
+            );
+        }
+        else {
+            items.push({
+                key: 'departments',
+                label: 'Departments',
+                children: <DepartmentsView isMobile={isMobile} canManage={false} />
             });
         }
-        
+
         return items;
     };
 
@@ -664,12 +842,31 @@ const OrganizationSetupPage = () => {
                         <span>Organization</span>
                     </div>
                 </div>
+                {(userRole === 'Admin') && (
+                    <Button
+                        icon={<MdPrint />}
+                        onClick={handlePrintRequest}
+                        loading={isPrinting}
+                    >
+                        Print Company QR Code
+                    </Button>
+                )}
             </div>
             <Tabs 
                 key={userRole}
                 defaultActiveKey={userRole === 'Super Admin' ? 'companies' : 'departments'}
                 items={getTabItems()} 
             />
+
+            <div style={{ display: 'none' }}>
+                {companyToPrint && (
+                    <PrintableQrCode
+                        ref={printComponentRef}
+                        companyName={companyToPrint.name}
+                        scanCode={companyToPrint.scan_code}
+                    />
+                )}
+            </div>
         </div>
     );
 };

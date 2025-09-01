@@ -124,7 +124,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     iconComponent: GiPartyFlags,
                     label: "Holidays",
                     href: "/dashboard/list/holidays",
-                    visible: ["Admin", "Super Admin", "Employee"],
+                    visible: ["Admin", "Employee"],
                 },
                 {
                     iconComponent: LuUsers,
@@ -155,12 +155,12 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     iconComponent: HiOutlineBadgeCheck,
                     label: "Entitlements",
                     href: "/dashboard/list/entitlements",
-                    visible: ["Admin", "Super Admin","Employee"],
+                    visible: ["Admin", "Employee"],
                 },
                 {
                     iconComponent: MdAccessTime,
                     label: "Timesheet",
-                    visible: ["Admin", "Super Admin"],
+                    visible: ["Admin"],
                     children: [
                         {
                             iconComponent: TbPoint,

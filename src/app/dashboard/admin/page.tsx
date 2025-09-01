@@ -107,7 +107,7 @@ const AdminPage = () => {
 
                 <div className="w-full lg:w-1/3 flex flex-col gap-6">
                     <EventCalendar birthdays={summaryData.upcoming_birthdays} />
-                    <Announcements />
+                    {/*<Announcements />*/}
                 </div>
             </div>
         </div>

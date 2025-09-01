@@ -1,227 +1,227 @@
 "use client";
-import moment from "moment";
-import React, { useEffect, useState } from "react";
-import { TbFileReport } from "react-icons/tb";
-import { MdOutlineReport } from "react-icons/md";
-import { IoMdTime } from "react-icons/io";
-import { RiTimerLine } from "react-icons/ri";
-import { MdKeyboardArrowRight } from "react-icons/md";
-import { BsSortDown } from "react-icons/bs";
-import { TbReport } from "react-icons/tb";
-import { PiCalendarDotBold } from "react-icons/pi";
-import { useRouter } from "next/navigation";
-import { findEmployees } from "@/lib/api/attendances";
-import Table from "@/components/Table";
-import Loading from "@/components/ui/Loading";
 
-type Attendance = {
-    id: number;
-    employee: {
-        name: string;
-    };
-    attendance: {
-        [day: string]: "P" | "A" | null;
-    };
+import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Card, Table, Spin, Button, Space, Tag, DatePicker, Row, Col, Statistic, message } from "antd";
+import type { TableProps } from 'antd';
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { FaFileExcel } from "react-icons/fa";
+import { findEmployees } from "@/lib/api/attendances";
+import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
+// Define the shape of our processed data
+type ProcessedAttendance = {
+    key: number; // employee_id
+    name: string;
+    // Each day will be a property, e.g., '01': 'P'
+    [day: string]: any;
 };
 
-const columns = [
-    {
-        header: "NAME",
-        accessor: "name",
-        className: "sticky left-0 bg-[#f8f9fd] z-10",
-    },
-    ...Array.from({ length: 30 }, (_, i) => {
-        const day = (i + 1).toString().padStart(2, "0");
-        return {
-            header: day,
-            accessor: day,
-            className: "text-center text-xs",
-        };
-    }),
-];
+// Define the shape for summary stats
+type SummaryStats = {
+    totalPresent: number;
+    totalLate: number;
+    totalAbsent: number;
+    totalLeave: number; // Placeholder
+};
 
 const MonthlyAttendance = () => {
     const router = useRouter();
-    const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
+    const [attendanceData, setAttendanceData] = useState<ProcessedAttendance[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedMonth, setSelectedMonth] = useState(dayjs());
+    const [summary, setSummary] = useState<SummaryStats>({ totalPresent: 0, totalLate: 0, totalAbsent: 0, totalLeave: 0 });
 
-    useEffect(() => {
-        const getData = async () => {
-            try {
-                const result = await findEmployees();
-                const rawData = result.data;
-               
-                // Group by employee and date
-                const grouped: { [employeeId: number]: Attendance } = {};
+    const fetchData = useCallback(async (month: dayjs.Dayjs) => {
+        setLoading(true);
+        try {
+            const result = await findEmployees();
+            const rawData = result.data;
 
-                rawData.forEach((record: any) => {
-                const day = new Date(record.date).getDate().toString().padStart(2, "0");
+            let totalPresent = 0;
+            let totalLate = 0;
+            let totalAbsent = 0;
 
-                if (!grouped[record.employee_id]) {
-                    grouped[record.employee_id] = {
-                        id: record.employee_id,
-                        employee: {
-                            name: record.employee.name,
-                        },
-                        attendance: {},
+            const groupedData = rawData.reduce((acc: Record<number, ProcessedAttendance>, record: any) => {
+                const employeeId = record.employee_id;
+                const date = dayjs(record.date);
+                const day = date.format('DD');
+
+                if (!acc[employeeId]) {
+                    acc[employeeId] = {
+                        key: employeeId,
+                        name: record.employee.name,
                     };
                 }
 
-                // ✅ Get correct status from nested attendance_data[0]
-                const attendanceStatus = record.attendance_data?.[0]?.status;
+                // Get status from the nested array
+                const attendanceRecord = record.attendance_data?.[0];
+                let status = 'A'; // Default to Absent
+                if (attendanceRecord) {
+                    if (attendanceRecord.status?.toLowerCase() === 'present') {
+                        status = 'P';
+                        totalPresent++;
+                    } else if (attendanceRecord.status?.toLowerCase() === 'late') {
+                        status = 'L';
+                        totalLate++;
+                    }
+                } else {
+                    // Only count weekdays as absent
+                    if(date.isoWeekday() <= 5) {
+                        totalAbsent++;
+                    }
+                }
 
-                grouped[record.employee_id].attendance[day] =
-                    attendanceStatus?.startsWith("P") ? "P" : "A";
-                });
+                acc[employeeId][day] = status;
+                return acc;
+            }, {});
 
-                setAttendanceData(Object.values(grouped));
-            } catch (error) {
-                console.error("Failed to fetch attendance:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            setAttendanceData(Object.values(groupedData));
+            setSummary({ totalPresent, totalLate, totalAbsent, totalLeave: 0 }); // Update summary stats
 
-        getData();
+        } catch (error) {
+            console.error("Failed to fetch attendance:", error);
+            message.error("Failed to fetch attendance data.");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const goBack = () => {
-        router.push("/dashboard/list/dashboard/admin");
+    useEffect(() => {
+        fetchData(selectedMonth);
+    }, [selectedMonth, fetchData]);
+
+    // --- Generate Table Columns Dynamically ---
+    const generateColumns = (month: dayjs.Dayjs): TableProps<ProcessedAttendance>['columns'] => {
+        const daysInMonth = month.daysInMonth();
+        const columns: TableProps<ProcessedAttendance>['columns'] = [
+            {
+                title: "Employee Name",
+                dataIndex: "name",
+                key: "name",
+                width: 200,
+                fixed: 'left', // Freeze the name column
+            },
+        ];
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayStr = i.toString().padStart(2, '0');
+            const date = month.date(i);
+            columns.push({
+                title: () => (
+                    <div className="text-center">
+                        <div>{i}</div>
+                        <div className="text-xs text-gray-400">{date.format('ddd')}</div>
+                    </div>
+                ),
+                dataIndex: dayStr,
+                key: dayStr,
+                width: 60,
+                align: 'center',
+                render: (status: 'P' | 'A' | 'L') => {
+                    switch (status) {
+                        case 'P': return <Tag color="success">P</Tag>;
+                        case 'L': return <Tag color="warning">L</Tag>;
+                        case 'A': return <Tag color="error">A</Tag>;
+                        default: return <span className="text-gray-300">-</span>;
+                    }
+                },
+            });
+        }
+        return columns;
     };
 
-    const formattedDate = moment().format("MMMM-YYYY");
+    const [columns, setColumns] = useState(generateColumns(selectedMonth));
 
-    const renderRow = (item: Attendance) => {
-        return (
-            <tr key={item.id} className="border-b border-gray-200 text-sm">
-                <td className="py-4 px-4">
-                    {item.employee.name}
-                </td>
-                {Array.from({ length: 30 }, (_, i) => {
-                    const day = (i + 1).toString().padStart(2, "0");
-                    const status = item.attendance?.[day];
-                    return (
-                        <td key={day} className="py-4 px-4">
-                            {status === "P" && (
-                                <span className="bg-[#6fd943] text-white text-xs px-2 py-1 rounded italic">
-                                P
-                                </span>
-                            )}
-                            {status === "A" && (
-                                <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded italic">
-                                A
-                                </span>
-                            )}
-                            {!status && (
-                                <span className="text-gray-300 text-xs"></span>
-                            )}
-                        </td>
-                    );
-                })}
-            </tr>
-        );
+    useEffect(() => {
+        setColumns(generateColumns(selectedMonth));
+    }, [selectedMonth]);
+
+    const handleExport = () => {
+        message.loading({ content: 'Generating Excel file...', key: 'export' });
+
+        if (columns === undefined) {
+            message.error('No columns found.');
+            return;
+        }
+
+        const headers = ["Employee Name", ...columns.slice(1).map(col => (col.title as () => JSX.Element)().props.children[0].props.children)];
+        const dataToExport = attendanceData.map(row => {
+            const rowData: (string | number)[] = [row.name];
+            columns.slice(1).forEach(col => {
+                const dayKey = col.key as string;
+                rowData.push(row[dayKey] || '');
+            });
+            return rowData;
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataToExport]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Attendance_${selectedMonth.format("MMM_YYYY")}`);
+        XLSX.writeFile(workbook, `Attendance_Report_${selectedMonth.format("MMMM_YYYY")}.xlsx`);
+
+        message.success({ content: 'Exported successfully!', key: 'export' });
     };
 
     return (
-        <div>
-            {/* Header and Navigation */}
-            <div className="flex items-center justify-between m-4">
+        <div className="p-4 sm:p-6 bg-light-bg min-h-screen">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="hidden md:block text-lg font-semibold mb-0">
-                        Manage Monthly Attendance
-                    </h1>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span
-                            onClick={goBack}
-                            className="hover:underline cursor-pointer text-blue-600 font-light"
-                        >
-                        Home
-                        </span>
-                            <MdKeyboardArrowRight />
-                            <span className="text-gray-700 font-light">
-                            Manage Monthly Attendance Report
-                        </span>
+                    <h1 className="text-xl font-semibold text-text-primary">Monthly Attendance Report</h1>
+                    <div className="text-sm text-text-secondary flex items-center gap-2">
+                        <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-accent-purple font-medium">Home</span>
+                        <MdKeyboardArrowRight />
+                        <span>Attendance Report</span>
                     </div>
-                </div>
-                <div className="flex items-center gap-4 self-end m-4 mb-0">
-                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-kungkeaYellow">
-                    <BsSortDown className="text-white font-semibold" />
-                </button>
                 </div>
             </div>
 
-            {/* Table or Loading */}
-            {loading ? (
-                <Loading />
-            ) : (
-                <>
-                    <div className="grid grid-cols-2 gap-4 m-4">
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6FD943] rounded-lg text-white">
-                                <TbReport size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Report</h1>
-                                <span className="text-sm text-gray-400 font-light">Monthly Leave Summary</span>
-                            </div>
-                        </div>
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6c757d] rounded-lg text-white">
-                                <PiCalendarDotBold size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Duration</h1>
-                                <span className="text-sm text-gray-400 font-light">{formattedDate}</span>
-                            </div>
-                        </div>
-                    </div>
+            {/* --- STYLE UPDATE: Summary cards with new theme styles --- */}
+            <Row gutter={[16, 16]} className="mb-6">
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false} className="shadow-sm rounded-lg bg-light-card">
+                        <Statistic title="Total Present" value={summary.totalPresent} valueStyle={{ color: '#3f8600' }} loading={loading} />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false} className="shadow-sm rounded-lg bg-light-card">
+                        <Statistic title="Total Late" value={summary.totalLate} valueStyle={{ color: '#faad14' }} loading={loading} />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false} className="shadow-sm rounded-lg bg-light-card">
+                        <Statistic title="Total Absent" value={summary.totalAbsent} valueStyle={{ color: '#cf1322' }} loading={loading} />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                    <Card bordered={false} className="shadow-sm rounded-lg bg-light-card">
+                        <Statistic title="Total On Leave" value={summary.totalLeave} loading={loading} />
+                    </Card>
+                </Col>
+            </Row>
 
-                    <div className="grid grid-cols-4 gap-3 m-4">
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6FD943] rounded-lg text-white">
-                                <TbFileReport size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Attendance</h1>
-                                <p className="text-xs text-gray-400 font-light">Total present: </p>
-                                <p className="text-xs text-gray-400 font-light">Total leave: </p>
-                            </div>
-                        </div>
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6c757d] rounded-lg text-white">
-                                <IoMdTime size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Overtime</h1>
-                                <span className="text-xs text-gray-400 font-light">Total overtime in hours: </span>
-                            </div>
-                        </div>
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6FD943] rounded-lg text-white">
-                               <MdOutlineReport size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Early leave</h1>
-                                <span className="text-xs text-gray-400 font-light">Total early leave in hours: </span>
-                            </div>
-                        </div>
-                        <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                            <div className="p-4 bg-[#6FD943] rounded-lg text-white">
-                                <RiTimerLine size={24} />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="hidden md:block text-lg font-semibold mb-0">Employee late</h1>
-                                <span className="text-xs text-gray-400 font-light">Total late in hours:</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl m-4 mt-0 card-table overflow-auto pt-5 pb-10">
-                        <Table columns={columns} data={attendanceData} renderRow={renderRow} />
-                    </div>
-                </>
-               
-            )}
+            {/* --- STYLE UPDATE: Main table card --- */}
+            <Card bordered={false} className="shadow-sm rounded-lg bg-light-card">
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <DatePicker
+                        picker="month"
+                        value={selectedMonth}
+                        onChange={(date) => setSelectedMonth(date || dayjs())}
+                        allowClear={false}
+                    />
+                    <Button icon={<FaFileExcel />} onClick={handleExport}>Export to Excel</Button>
+                </div>
+                <Table
+                    columns={columns}
+                    dataSource={attendanceData}
+                    loading={loading}
+                    pagination={false}
+                    scroll={{ x: 'max-content' }}
+                    className="ant-table-wrapper--light"
+                />
+            </Card>
         </div>
     );
 };

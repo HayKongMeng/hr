@@ -35,7 +35,7 @@ const Textbox: React.FC<TextboxProps> = ({
             {label && (
                 <label
                     htmlFor={name}
-                    className={clsx("text-block text-sm font-light ", labelClass)}
+                    className={clsx("text-sm font-light ", labelClass)}
                 >
                     {label.split('*').map((part, index, arr) => (
                         <React.Fragment key={index}>

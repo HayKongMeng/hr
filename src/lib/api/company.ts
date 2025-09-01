@@ -9,6 +9,23 @@ export const fetchCompanies = async (page: number = 1, limit: number = 10) => {
 export type Company = {
     id: number;
     name: string;
+    company_code: string;
+    type: string;
+    email: string;
+    phone: string;
+    country: string;
+    province: string;
+    city: string;
+    zip_code: string;
+    address: string;
+    account_url: string;
+    website: string;
+    status: boolean;
+    longitude: number;
+    latitude: number;
+    posted_by: number;
+    created_at: string;
+    scan_code: string;
 };
 
 export const fetchAllCompanies = async (): Promise<Company[]> => {
@@ -16,7 +33,10 @@ export const fetchAllCompanies = async (): Promise<Company[]> => {
     return response.data.result.data;
 };
 
-export const getCompanyById = (id: number) => api.get(`api/employee/company/${id}`);
+export const getCompanyById = async (id: number): Promise<Company> => {
+    const response = await api.get(`api/employee/company/${id}`);
+    return response.data.result.data;
+};
 
 export const createCompany = async (payload: {
     company_code: string;

@@ -110,7 +110,8 @@ const LoginPage = () => {
                                 type='email'
                                 name='email'
                                 label='Email Address'
-                                className='w-full bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-white/50 rounded-lg'
+                                labelClass="text-white"
+                                className='border-white w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-300 dark:text-gray-300 focus:border-white/50 rounded-lg'
                                 register={register("email", {
                                     required: "Email Address is required!",
                                 })}
@@ -121,8 +122,8 @@ const LoginPage = () => {
                                 type='password'
                                 name='password'
                                 label='Password'
-                                // --- STYLE UPDATE: ClassName for glass inputs ---
-                                className='w-full bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-white/50 rounded-lg'
+                                labelClass="text-white"
+                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-300 dark:text-gray-300 focus:border-white/50 rounded-lg'
                                 register={register("password", {
                                     required: "Password is required!",
                                 })}

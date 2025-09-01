@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BsSortDown } from "react-icons/bs";
-import FormModal from "@/components/FormModal";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import Loading from "@/components/ui/Loading";
-import TableSearch from "@/components/TableSearch";
-import { role } from "@/lib/data";
-import { fetchAllRoles } from "@/lib/api/users";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { MdKeyboardArrowRight } from "react-icons/md";
+import { Card, Table, Spin, Button, Space, Tag, Input, message } from "antd";
+import type { TableProps } from 'antd';
+import { MdKeyboardArrowRight, MdAdd, MdEdit, MdDelete } from "react-icons/md";
+import { fetchAllRoles } from "@/lib/api/users";
+import FormModal from "@/components/FormModal"; // Assuming this is your Ant Design modal wrapper
+import { useAuth } from "@/lib/AuthContext"; // Import useAuth to get the role
 
 type Role = {
     id: number;
@@ -22,233 +19,157 @@ type Role = {
     }[];
 };
 
-const columns = [
-    { header: "Role", accessor: "role_name" },
-    { header: "Permissions", accessor: "permissions" },
-    { header: "Actions", accessor: "action" },
-];
-
 const RoleListPage = () => {
     const router = useRouter();
-    const [RolesByPage, setRolesByPage] = useState<{
-        [key: string]: Role[];
-    }>({});
+    const { user } = useAuth(); // Get the current user's role
+    const userRole = user?.roles?.[0];
+
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
-    const [totalPages, setTotalPages] = useState<number>(1);
-    const [totalItems, setTotalItems] = useState<number>(0);
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0,
+    });
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const getRoles = async (page: number, perPage: number) => {
-        const cacheKey = `${page}-${perPage}`;
-
-        if (RolesByPage[cacheKey]) {
-            setRoles(RolesByPage[cacheKey]);
-            setLoading(false);
-            return;
-        }
-     
+    const fetchData = useCallback(async (page: number, pageSize: number, search: string) => {
         setLoading(true);
         try {
-            const res = await fetchAllRoles(currentPage, itemsPerPage);
-            const filtered = res.data.filter((p: any) => p && p.role_name);
-
-            // Save to page cache
-            setRolesByPage((prev) => ({
+            // Your API function might need to be updated to accept a search query
+            const res = await fetchAllRoles(page, pageSize);
+            setRoles(res.data || []);
+            setPagination(prev => ({
                 ...prev,
-                [cacheKey]: filtered,
-            }));;
-
-            setRoles(filtered);
-            setTotalPages(res.total_pages);
-            setTotalItems(res.total_items);
+                current: page,
+                pageSize: pageSize,
+                total: res.total_items,
+            }));
         } catch (err: any) {
-            setError(err.message || "Failed to fetch users");
+            message.error("Failed to fetch roles.");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        getRoles(currentPage, itemsPerPage);
-    }, [currentPage, itemsPerPage]);
+        const debounce = setTimeout(() => {
+            fetchData(pagination.current, pagination.pageSize, searchQuery);
+        }, 300); // Debounce search to avoid excessive API calls
 
-    const handleRolesSuccess = (updatedRole: Role) => {
-        setRolesByPage((prev) => {
-            const updatedPage = (prev[currentPage] || []).map((role) =>
-                role.id === updatedRole.id ? updatedRole : role
-            );
+        return () => clearTimeout(debounce);
+    }, [pagination.current, pagination.pageSize, searchQuery, fetchData]);
 
-            const exists = prev[currentPage]?.some((role) => role.id === updatedRole.id);
-
-            const newPage = exists
-                ? updatedPage
-                : [updatedRole, ...(prev[currentPage] || [])];
-
-            return {
-                ...prev,
-                [currentPage]: newPage,
-            };
-        });
-
-        // Update visible roles
-        setRoles((prev) => {
-            const index = prev.findIndex((role) => role.id === updatedRole.id);
-            if (index !== -1) {
-                const updated = [...prev];
-                updated[index] = updatedRole;
-                return updated;
-            } else {
-                return [updatedRole, ...prev];
-            }
-        });
+    const handleSuccess = () => {
+        // Refetch data on the current page after a create/update/delete action
+        fetchData(pagination.current, pagination.pageSize, searchQuery);
     };
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+    const handleTableChange: TableProps<Role>['onChange'] = (newPagination) => {
+        setPagination(prev => ({
+            ...prev,
+            current: newPagination.current || 1,
+            pageSize: newPagination.pageSize || 10,
+        }));
     };
 
-    const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newSize = Number(e.target.value);
-        setItemsPerPage(newSize);
-        setCurrentPage(1);
-        setRoles([]); // Reset current visible data
-        setRolesByPage({}); // Clear cached data
-    };
-
-    const goBack = () => {
-        router.push("/dashboard/list/dashboard/admin");
-    };
-
-    const renderRow = (item: Role) => {
-        if (!item || !item.role_name) return null;
-        return (
-            <tr
-                key={item.id}
-                className="border-b border-gray-200 text-sm"
-            >
-                <td className="py-4 px-4">
-                    <div className="flex items-center uppercase">
-                        {item.role_name}
-                    </div>
-                </td>
-                <td className="hidden md:table-cell py-4 px-4">
-                    {item.permissions.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {item.permissions.map((perm) => (
-                                <span
-                                    key={perm.id}
-                                    className="gradient-green text-white px-3 py-0.5 rounded text-xs font-light"
-                                >
-                                    {perm.action} {perm.module}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        <span className="text-gray-400 italic">No permissions</span>
+    const columns: TableProps<Role>['columns'] = [
+        {
+            title: "Role Name",
+            dataIndex: "role_name",
+            key: "role_name",
+            sorter: (a, b) => a.role_name.localeCompare(b.role_name),
+        },
+        {
+            title: "Permissions",
+            dataIndex: "permissions",
+            key: "permissions",
+            render: (permissions: Role['permissions']) => (
+                <div className="flex flex-wrap gap-1">
+                    {permissions.length > 0 ? permissions.slice(0, 5).map((perm) => (
+                        <Tag key={perm.id} color="blue">
+                            {`${perm.action} ${perm.module}`}
+                        </Tag>
+                    )) : <Tag>No Permissions</Tag>}
+                    {permissions.length > 5 && <Tag>...</Tag>}
+                </div>
+            ),
+        },
+        {
+            title: "Actions",
+            key: "action",
+            align: 'right',
+            render: (_, record: Role) => (
+                <Space size="middle">
+                    {/* Conditionally render buttons based on user role */}
+                    {(userRole === 'Admin' || userRole === 'Super Admin') && (
+                        <>
+                            <FormModal
+                                table="Role"
+                                type="update"
+                                data={record}
+                                onSuccess={handleSuccess}
+                            />
+                            <FormModal
+                                table="Role"
+                                type="delete"
+                                id={record.id}
+                                onSuccess={handleSuccess}
+                            />
+                        </>
                     )}
-                </td>
-                <td className="w-32 py-4 px-4">
-                    <div className="flex items-center gap-2">
-                        {role === "admin" && (
-                            <>
-                                <FormModal
-                                    table="Role"
-                                    type="update"
-                                    data={item}
-                                    onSuccess={handleRolesSuccess}
-                                />
-                                <FormModal
-                                    table="Role"
-                                    type="delete"
-                                    id={item.id}
-                                    onSuccess={() => {
-                                        const updated = roles.filter((role) => role.id !== item.id);
-                                        setRoles(updated);
-                                        setRolesByPage((prev) => ({
-                                            ...prev,
-                                            [currentPage]: updated,
-                                        }));
-                                    }}
-                                />
-                            </>
-                        )}
-                    </div>
-                </td>
-            </tr>
-        );
-    };
+                </Space>
+            ),
+        },
+    ];
 
     return (
-        <div>
-            <div className="flex items-center justify-between m-4">
+        <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h1 className="hidden md:block text-lg font-semibold mb-0">Manage Roles</h1>
+                    <h1 className="text-lg font-semibold">Manage Roles</h1>
                     <div className="text-sm text-gray-500 flex items-center gap-2">
                         <span
-                            onClick={goBack}
-                            className="hover:underline cursor-pointer text-blue-600 font-light"
+                            onClick={() => router.push("/dashboard/list/dashboard/admin")}
+                            className="hover:underline cursor-pointer text-blue-600"
                         >
                             Home
                         </span>
                         <MdKeyboardArrowRight />
-                        <span className="text-gray-700 font-light">Role</span>
+                        <span>Roles</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-4 self-end m-4 mb-0">
-                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-kungkeaYellow">
-                        <BsSortDown className="text-white font-semibold" />
-                    </button>
+                {/* Only Admins/Super Admins can create new roles */}
+                {(userRole === 'Admin' || userRole === 'Super Admin') && (
                     <FormModal
                         table="Role"
                         type="create"
-                        onSuccess={handleRolesSuccess}
+                        onSuccess={handleSuccess}
                     />
-                </div>
+                )}
             </div>
 
-
-            {loading ? (
-                <Loading />
-            ) : (
-                <div className="bg-white rounded-2xl m-4 mt-0 card-table">
-                    <>
-                        {/* TOP */}
-                        <div className="flex items-center justify-between pr-6 pl-6 pt-10 pb-4">
-                            <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={handleItemsPerPageChange}
-                                    className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {[10, 20, 30, 50].map((size) => (
-                                        <option key={size} value={size}>
-                                            {size}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span>entries per page</span>
-                            </div>
-                            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                                <TableSearch />
-                            </div>
-                        </div>
-
-                        {/* LIST */}
-                        <Table columns={columns} renderRow={renderRow} data={roles} />
-
-                        {/* PAGINATION */}
-                        <Pagination
-                            currentPage={currentPage}
-                            totalItems={totalItems}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={handlePageChange}
-                        />
-                    </>
+            <Card>
+                <div className="flex justify-end mb-4">
+                    <Input.Search
+                        placeholder="Search by role name..."
+                        onSearch={(value) => {
+                            setSearchQuery(value);
+                            setPagination(prev => ({ ...prev, current: 1 })); // Reset to first page on search
+                        }}
+                        style={{ width: 250 }}
+                        allowClear
+                    />
                 </div>
-            )}
+                <Table
+                    columns={columns}
+                    dataSource={roles}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={pagination}
+                    onChange={handleTableChange}
+                />
+            </Card>
         </div>
     );
 };

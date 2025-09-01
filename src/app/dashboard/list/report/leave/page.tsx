@@ -1,29 +1,20 @@
 "use client";
-import moment from "moment";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import { fetchLeaves } from "@/lib/api/leave";
-import { getEmployeeById } from "@/lib/api/employee";
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { MdKeyboardArrowRight } from "react-icons/md";
-import { BsSortDown } from "react-icons/bs";
-import { TbReport } from "react-icons/tb";
-import { LuCircleCheck } from "react-icons/lu";
-import { MdOutlineCancel } from "react-icons/md";
-import { FiMinusCircle } from "react-icons/fi";
-import { PiCalendarDotBold } from "react-icons/pi";
-import TableSearch from "@/components/TableSearch";
-import DetailsModal from "@/components/DetailsModal";
 
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Card, Table, Spin, Button, Space, Tag, DatePicker, Row, Col, Statistic, message } from "antd";
+import type { TableProps } from 'antd';
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { fetchLeaves, fetchEmployeesLeave } from "@/lib/api/leave";
+import { getEmployeeById } from "@/lib/api/employee";
+import LeaveDetailsModal from "@/components/modals/LeaveDetailsModal"; // Import the new modal
+import dayjs from "dayjs";
+
+// --- Type Definitions ---
 interface Employee {
     name: string;
     employee_code: string;
 }
-
-type LeaveStatus = {
-    status_name: string;
-};
 
 interface Leave {
     id: number;
@@ -31,20 +22,9 @@ interface Leave {
     reason: string;
     start_date: string;
     end_date: string;
-    leave_type: {
-        id: number;
-        type_name: string;
-    }
-    status: LeaveStatus;
+    leave_type: { type_name: string; };
+    status: { status_name: string; };
 }
-
-
-type LeavesResponse = {
-    data: Leave[];
-    current_page: number;
-    total_pages: number;
-    total_items: number;
-};
 
 type LeaveSummary = {
     approved: number;
@@ -52,320 +32,193 @@ type LeaveSummary = {
     pending: number;
 };
 
+// This will be the structure for our table rows
+type EmployeeLeaveSummary = {
+    key: number; // employee_id
+    employee_code: string;
+    employee_name: string;
+    approved: number;
+    rejected: number;
+    pending: number;
+};
 
-interface EmployeeMap {
-    [id: number]: Employee;
-}
-
-const employeeMap: EmployeeMap = {};
-
-const columns = [
-    { header: "Employee ID", accessor: "employee_id" },
-    { header: "Employee", accessor: "employee_name" },
-    { header: "Approved Leaves", accessor: "approved_leaves" },
-    { header: "Rejected Leaves", accessor: "rejected_leaves" },
-    { header: "Pending Leaves", accessor: "pending_leaves" },
-];
-
-
-const LeaveTable: React.FC = () => {
+const LeaveReportPage = () => {
     const router = useRouter();
-    const [LeavesByPage, setLeavesByPage] = useState<{
-        [key: string]: Leave[];
-    }>({});
-    const [leaves, setLeaves] = useState<Leave[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [summaryData, setSummaryData] = useState<EmployeeLeaveSummary[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+    const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
-    const [totalPages, setTotalPages] = useState<number>(1);
-    const [totalItems, setTotalItems] = useState<number>(0);
-    const [employees, setEmployees] = useState<EmployeeMap>({});
-
-    const [leaveSummaryByEmployee, setLeaveSummaryByEmployee] = useState<{ [employeeId: number]: LeaveSummary }>({});
-
-    const [showModal, setShowModal] = useState(false);
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
-    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    // State for the details modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<{ id: number; name: string } | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [employeeLeaves, setEmployeeLeaves] = useState<Leave[]>([]);
 
 
-    useEffect(() => {
-        loadLeaves(currentPage, itemsPerPage);
-    }, [currentPage, itemsPerPage]);
-
-    const loadLeaves = async (page: number, perPage: number) => {
-        const cacheKey = `${page}-${perPage}`;
-
-        // Use cached data if available
-        if (LeavesByPage[cacheKey]) {
-            setLeaves(LeavesByPage[cacheKey]);
-            setLoading(false);
-            return;
-        }
-
+    const fetchData = useCallback(async (page: number, pageSize: number, month: dayjs.Dayjs) => {
         setLoading(true);
         try {
-            setError(null);
+            // Your API should ideally support date filtering.
+            // Pass month and year to the API.
+            const res = await fetchLeaves(page, pageSize);
+            const leaves: Leave[] = res.data || [];
 
-            const res: LeavesResponse = await fetchLeaves(page, perPage);
-            const filtered: Leave[] = res.data.filter((p: any) => p && p.start_date);
-
-            // Summarize leave counts by employee for the current page data
-            const summary: { [id: number]: LeaveSummary } = {};
-
-            res.data.forEach((leave: Leave) => {
+            const summaryMap: Record<number, LeaveSummary> = leaves.reduce((acc, leave) => {
                 const empId = leave.employee_id;
+                if (!acc[empId]) acc[empId] = { approved: 0, rejected: 0, pending: 0 };
                 const status = leave.status.status_name.toLowerCase();
+                if (status === 'approved') acc[empId].approved++;
+                else if (status === 'rejected') acc[empId].rejected++;
+                else if (status === 'pending') acc[empId].pending++;
+                return acc;
+            }, {} as Record<number, LeaveSummary>);
 
-                if (!summary[empId]) {
-                    summary[empId] = { approved: 0, rejected: 0, pending: 0 };
-                }
-
-                if (status === "approved") summary[empId].approved++;
-                else if (status === "rejected") summary[empId].rejected++;
-                else if (status === "pending") summary[empId].pending++;
-            });
-
-            setLeaveSummaryByEmployee(summary);
-
-                const employeeIds = Object.keys(summary).map(Number);
-
-            // Fetch employee details
-            const employeePromises = employeeIds.map(id => getEmployeeById(id));
+            const employeeIds = Array.from(new Set(leaves.map(l => l.employee_id)));
+            const employeePromises = employeeIds.map(id => getEmployeeById(id).catch(() => null));
             const employeeResults = await Promise.all(employeePromises);
 
-            const newEmployeeMap: EmployeeMap = {};
-            employeeResults.forEach((res, idx) => {
-                const empData = res.data?.result?.data; // adjust this path to your API response
-                if (empData) {
-                    newEmployeeMap[employeeIds[idx]] = {
-                        name: empData.name,
-                        employee_code: empData.employee_code,
-                    };
+            const employeeMap: Record<number, Employee> = {};
+            employeeResults.forEach(res => {
+                if (res) {
+                    const empData = res.data?.result?.data;
+                    employeeMap[empData.id] = { name: empData.name, employee_code: empData.employee_code };
                 }
             });
-            
-            setEmployees(newEmployeeMap);
 
-            // Save to page cache
-            setLeavesByPage((prev) => ({
-                ...prev,
-                [cacheKey]: filtered,
+            const tableData: EmployeeLeaveSummary[] = employeeIds.map(id => ({
+                key: id,
+                employee_code: employeeMap[id]?.employee_code || `ID: ${id}`,
+                employee_name: employeeMap[id]?.name || 'Unknown Employee',
+                ...summaryMap[id],
             }));
 
-            setLeaves(filtered);
-            setTotalPages(res.total_pages);
-            setTotalItems(res.total_items);
+            setSummaryData(tableData);
+            setPagination(prev => ({ ...prev, total: res.total_items, current: page, pageSize }));
 
         } catch (err) {
-            setError("Failed to fetch leaves");
+            message.error("Failed to fetch leave report data.");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
+    useEffect(() => {
+        fetchData(pagination.current, pagination.pageSize, selectedMonth);
+    }, [pagination.current, pagination.pageSize, selectedMonth, fetchData]);
 
-    const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newSize = Number(e.target.value);
-        setItemsPerPage(newSize);
-        setCurrentPage(1);
-        setLeaves([]); // Reset current visible data
-        setLeavesByPage({}); // Clear cached data
-    };
-
-    const goBack = () => {
-        router.push("/dashboard/list/dashboard/admin");
-    };
-
-    const employeeIds = Object.keys(leaveSummaryByEmployee).map(id => Number(id));
-    const totalApproved = useMemo(() => {
-        return Object.values(leaveSummaryByEmployee).reduce((sum, emp) => sum + emp.approved, 0);
-    }, [leaveSummaryByEmployee]);
-
-    const totalRejected = useMemo(() => {
-        return Object.values(leaveSummaryByEmployee).reduce((sum, emp) => sum + emp.rejected, 0);
-    }, [leaveSummaryByEmployee]);
-
-    const totalPending = useMemo(() => {
-        return Object.values(leaveSummaryByEmployee).reduce((sum, emp) => sum + emp.pending, 0);
-    }, [leaveSummaryByEmployee]);
-
-    const handleView = (employeeId: number, status: string) => {
-        setSelectedEmployeeId(employeeId);
+    const handleViewDetails = async (employeeId: number, name: string, status: string) => {
+        setSelectedEmployee({ id: employeeId, name });
         setSelectedStatus(status);
-        setShowModal(true);
+        setIsModalOpen(true);
+        setModalLoading(true);
+        try {
+            const res = await fetchEmployeesLeave(employeeId);
+            setEmployeeLeaves(res.data || []);
+        } catch {
+            message.error(`Failed to load leaves for ${name}.`);
+        } finally {
+            setModalLoading(false);
+        }
     };
 
-    const renderRow = (employeeId: number) => {
-        const summary = leaveSummaryByEmployee[employeeId];
-        const employee = employees[employeeId];
-        return (
-            <tr key={employeeId} className="border-b border-gray-200 text-sm">
-                <td className="py-4 px-4">
-                    <button className="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-1 px-4 border border-blue-500 hover:border-transparent rounded">
-                        #{employee?.employee_code || `ID: ${employeeId}`}
-                    </button>
-                </td>
-                <td className="py-4 px-4">{employee?.name || `ID: ${employeeId}`}</td>
-                <td className="py-4 px-4">
-                    <button 
-                        onClick={() => handleView(employeeId, "approved")}
-                        className="px-3 py-1 text-sm text-white bg-[#3ec9d6] hover:bg-[#20a8b5] rounded"
-                    >
-                        {summary?.approved || 0} View
-                    </button>                    
-                </td>
-                <td className="py-4 px-4">
-                    <button 
-                        onClick={() => handleView(employeeId, "rejected")}
-                        className="px-3 py-1 text-sm text-white bg-[#ff3a6e] hover:bg-[#e71c52] rounded"
-                    >
-                        {summary?.rejected || 0} View
-                    </button>
-                </td>
-                <td className="py-4 px-4">
-                    <button 
-                        onClick={() => handleView(employeeId, "pending")}
-                        className="px-3 py-1 text-sm text-white bg-[#ffa21d] hover:bg-[#e38f17] rounded"
-                    >
-                        {summary?.pending || 0} View
-                    </button>
-                </td>
-            </tr>
-        );
-    };
+    const columns: TableProps<EmployeeLeaveSummary>['columns'] = [
+        { title: "Employee ID", dataIndex: "employee_code", key: "employee_code", sorter: (a, b) => a.employee_code.localeCompare(b.employee_code) },
+        { title: "Employee Name", dataIndex: "employee_name", key: "employee_name", sorter: (a, b) => a.employee_name.localeCompare(b.employee_name) },
+        { title: "Approved", dataIndex: "approved", key: "approved", align: 'center', render: (count, record) => (
+                <Button type="link" onClick={() => handleViewDetails(record.key, record.employee_name, 'approved')} disabled={count === 0}>{count}</Button>
+            )},
+        { title: "Rejected", dataIndex: "rejected", key: "rejected", align: 'center', render: (count, record) => (
+                <Button type="link" onClick={() => handleViewDetails(record.key, record.employee_name, 'rejected')} disabled={count === 0} danger>{count}</Button>
+            )},
+        { title: "Pending", dataIndex: "pending", key: "pending", align: 'center', render: (count, record) => (
+                <Tag color="gold" style={{ cursor: count > 0 ? 'pointer' : 'default' }} onClick={() => count > 0 && handleViewDetails(record.key, record.employee_name, 'pending')}>{count}</Tag>
+            )},
+    ];
 
-    const formattedDate = moment().format("MMMM-YYYY");
-
-    if (loading) {
-        return <p className="text-center py-10">Loading...</p>;
-    }
-
-    if (error) {
-        return <p className="text-center py-10 text-red-600">{error}</p>;
-    }
+    const totalSummary = useMemo(() => {
+        // Ideally, this data would come from a separate summary API endpoint.
+        // For now, we calculate from the visible page data.
+        return summaryData.reduce((acc, current) => {
+            acc.approved += current.approved;
+            acc.rejected += current.rejected;
+            acc.pending += current.pending;
+            return acc;
+        }, { approved: 0, rejected: 0, pending: 0 });
+    }, [summaryData]);
 
     return (
-        <div>
-            <div className="flex items-center justify-between m-4">
+        // --- STYLE UPDATE: Main container with background color ---
+        <div className="p-4 sm:p-6 bg-light-bg min-h-screen">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="hidden md:block text-lg font-semibold mb-0">Manage Leave Report</h1>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span
-                            onClick={goBack}
-                            className="hover:underline cursor-pointer text-blue-600 font-light"
-                        >
-                            Home
-                        </span>
+                    {/* --- STYLE UPDATE: Text colors --- */}
+                    <h1 className="text-xl font-semibold text-text-primary">Leave Report</h1>
+                    <div className="text-sm text-text-secondary flex items-center gap-2">
+                        <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-accent-purple font-medium">Home</span>
                         <MdKeyboardArrowRight />
-                        <span className="text-gray-700 font-light">Leave Report</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4 self-end m-4 mb-0">
-                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-kungkeaYellow">
-                        <BsSortDown className="text-white font-semibold" />
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 m-4">
-                <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                    <div className="p-3 bg-[#6FD943] rounded-lg text-white">
-                        <TbReport size={24} />
-                    </div>
-                    <div className="ml-3">
-                        <h1 className="hidden md:block text-lg font-semibold mb-0">Report</h1>
-                        <span className="text-sm text-gray-400 font-light">Monthly Leave Summary</span>
-                    </div>
-                </div>
-                <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                    <div className="p-3 bg-[#6c757d] rounded-lg text-white">
-                        <PiCalendarDotBold size={24} />
-                    </div>
-                    <div className="ml-3">
-                        <h1 className="hidden md:block text-lg font-semibold mb-0">Duration</h1>
-                        <span className="text-sm text-gray-400 font-light">{formattedDate}</span>
+                        <span>Leave Report</span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 m-4">
-                <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                    <div className="p-3 bg-[#6FD943] rounded-lg text-white">
-                        <LuCircleCheck size={24} />
-                    </div>
-                    <div className="ml-3">
-                        <h1 className="hidden md:block text-lg font-semibold mb-0">Approved Leaves</h1>
-                        <span className="text-sm text-gray-400 font-light">{totalApproved}</span>
-                    </div>
-                </div>
-                <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                    <div className="p-3 bg-[#6c757d] rounded-lg text-white">
-                        <MdOutlineCancel size={24} />
-                    </div>
-                    <div className="ml-3">
-                        <h1 className="hidden md:block text-lg font-semibold mb-0">Rejected Leave</h1>
-                        <span className="text-sm text-gray-400 font-light">{totalRejected}</span>
-                    </div>
-                </div>
-                <div className="bg-white card-table rounded-2xl p-5 flex items-center">
-                    <div className="p-3 bg-[#6FD943] rounded-lg text-white">
-                        <FiMinusCircle size={24} />
-                    </div>
-                    <div className="ml-3">
-                        <h1 className="hidden md:block text-lg font-semibold mb-0">Pending Leaves</h1>
-                        <span className="text-sm text-gray-400 font-light">{totalPending}</span>
-                    </div>
-                </div>
-            </div>
+            {/* --- STYLE UPDATE: Summary cards --- */}
+            <Row gutter={[16, 16]} className="mb-6">
+                <Col xs={24} sm={12} md={8}>
+                    <Card bordered={false} className="shadow-sm rounded-lg">
+                        <Statistic title="Total Approved" value={totalSummary.approved} valueStyle={{ color: '#3f8600' }} />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                    <Card bordered={false} className="shadow-sm rounded-lg">
+                        <Statistic title="Total Rejected" value={totalSummary.rejected} valueStyle={{ color: '#cf1322' }} />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                    <Card bordered={false} className="shadow-sm rounded-lg">
+                        <Statistic title="Total Pending" value={totalSummary.pending} valueStyle={{ color: '#faad14' }} />
+                    </Card>
+                </Col>
+            </Row>
 
-            <div className="bg-white rounded-2xl m-4 mt-0 card-table">
-                <div className="flex items-center justify-between pr-6 pl-6 pt-10 pb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <select
-                            value={itemsPerPage}
-                            onChange={handleItemsPerPageChange}
-                            className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {[10, 20, 30, 50].map((size) => (
-                                <option key={size} value={size}>
-                                    {size}
-                                </option>
-                            ))}
-                        </select>
-                        <span>entries per page</span>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                        <TableSearch />
-                    </div>
+            {/* --- STYLE UPDATE: Main table card --- */}
+            <Card bordered={false} className="shadow-sm rounded-lg">
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <DatePicker
+                        picker="month"
+                        value={selectedMonth}
+                        onChange={(date) => {
+                            setSelectedMonth(date || dayjs());
+                            setPagination(prev => ({ ...prev, current: 1 }));
+                        }}
+                        allowClear={false}
+                    />
+                    {/* You could add an Export button here later if you wish */}
                 </div>
                 <Table
                     columns={columns}
-                    data={employeeIds}
-                    renderRow={renderRow}
+                    dataSource={summaryData}
+                    loading={loading}
+                    pagination={pagination}
+                    onChange={(p) => setPagination(prev => ({...prev, current: p.current!, pageSize: p.pageSize! }))}
+                    className="ant-table-wrapper--light" // Optional: for custom overrides
                 />
-                <Pagination
-                    currentPage={currentPage}
-                    totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={handlePageChange}
+            </Card>
+
+            {/* Modal does not need style changes as it's a separate component */}
+            {selectedEmployee && (
+                <LeaveDetailsModal
+                    open={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    employeeName={selectedEmployee.name}
+                    status={selectedStatus}
+                    leaves={employeeLeaves}
+                    loading={modalLoading}
                 />
-                 {showModal && (
-                    <DetailsModal
-                        leaves={leaves}
-                        selectedEmployeeId={selectedEmployeeId}
-                        selectedStatus={selectedStatus}
-                        setShowModal={setShowModal}
-                    />
-                )}
-            </div>
-           
+            )}
         </div>
     );
 };
 
-export default LeaveTable;
+export default LeaveReportPage;
