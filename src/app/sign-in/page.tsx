@@ -111,7 +111,7 @@ const LoginPage = () => {
                                 name='email'
                                 label='Email Address'
                                 labelClass="text-white"
-                                className='border-white w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-300 dark:text-gray-300 focus:border-white/50 rounded-lg'
+                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-200 dark:text-gray-300 focus:border-white/50 rounded-lg'
                                 register={register("email", {
                                     required: "Email Address is required!",
                                 })}
@@ -123,7 +123,7 @@ const LoginPage = () => {
                                 name='password'
                                 label='Password'
                                 labelClass="text-white"
-                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-300 dark:text-gray-300 focus:border-white/50 rounded-lg'
+                                className='w-full bg-white/5 border-white/20 text-white placeholder-white dark:placeholder-gray-200 dark:text-gray-300 focus:border-white/50 rounded-lg'
                                 register={register("password", {
                                     required: "Password is required!",
                                 })}
