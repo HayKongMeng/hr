@@ -5,19 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/components/PrintableQrCode.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/modals/LeaveDetailsModal.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/report/leave/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/report/leave/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/report/monthly/attendance/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/report/monthly/attendance/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/roles/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/roles/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Menu.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ui/Textbox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/Textbox.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/companies/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/companies/[id]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/company.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/company.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -105,7 +94,7 @@
       <workItem from="1755827011008" duration="22771000" />
       <workItem from="1755878867866" duration="1894000" />
       <workItem from="1756086469146" duration="82807000" />
-      <workItem from="1756440194436" duration="36555000" />
+      <workItem from="1756440194436" duration="37437000" />
     </task>
     <servers />
   </component>

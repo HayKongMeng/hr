@@ -26,6 +26,8 @@ export type Company = {
     posted_by: number;
     created_at: string;
     scan_code: string;
+    posted_by_name: string;
+    updated_at: string;
 };
 
 export const fetchAllCompanies = async (): Promise<Company[]> => {

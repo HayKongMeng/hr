@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { getCompanyById } from '@/lib/api/company';
+import {Company, getCompanyById} from '@/lib/api/company';
 import {
     FaPhoneAlt,
     FaEnvelope,
@@ -40,12 +40,13 @@ interface CompanyData {
     deleted_at: string | null;
     created_at: string;
     updated_at: string;
+    scan_code: string;
 }
 
 const CompanyDetails = () => {
     const router = useRouter();
     const { id } = useParams();
-    const [company, setCompany] = useState<CompanyData | null>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -54,7 +55,7 @@ const CompanyDetails = () => {
         const fetchCompany = async () => {
             try {
                 const response = await getCompanyById(Number(id));
-                setCompany(response.data.result.data);
+                setCompany(response);
             } catch (error) {
                 console.error('Failed to fetch company', error);
             } finally {
