@@ -118,7 +118,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     iconComponent: LuQrCode,
                     label: "Check Attendance",
                     href: "/dashboard/dash",
-                    visible: ["Admin", "Super Admin", "Employee"],
+                    visible: ["Admin", "Employee"],
                 },
                 {
                     iconComponent: GiPartyFlags,
