@@ -513,21 +513,11 @@ const CompaniesView = ({ isMobile }: { isMobile: boolean }) => {
                 }
 
                 message.success("Company created! Now assigning to employee...");
-
-                const historyPayload = {
-                    company_id: newCompanyId,
-                    employee_id: values.employee_id,
-                    start_date: dayjs(values.start_date).format("YYYY-MM-DD"),
-                    end_date: "9999-12-31",
-                    notes: "Initial assignment on creation.",
-                };
-                await createCompanyHistory(historyPayload);
-                message.success("Company successfully assigned to employee!");
             }
             handleModalCancel();
             fetchData();
         } catch (error: any) {
-            message.error(error?.response?.data?.message || "Operation failed.");
+            message.error(error?.response?.data?.exception?.message || "Operation failed.");
         } finally {
             setIsSubmitting(false);
         }
