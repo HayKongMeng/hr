@@ -83,8 +83,8 @@ const ProfilePage = () => {
     const router = useRouter();
     const { id } = useParams();
     const pageIdAsNumber = Number(id);
-    const { user, loading: authLoading, isAuthenticated } = useAuth();
-    const [employee, setEmployee] = useState<any>(null);
+    const { user,employee, loading: authLoading, isAuthenticated } = useAuth();
+    const [allEmployee, setAllEmployee] = useState<any>(null);
     const [imgSrc, setImgSrc] = useState('');
     const [selectedPersonalInfoId, setSelectedPersonalInfoId] = useState<number | undefined>();
     const [selectedBankInfoId, setSelectedBankInfoId] = useState<number | undefined>();
@@ -99,7 +99,7 @@ const ProfilePage = () => {
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
     const loggedInUserRoles = user?.roles || [];
-    const loggedInEmployeeId = user?.emp_id;
+    const loggedInEmployeeId = employee?.data?.id;
     const isViewingOwnProfile = loggedInEmployeeId === pageIdAsNumber;
     const isAdmin = loggedInUserRoles.includes('Admin');
 
@@ -190,7 +190,7 @@ const ProfilePage = () => {
                 getEducationDetailByEmployeeId(Number(id)),
                 getExperienceByEmployeeId(Number(id))
             ]);
-            setEmployee(employeeRes.data.result.data);
+            setAllEmployee(employeeRes.data.result.data);
             setEmergencyContacts(contactsRes.data.result.data);
             setPersonalInformation(personalInfo.data.result.data);
             setBankInformation(bankInfo.data.result.data);
@@ -216,12 +216,14 @@ const ProfilePage = () => {
         router.push('/dashboard/list/employees');
     };
 
-    if (authLoading || isAuthorized === null) {
-        return <LoadingRollerSpinner />;
-    }
+
 
     if (isAuthorized === false) {
         return notFound();
+    }
+
+    if (authLoading || isAuthorized === null) {
+        return <LoadingRollerSpinner />;
     }
 
     if (loading) {
@@ -276,15 +278,15 @@ const ProfilePage = () => {
                             height={80}
                             unoptimized
                             className="rounded-full border object-cover absolute top-0 left-1/2 translate-x-[-50%] translate-y-[62%]"
-                            onError={() => setImgSrc( employee?.image_url || '/avatar.png')}
+                            onError={() => setImgSrc( allEmployee?.image_url || '/avatar.png')}
                         />
                     </div>
 
                     <div className='text-center mt-10'>
-                        <h2 className="font-bold text-lg mt-2 text-black flex justify-center items-center">{employee?.name} <BsPatchCheckFill className='ml-1 text-green-400' size={14} /></h2>
+                        <h2 className="font-bold text-lg mt-2 text-black flex justify-center items-center">{allEmployee?.name} <BsPatchCheckFill className='ml-1 text-green-400' size={14} /></h2>
                         <p className="text-black text-sm pl-4 pr-4">
                             <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
-                                • {employee?.position?.title}
+                                • {allEmployee?.position?.title}
                             </span>
                         </p>
                     </div>
@@ -296,28 +298,28 @@ const ProfilePage = () => {
                                 <FaIdBadge className="text-blue-600" />
                                 Employee ID:
                             </p>
-                            <p className="text-black">{employee?.employee_code}</p>
+                            <p className="text-black">{allEmployee?.employee_code}</p>
                         </div>
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
                                 <FaUsers className="text-green-600" />
                                 Team:
                             </p>
-                            <p className="text-black">{employee?.department?.name}</p>
+                            <p className="text-black">{allEmployee?.department?.name}</p>
                         </div>
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
                                 <FaCalendarAlt className="text-yellow-500" />
                                 Date Of Join:
                             </p>
-                            <p className="text-black">{employee?.hire_date}</p>
+                            <p className="text-black">{allEmployee?.hire_date}</p>
                         </div>
                         <div className="flex justify-between gap-2 text-xs">
                             <p className="flex items-center gap-1">
                                     <FaBuilding className="text-purple-600" />
                                 Report Office:
                             </p>
-                            <p className="text-black">{employee?.posted_by_name}</p>
+                            <p className="text-black">{allEmployee?.posted_by_name}</p>
                         </div>
 
                         {/* Buttons with Icons */}
@@ -339,7 +341,7 @@ const ProfilePage = () => {
                                 <FormModal
                                     table="Employee"
                                     type="update"
-                                    data={employee}
+                                    data={allEmployee}
                                     onSuccess={() => setShowModal(false)}
                                     onCancel={() => setShowModal(false)}
                                 />
@@ -351,7 +353,7 @@ const ProfilePage = () => {
                                 <FaPhoneAlt className="text-blue-600" />
                                 Phone:
                             </p>
-                            <p className="text-black">{employee?.phone}</p>
+                            <p className="text-black">{allEmployee?.phone}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -359,7 +361,7 @@ const ProfilePage = () => {
                                 <FaEnvelope className="text-green-600" />
                                 Email:
                             </p>
-                            <p className="text-black">{employee?.email}</p>
+                            <p className="text-black">{allEmployee?.email}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -367,7 +369,7 @@ const ProfilePage = () => {
                                 <FaGenderless className="text-pink-500" />
                                 Gender:
                             </p>
-                            <p className="text-black">{employee?.gender}</p>
+                            <p className="text-black">{allEmployee?.gender}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -375,7 +377,7 @@ const ProfilePage = () => {
                                 <FaBirthdayCake className="text-yellow-500" />
                                 Birthday:
                             </p>
-                            <p className="text-black">{employee?.date_of_birth}</p>
+                            <p className="text-black">{allEmployee?.date_of_birth}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -394,8 +396,8 @@ const ProfilePage = () => {
                             {canEdit && (
                                 <button
                                     onClick={() => {
-                                        if (employee?.id !== undefined) {
-                                            handleOpenPersoalInfo(employee.id, personalInformation?.[0]?.id);
+                                        if (allEmployee?.id !== undefined) {
+                                            handleOpenPersoalInfo(allEmployee.id, personalInformation?.[0]?.id);
                                         }
                                     }}
                                     className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -468,8 +470,8 @@ const ProfilePage = () => {
                             {canEdit && (
                             <button
                                 onClick={() => {
-                                    if (employee?.id !== undefined) {
-                                        handleOpenEmergencyContact(employee.id);
+                                    if (allEmployee?.id !== undefined) {
+                                        handleOpenEmergencyContact(allEmployee.id);
                                     }
                                 }}
                                 className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -533,7 +535,7 @@ const ProfilePage = () => {
                                         <FormModal
                                             table="Employee"
                                             type="update"
-                                            data={employee}
+                                            data={allEmployee}
                                             onSuccess={() => {
                                                 setShowModal(false);
                                             }}
@@ -564,7 +566,7 @@ const ProfilePage = () => {
                                 >
                                      <div className='border-t'>
                                         <div className="text-xs text-gray-700 pt-4">
-                                            {employee?.address}
+                                            {allEmployee?.address}
                                         </div>
                                      </div>
                                 </Disclosure.Panel>
@@ -579,10 +581,10 @@ const ProfilePage = () => {
                                     <div className='flex items-center'>
                                         <button
                                             onClick={() => {
-                                                if (employee?.id !== undefined && bankInformation?.[0]?.id) {
-                                                    handleOpenBankInfo(employee.id, bankInformation[0].id); // Edit
-                                                } else if (employee?.id !== undefined) {
-                                                    handleOpenBankInfo(employee.id); // Add
+                                                if (allEmployee?.id !== undefined && bankInformation?.[0]?.id) {
+                                                    handleOpenBankInfo(allEmployee.id, bankInformation[0].id); // Edit
+                                                } else if (allEmployee?.id !== undefined) {
+                                                    handleOpenBankInfo(allEmployee.id); // Add
                                                 }
                                             }}
                                             className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -640,10 +642,10 @@ const ProfilePage = () => {
                                     <div className='flex items-center'>
                                         <button
                                             onClick={() => {
-                                                if (employee?.id !== undefined && familyInformation?.[0]?.id) {
-                                                    handleOpenFamilyInfo(employee.id, familyInformation[0].id); // Edit
-                                                } else if (employee?.id !== undefined) {
-                                                    handleOpenFamilyInfo(employee.id); // Add
+                                                if (allEmployee?.id !== undefined && familyInformation?.[0]?.id) {
+                                                    handleOpenFamilyInfo(allEmployee.id, familyInformation[0].id); // Edit
+                                                } else if (allEmployee?.id !== undefined) {
+                                                    handleOpenFamilyInfo(allEmployee.id); // Add
                                                 }
                                             }}
                                             className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -701,8 +703,8 @@ const ProfilePage = () => {
                                     <div className='flex items-center'>
                                         <button
                                             onClick={() => {
-                                                if (employee?.id !== undefined) {
-                                                    handleOpenEduDetail(employee.id);
+                                                if (allEmployee?.id !== undefined) {
+                                                    handleOpenEduDetail(allEmployee.id);
                                                 }
                                             }}
                                             className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -758,8 +760,8 @@ const ProfilePage = () => {
                                     <div className='flex items-center'>
                                         <button
                                             onClick={() => {
-                                                if (employee?.id !== undefined) {
-                                                    handleOpenExperience(employee.id);
+                                                if (allEmployee?.id !== undefined) {
+                                                    handleOpenExperience(allEmployee.id);
                                                 }
                                             }}
                                             className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
@@ -817,16 +819,16 @@ const ProfilePage = () => {
                     </Disclosure>
                 </div>
             </div>
-            {canEdit && employee?.id !== undefined && (
+            {canEdit && allEmployee?.id !== undefined && (
                 <>
-                    <EmergencyContactForm open={isModalOpenEmC} onClose={handleCloseEmergencyContact} onSaved={fetchData} employeeId={employee.id} />
-                    <PersonalInfoForm isOpen={isModalOpenPerIn} onClose={handleClosePersoalInfo} employeeId={employee.id} personalInfoId={selectedPersonalInfoId} onSaved={fetchData} />
-                    <BankInfoForm open={isModalOpenBankIn} onClose={handleCloseBankInfo} onSaved={fetchData} employeeId={employee.id} bankInfoId={selectedBankInfoId} />
-                    <FamilyInfoForm open={isModalOpenFamilyIn} onClose={handleCloseFamilyInfo} onSaved={fetchData} employeeId={employee.id} familyInfoId={selectedFamilyInfoId} />
-                    <EducationDetailsForm open={isModalOpenEduDetail} onClose={handleCloseEduDetail} onSaved={fetchData} employeeId={employee.id} />
-                    <ExperienceForm open={isModalOpenExperience} onClose={handleCloseExperience} onSaved={fetchData} employeeId={employee.id} />
-                    {isChangePasswordModalOpen && employee && (
-                        <ChangePasswordModal open={isChangePasswordModalOpen} employee={employee} onCancel={handleCloseChangePassword} onSuccess={fetchData} />
+                    <EmergencyContactForm open={isModalOpenEmC} onClose={handleCloseEmergencyContact} onSaved={fetchData} employeeId={allEmployee.id} />
+                    <PersonalInfoForm isOpen={isModalOpenPerIn} onClose={handleClosePersoalInfo} employeeId={allEmployee.id} personalInfoId={selectedPersonalInfoId} onSaved={fetchData} />
+                    <BankInfoForm open={isModalOpenBankIn} onClose={handleCloseBankInfo} onSaved={fetchData} employeeId={allEmployee.id} bankInfoId={selectedBankInfoId} />
+                    <FamilyInfoForm open={isModalOpenFamilyIn} onClose={handleCloseFamilyInfo} onSaved={fetchData} employeeId={allEmployee.id} familyInfoId={selectedFamilyInfoId} />
+                    <EducationDetailsForm open={isModalOpenEduDetail} onClose={handleCloseEduDetail} onSaved={fetchData} employeeId={allEmployee.id} />
+                    <ExperienceForm open={isModalOpenExperience} onClose={handleCloseExperience} onSaved={fetchData} employeeId={allEmployee.id} />
+                    {isChangePasswordModalOpen && allEmployee && (
+                        <ChangePasswordModal open={isChangePasswordModalOpen} employee={allEmployee} onCancel={handleCloseChangePassword} onSuccess={fetchData} />
                     )}
                 </>
             )}

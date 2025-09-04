@@ -74,7 +74,6 @@ const AttendancePage = () => {
     const { user, loading: authLoading, isAuthenticated } = useAuth();
 
     const isMobile = useIsMobile();
-    const [isClient, setIsClient] = useState(false);
 
     const isEmployee = user?.roles.includes('Employee');
     const isAdmin = user?.roles.includes('Admin');
@@ -349,7 +348,7 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
 
 // --- My Attendance View (Refactored from MobileView) ---
 const MyAttendanceView = () => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, employee, isAuthenticated } = useAuth();
 
     const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -357,7 +356,7 @@ const MyAttendanceView = () => {
     const [summaryStats, setSummaryStats] = useState({ workingDays: 0, lateArrivals: 0, earlyLeavers: 0 });
 
     useEffect(() => {
-        const employeeId = user?.emp_id;
+        const employeeId = employee?.data?.id;
 
         if (!isAuthenticated || !employeeId) {
             setLoading(false);

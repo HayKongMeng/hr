@@ -29,7 +29,7 @@ export async function POST(request: Request) {
             sameSite: 'lax',
         });
 
-        const responsePayload = { token };
+        const responsePayload = { token, user, employee };
         const response = NextResponse.json(responsePayload);
         response.headers.set('Set-Cookie', tokenCookie);
 

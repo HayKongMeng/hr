@@ -16,7 +16,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleMobileMenu, toggleDesktopCollapse, isDesktopCollapsed }) => {
-    const { user, logout } = useAuth();
+    const { user,employee, logout } = useAuth();
     const userRole = user?.roles?.[0];
 
     const handleLogout = () => {
@@ -53,14 +53,14 @@ const Header: React.FC<HeaderProps> = ({ toggleMobileMenu, toggleDesktopCollapse
                 </button>
                 <div className="flex items-center gap-2">
                     <Image
-                        src={user?.emp_profile || '/avatar.png'}
+                        src={employee?.data?.image_url || '/avatar.png'}
                         alt="User Profile"
                         width={36}
                         height={36}
                         className="rounded-full object-cover"
                     />
                     <div className="hidden sm:block">
-                        <p className="font-semibold text-gray-800 text-sm">{user?.emp_username || 'User'}</p>
+                        <p className="font-semibold text-gray-800 text-sm">{user?.name || 'User'}</p>
                         <p className="text-xs text-gray-500">{userRole}</p>
                     </div>
                 </div>

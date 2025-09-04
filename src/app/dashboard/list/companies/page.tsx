@@ -40,9 +40,12 @@ import Link from "next/link";
 import {useAuth} from "@/lib/AuthContext";
 import FormModal from "@/components/FormModal";
 import CompanyHistoryForm from "@/components/forms/CompanyHistoryForm";
-import {FaCrosshairs} from "react-icons/fa";
+import {FaCrosshairs, FaQrcode} from "react-icons/fa";
 import {useReactToPrint} from "react-to-print";
 import PrintableQrCode from "@/components/PrintableQrCode";
+import jsPDF from "jspdf";
+import QRCode from 'qrcode';
+import html2canvas from "html2canvas";
 
 // --- Type Definitions ---
 type Company = {
@@ -599,8 +602,8 @@ const DepartmentsView = ({ isMobile,canManage  }: { isMobile: boolean , canManag
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selected, setSelected] = useState<Department | null>(null);
 
-    const { user } = useAuth();
-    const companyId = user?.company_id;
+    const { user, employee } = useAuth();
+    const companyId = employee?.data?.company_id;
 
     const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
@@ -732,52 +735,64 @@ const OrganizationSetupPage = () => {
     const router = useRouter();
     const isMobile = useIsMobile();
     const [isClient, setIsClient] = useState(false);
-    const { user, isAuthenticated, loading: authLoading } = useAuth();
+    const { user, employee, isAuthenticated, loading: authLoading } = useAuth();
 
-    const printComponentRef = useRef<HTMLDivElement>(null);
-    const [companyToPrint, setCompanyToPrint] = useState<Company | null>(null);
-    const [isPrinting, setIsPrinting] = useState(false);
+    const employeePrintRef = useRef<HTMLDivElement>(null);
+    const [employeeToPrint, setEmployeeToPrint] = useState<{name: string; scan_code: string} | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
-    const printTrigger = useReactToPrint({
-        onAfterPrint: () => setCompanyToPrint(null), // Clean up after printing
-    });
 
-    useEffect(() => { setIsClient(true); }, []);
-    const userRole = user?.roles?.[0];
+    const handleExportQrToPdf = useCallback(async () => {
+        const scanCode = employee?.data?.scan_code;
 
-    const handlePrintRequest = async () => {
-        const companyId = user?.company_id;
-
-        if (!companyId) {
-            message.error("Your account is not associated with a company.");
+        if (!scanCode) {
+            message.error("No scan code is available to export.");
             return;
         }
 
-        setIsPrinting(true);
-        message.loading({ content: 'Preparing QR Code...', key: 'print' });
+        setIsExporting(true);
+        message.loading({ content: 'Generating PDF...', key: 'pdf_export' });
 
         try {
-            const companyData = await getCompanyById(companyId);
+            const qrCodeDataURL = await QRCode.toDataURL(scanCode, {
+                errorCorrectionLevel: 'H', // High error correction
+                width: 200, // Width in pixels
+                margin: 2,
+            });
 
-            if (companyData && companyData.scan_code) {
-                setCompanyToPrint(companyData);
-            } else {
-                message.error({ content: 'This company does not have a QR scan code configured.', key: 'print' });
-            }
+            const doc = new jsPDF('portrait', 'mm', 'a4');
+
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageCenter = pageWidth / 2;
+
+            doc.setFontSize(16);
+
+            const qrCodeSize = 80;
+            const qrCodeX = pageCenter - (qrCodeSize / 2);
+            const qrCodeY = 50;
+            doc.addImage(qrCodeDataURL, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
+
+            doc.setFontSize(12);
+            doc.setFont('courier');
+            doc.text(scanCode, pageCenter, qrCodeY + qrCodeSize + 10, { align: 'center' });
+
+            doc.save(`qrcode-${scanCode}.pdf`);
+
+            message.success({ content: 'PDF exported successfully!', key: 'pdf_export' });
+
         } catch (error) {
-            console.error("Failed to fetch company details for printing:", error);
-            message.error({ content: 'Failed to retrieve company details.', key: 'print' });
+            console.error("Error creating PDF:", error);
+            message.error({ content: 'Failed to create PDF.', key: 'pdf_export' });
         } finally {
+            setIsExporting(false);
         }
-    };
 
-    useEffect(() => {
-        if (companyToPrint && printComponentRef.current) {
-            message.success({ content: 'QR Code ready!', key: 'print', duration: 1 });
-            printTrigger();
-            setIsPrinting(false);
-        }
-    }, [companyToPrint, printTrigger]);
+    }, [employee]);
+
+
+
+    useEffect(() => { setIsClient(true); }, []);
+    const userRole = user?.roles?.[0];
 
     const getTabItems = () => {
         const items = [];
@@ -832,13 +847,14 @@ const OrganizationSetupPage = () => {
                         <span>Organization</span>
                     </div>
                 </div>
-                {(userRole === 'Admin') && (
+                {(employee?.data?.scan_code) && (
                     <Button
-                        icon={<MdPrint />}
-                        onClick={handlePrintRequest}
-                        loading={isPrinting}
+                        type="primary"
+                        icon={<FaQrcode />}
+                        onClick={handleExportQrToPdf}
+                        loading={isExporting}
                     >
-                        Print Company QR Code
+                        Print My QR Code
                     </Button>
                 )}
             </div>
@@ -848,15 +864,14 @@ const OrganizationSetupPage = () => {
                 items={getTabItems()} 
             />
 
-            <div style={{ display: 'none' }}>
-                {companyToPrint && (
+
+                {employeeToPrint && (
                     <PrintableQrCode
-                        ref={printComponentRef}
-                        companyName={companyToPrint.name}
-                        scanCode={companyToPrint.scan_code}
+                        ref={employeePrintRef}
+                        companyName={employeeToPrint.name} // Display employee name
+                        scanCode={employeeToPrint.scan_code}
                     />
                 )}
-            </div>
         </div>
     );
 };

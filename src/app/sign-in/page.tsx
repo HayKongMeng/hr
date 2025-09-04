@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import api from '../../lib/api/index';
 import { toast } from "sonner";
 import Textbox from "../../components/ui/Textbox";
 import Button from "../../components/ui/Button";
@@ -10,17 +9,12 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
-import Link from 'next/link'; // Import Link for navigation
-import { FaGoogle } from 'react-icons/fa'; // Example using react-icons for Google icon
 
 type LoginFormData = {
     email: string;
     password: string;
 };
-interface TokenPayload {
-    roles: string[];
-}
+
 const LoginPage = () => {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -32,19 +26,17 @@ const LoginPage = () => {
         try {
             const response = await axios.post('/api/auth/login', data);
 
-            const { token } = response.data;
+            const { token, user, employee } = response.data;
 
-            if (!token || typeof token !== 'string') {
-                throw new Error("Invalid token received from server.");
+            if (!token || !user) {
+                throw new Error("Invalid login response from server.");
             }
 
-            login(token);
-
-            const decoded = jwtDecode<TokenPayload>(token);
-            const userRole = decoded.roles[0];
+            login({ token, user, employee });
 
             toast.success('Login successful!');
 
+            const userRole = user.roles[0];
             if (userRole === 'Employee') {
                 router.push('/dashboard/dash');
             } else {
@@ -56,12 +48,6 @@ const LoginPage = () => {
             const errorMessage = error.response?.data?.message || error.message || "An unknown login error occurred.";
             toast.error(errorMessage);
         }
-    };
-
-    // Google Sign-In handler (placeholder)
-    const handleGoogleSignIn = () => {
-        // TODO: Implement Google Sign-In logic here
-        toast.info("Google Sign-In is not yet implemented.");
     };
 
     return (

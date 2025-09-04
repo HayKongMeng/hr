@@ -19,10 +19,10 @@ export default function UserDropdown() {
     const dropdownRef = useRef<HTMLDivElement | null>(null);
 
     // --- Use the AuthContext for all user data ---
-    const { user, loading: authLoading, logout } = useAuth();
-    const userName = user?.emp_username || 'User';
+    const { user, employee, loading: authLoading, logout } = useAuth();
+    const userName = user?.name || 'User';
     const userRole = user?.roles[0] || 'Employee';
-    const employeeId = user?.emp_id;
+    const employeeId = employee?.data?.id;
 
     // --- Click outside handler (no changes needed) ---
     useEffect(() => {
@@ -53,7 +53,7 @@ export default function UserDropdown() {
                 className="inline-flex items-center gap-2 bg-light-card border border-light-border rounded-lg p-1 shadow-sm hover:bg-light-bg transition-colors duration-200"
             >
                 <img
-                    src={user?.emp_profile || "/avatar.png"}
+                    src={employee?.data?.image_url || "/avatar.png"}
                     alt="User Avatar"
                     className="w-8 h-8 rounded-md object-cover"
                 />

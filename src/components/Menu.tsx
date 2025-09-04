@@ -1,320 +1,271 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react'; // Import useMemo
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { RxDashboard } from "react-icons/rx";
-import {LuQrCode, LuUsers} from "react-icons/lu";
-import { TbPoint } from "react-icons/tb";
-import { LuUserCog } from "react-icons/lu";
-import {FiUser, FiUserPlus} from "react-icons/fi";
-import {
-  MdAccessTime,
-  MdLogout,
-  MdOutlineSpaceDashboard,
-} from 'react-icons/md';
-
-import {Menu as AntdMenu, Spin} from 'antd';
+import { usePathname } from 'next/navigation';
+import { useAuth } from "@/lib/AuthContext";
+import { Spin, Tooltip } from 'antd';
 import type { IconType } from 'react-icons';
-import { MenuItemType } from 'antd/es/menu/interface';
-import {useAuth} from "@/lib/AuthContext";
-import {FaUserCheck} from "react-icons/fa6";
-import {FaTree} from "react-icons/fa";
-import {GiPartyFlags} from "react-icons/gi";
-import {HiOutlineBadgeCheck} from "react-icons/hi";
+import clsx from 'clsx';
+import {
+    LuLayoutGrid,
+    LuLayers,
+    LuChevronDown,
+} from 'react-icons/lu';
+import { GiPartyFlags } from "react-icons/gi";
+import { FiUserPlus } from "react-icons/fi";
+import { FaUserShield } from "react-icons/fa";
+import { FaBuildingShield } from "react-icons/fa6";
 
-
-const api = {
-    post: async (url: string) => {
-        if (url === '/auth/logout') {
-            return new Promise((resolve) => setTimeout(resolve, 500));
-        }
-        throw new Error('Unknown endpoint');
-    },
-};
-
-interface MenuChildItem {
-    iconComponent?: IconType;
+interface NavItem {
     label: string;
+    icon: IconType;
     href?: string;
+    badge?: number | string;
+    children?: NavItem[];
     visible: string[];
-    children?: MenuChildItem[];
 }
-
-interface MenuItem extends Omit<MenuChildItem, 'href'> {
-    iconComponent?: IconType;
-    label: string;
-    href?: string;
-    visible: string[];
-    children?: MenuChildItem[];
-}
-interface MenuProps {
-  closeMenu: () => void;
-  collapsed: boolean;
-}
-
 
 interface MenuSection {
-    items: MenuItem[];
+    title?: string;
+    items: NavItem[];
 }
 
-
-
-
+interface MenuProps {
+    closeMenu: () => void;
+    collapsed: boolean;
+}
 
 const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
-    const router = useRouter();
     const pathname = usePathname();
-    const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+    const { user, employee, loading: authLoading } = useAuth();
 
-    const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+    const [openSections, setOpenSections] = useState<string[]>([]);
 
     const userRoles = user?.roles || [];
-    const employeeId = user?.emp_id;
+    const employeeId = employee?.data?.id;
 
     const getMenuItems = (empId: number | undefined): MenuSection[] => [
         {
+            title: 'Dashboard Manage',
             items: [
                 {
-                    iconComponent: RxDashboard,
-                    label: "Dashboard",
-                    visible: ["Admin", "Super Admin"],
+                    label: 'Dashboard',
+                    icon: LuLayoutGrid,
+                    visible: ['Admin', 'Super Admin', 'Employee'],
                     children: [
                         {
-                            iconComponent: TbPoint,
-                            label: "Overview",
-                            href: "/dashboard/admin",
-                            visible: ["Admin", "Super Admin","Employee"],
+                            label: 'Dashboard',
+                            href: '/dashboard/admin',
+                            icon: LuLayoutGrid,
+                            visible: ['Admin', 'Super Admin'],
                         },
                         {
-                            iconComponent: TbPoint,
-                            label: "Report",
-                            visible: ["Admin", "Super Admin"],
-                            children: [
-                                {
-                                    iconComponent: TbPoint,
-                                    label: "Monthly Attendance",
-                                    href: "/dashboard/list/report/monthly/attendance",
-                                    visible: ["Admin", "Super Admin"],
-                                },
-                                {
-                                    iconComponent: TbPoint,
-                                    label: "Leave",
-                                    href: "/dashboard/list/report/leave",
-                                    visible: ["Admin", "Super Admin"],
-                                },
-                            ],
-                        },
-                    ]
-                },
-                {
-                    iconComponent: FiUser,
-                    label: "Profile",
-                    href: `/dashboard/list/employees/${employeeId}`,
-                    visible: ["Admin","Employee"],
-                },
-                {
-                    iconComponent: LuQrCode,
-                    label: "Check Attendance",
-                    href: "/dashboard/dash",
-                    visible: ["Admin", "Employee"],
-                },
-                {
-                    iconComponent: GiPartyFlags,
-                    label: "Holidays",
-                    href: "/dashboard/list/holidays",
-                    visible: ["Admin", "Employee"],
-                },
-                {
-                    iconComponent: LuUsers,
-                    label: "Staff",
-                    visible: ["Admin", "Super Admin"],
-                    children: [
-                        {
-                            iconComponent: TbPoint,
-                            label: "User",
-                            href: "/dashboard/list/users",
-                            visible: ["Admin", "Super Admin"],
+                            label: 'Check In',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/dash`,
+                            visible: ["Admin", "Employee"],
                         },
                         {
-                            iconComponent: TbPoint,
-                            label: "Role",
-                            href: "/dashboard/list/roles",
-                            visible: ["Super Admin"],
+                            label: 'Attendance',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/list/attendance`,
+                            visible: ["Admin", "Employee"],
+                        },
+                        {
+                            label: 'Leave Request',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/list/leaves`,
+                            visible: ["Admin", "Employee"],
+                        },
+                        {
+                            label: 'My Profile',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/list/employees/${empId}`,
+                            visible: ["Admin", "Employee"],
                         },
                     ],
                 },
+            ],
+        },
+        {
+            title: 'HRMS Setup',
+            items: [
                 {
-                    iconComponent: FiUserPlus,
-                    label: "Employee",
-                    href: "/dashboard/list/employees",
-                    visible: ["Admin", "Super Admin"],
-                },
-                {
-                    iconComponent: HiOutlineBadgeCheck,
-                    label: "Entitlements",
-                    href: "/dashboard/list/entitlements",
-                    visible: ["Admin", "Employee"],
-                },
-                {
-                    iconComponent: MdAccessTime,
-                    label: "Timesheet",
-                    visible: ["Admin"],
+                    label: 'Employee Create',
+                    icon: FiUserPlus,
+                    visible: ['Admin', 'Super Admin'],
                     children: [
-                        {
-                            iconComponent: TbPoint,
-                            label: "Manage Leave",
-                            href: "/dashboard/list/leaves",
-                            visible: ["Admin", "Super Admin", "Employee"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Attendance",
-                            visible: ["Admin", "Super Admin" , "Employee"],
-                            children: [
-                                {
-                                    iconComponent: TbPoint,
-                                    label: "Marked Attendance",
-                                    href: "/dashboard/list/attendance/markedattendance",
-                                    visible: ["Admin", "Super Admin" , "Employee"],
-                                }
-                            ],
-                        },
+                        { label: 'Users', icon: LuLayers, href: '/dashboard/list/users', visible: ['Super Admin'] },
+                        { label: 'Roles', icon: FaUserShield, href: '/dashboard/list/roles', visible: ["Super Admin"] },
+                        { label: 'Employees', icon: FiUserPlus, href: '/dashboard/list/employees', visible: ["Admin", "Super Admin"] },
                     ],
                 },
                 {
-                    iconComponent: MdAccessTime,
-                    href: "/dashboard/list/leaves",
-                    label: "Manage Leave",
-                    visible: ["Employee"],
-                },
-                {
-                    iconComponent: FaUserCheck,
-                    label: "Marked Attendance",
-                    href: "/dashboard/list/attendance/markedattendance",
-                    visible: ["Employee"],
-                },
-                {
-                    iconComponent: MdOutlineSpaceDashboard,
-                    label: "HRM System Setup",
-                    visible: ["Admin","Super Admin"],
+                    label: 'Holidays Setup',
+                    icon: GiPartyFlags,
+                    visible: ['Admin', 'Super Admin'],
                     children: [
-                        {
-                            iconComponent: TbPoint,
-                            label: "Companies",
-                            href: "/dashboard/list/companies",
-                            visible: ["Super Admin", "Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Designation",
-                            href: "/dashboard/list/designations",
-                            visible: ["Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Leave Type",
-                            href: "/dashboard/list/leave-type",
-                            visible: ["Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Working Station",
-                            href: "/dashboard/list/working-station",
-                            visible: ["Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Employment Type",
-                            href: "/dashboard/list/employment-type",
-                            visible: ["Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Nationalities",
-                            href: "/dashboard/list/nationalities",
-                            visible: ["Admin"],
-                        },
-                        {
-                            iconComponent: TbPoint,
-                            label: "Matrial Status",
-                            href: "/dashboard/list/matrial-status",
-                            visible: ["Admin"],
-                        }
+                        { label: 'Manage Leave', icon: LuLayers, href: '/dashboard/list/leaves', visible: ['Admin', 'Super Admin', 'Employee'] },
+                        { label: 'Entitlement setup', icon: LuLayers, href: '/dashboard/list/entitlements', visible: ["Admin", "Super Admin"] },
+                        { label: 'Nationalities setup', icon: LuLayers, href: '/dashboard/list/nationalities', visible: ["Admin", "Super Admin"] },
+                        { label: 'Working station setup', icon: LuLayers, href: '/dashboard/list/working-station', visible: ["Admin", "Super Admin"] },
+                        { label: 'Marital Status setup', icon: LuLayers, href: '/dashboard/list/marital-status', visible: ["Admin", "Super Admin"] },
+                        { label: 'Leave type', icon: LuLayers, href: '/dashboard/list/leave-type', visible: ["Admin", "Super Admin"] },
+                        { label: 'Designation setup', icon: LuLayers, href: '/dashboard/list/designations', visible: ["Admin", "Super Admin"] },
+                    ],
+                },
+                {
+                    label: 'Employee Field Setup',
+                    icon: LuLayers,
+                    visible: ['Admin', 'Super Admin'],
+                    children: [
+                        // Note: I've corrected this as 'Manage Leave' was duplicated.
+                        { label: 'Holidays', icon: LuLayers, href: '/dashboard/list/holidays', visible: ["Admin"] },
+                    ],
+                },
+                { label: 'Holidays', icon: GiPartyFlags, href: '/dashboard/list/holidays', visible: ["Employee"] },
+                {
+                    label: 'Company Setup',
+                    icon: FaBuildingShield,
+                    visible: ['Admin', 'Super Admin'],
+                    children: [
+                        { label: 'Company', icon: LuLayers, href: '/dashboard/list/companies', visible: ['Admin', 'Super Admin'] },
                     ],
                 },
             ],
         },
     ];
 
-    const menuItems = getMenuItems(employeeId);
-    const handleLogout = () => {
-        logout();
-        toast.success('Logged out successfully!');
-    };
+    const menuSections = useMemo(() => {
+        const rawSections = getMenuItems(employeeId);
 
-    const transformMenuItems = (items: (MenuItem | MenuChildItem)[], roles: string[]): MenuItemType[] => {
-        return items
-            .filter(item => item.visible.some(visibleRole => roles.includes(visibleRole)))
-            .map((item) => {
-                const key = item.href || item.label;
-                const icon = item.iconComponent ? React.createElement(item.iconComponent) : null;
-
-                if (item.children && item.children.length > 0) {
-                    const visibleChildren = transformMenuItems(item.children, roles);
-                    if (visibleChildren.length === 0) return null;
-                    return { key, icon, label: item.label, children: visibleChildren };
-                }
-
-                return {
-                    key,
-                    icon,
-                    label: <Link href={item.href || '#'} onClick={closeMenu}>{item.label}</Link>,
-                };
-            })
-            .filter(Boolean) as MenuItemType[];
-    };
-
-    const antdMenuItems = isAuthenticated ? transformMenuItems(menuItems[0].items, userRoles) : [];
-    
-    const getDefaultOpenKeys = () => {
-        const openKeys: string[] = [];
-        const findPath = (items: (MenuItem | MenuChildItem)[]) => {
-            for (const item of items) {
-                if (item.children) {
-                    const childHasActiveLink = item.children.some(child => child.href === pathname || (child.children && child.children.some(c => c.href === pathname)));
-                    if (childHasActiveLink) {
-                        openKeys.push(item.href || item.label);
-                        findPath(item.children); 
+        const processSections = (sections: MenuSection[], roles: string[]): MenuSection[] => {
+            return sections.map(section => ({
+                ...section,
+                items: section.items.map(item => {
+                    if (!item.children) {
+                        return item;
                     }
-                }
-            }
+
+                    const visibleChildren = item.children.filter(child =>
+                        child.visible.some(role => roles.includes(role))
+                    );
+
+                    return {
+                        ...item,
+                        badge: visibleChildren.length,
+                    };
+                }),
+            }));
         };
-        findPath(menuItems[0].items);
-        return openKeys;
+
+        return processSections(rawSections, userRoles);
+    }, [employeeId, userRoles]);
+
+    useEffect(() => {
+        if (collapsed) {
+            setOpenSections([]);
+        }
+    }, [collapsed]);
+
+    useEffect(() => {
+        if (!collapsed) {
+            const activeParent = menuSections
+                .flatMap(section => section.items)
+                .find(item => item.children?.some(child => child.href === pathname));
+            if (activeParent) {
+                setOpenSections([activeParent.label]);
+            }
+        }
+    }, [pathname, collapsed, menuSections]);
+
+    const toggleSection = (label: string) => {
+        if (collapsed) return;
+        setOpenSections(prev =>
+            prev.includes(label) ? prev.filter(s => s !== label) : [...prev, label]
+        );
     };
 
     if (authLoading) {
-        return (
-            <div className="flex justify-center items-center h-full">
-                <Spin />
-            </div>
-        );
+        return <div className="flex justify-center items-center h-full p-6"><Spin /></div>;
     }
 
     return (
-        <div className="h-full flex flex-col justify-between">
-            <AntdMenu
-                mode="inline"
-                inlineCollapsed={collapsed}
-                theme="light"
-                selectedKeys={[pathname]}
-                defaultOpenKeys={getDefaultOpenKeys()}
-                items={antdMenuItems}
-                style={{ borderRight: 0 }}
-            />
-        </div>
+        <nav className="flex-grow p-4">
+            {menuSections.map((section, sectionIndex) => (
+                <div key={section.title || sectionIndex}>
+                    {section.title && (
+                        <h2 className={clsx("px-4 mt-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider", {
+                            'opacity-0': collapsed,
+                            'opacity-100': !collapsed
+                        })}>
+                            {section.title}
+                        </h2>
+                    )}
+                    <ul className="space-y-1">
+                        {section.items
+                            .filter(item => item.visible.some(role => userRoles.includes(role)))
+                            .map((item) => (
+                                <li key={item.label}>
+                                    <Tooltip title={item.label} placement="right" mouseEnterDelay={0.3} open={collapsed ? undefined : false}>
+                                        <div>
+                                            {item.children ? (
+                                                <>
+                                                    <div
+                                                        onClick={() => toggleSection(item.label)}
+                                                        className={clsx("flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-gray-100", {
+                                                            'justify-center': collapsed
+                                                        })}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <item.icon className="text-gray-700 min-w-[20px]" size={20} />
+                                                            {!collapsed && <span className="font-medium text-sm text-gray-800">{item.label}</span>}
+                                                        </div>
+                                                        {!collapsed && (
+                                                            <div className="flex items-center gap-2">
+                                                                {/* *** CHANGE: Only render badge if count > 0 *** */}
+                                                                {item.badge && Number(item.badge) > 0 && (
+                                                                    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-200 rounded-md">
+                                                                        {item.badge}
+                                                                    </span>
+                                                                )}
+                                                                <LuChevronDown size={16} className={`text-gray-500 transition-transform duration-200 ${openSections.includes(item.label) ? 'rotate-180' : ''}`} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {!collapsed && openSections.includes(item.label) && (
+                                                        <ul className="mt-1 pl-7 border-l border-gray-200 ml-4">
+                                                            {item.children
+                                                                .filter(child => child.visible.some(role => userRoles.includes(role)))
+                                                                .map(child => (
+                                                                    <li key={child.label}>
+                                                                        <Link href={child.href || '#'} onClick={closeMenu} className={`block p-2 rounded-md text-sm transition-colors ${pathname === child.href ? 'font-semibold text-gray-900' : 'text-gray-600 hover:text-black'}`}>
+                                                                            {child.label}
+                                                                        </Link>
+                                                                    </li>
+                                                                ))}
+                                                        </ul>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <Link href={item.href || '#'} onClick={closeMenu} className={clsx("flex items-center gap-3 p-3 rounded-lg transition-colors", {
+                                                    'justify-center': collapsed,
+                                                    'bg-gray-100 text-black font-semibold': pathname === item.href,
+                                                    'text-gray-600 hover:bg-gray-100 hover:text-black': pathname !== item.href
+                                                })}>
+                                                    <item.icon size={20} className="min-w-[20px]" />
+                                                    {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </Tooltip>
+                                </li>
+                            ))}
+                    </ul>
+                </div>
+            ))}
+        </nav>
     );
 };
 

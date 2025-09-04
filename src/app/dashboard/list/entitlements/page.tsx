@@ -97,7 +97,7 @@ const LeaveEntitlementPage = () => {
     const [form] = Form.useForm();
     const router = useRouter();
 
-    const { user, loading: authLoading, isAuthenticated } = useAuth();
+    const { user, employee, loading: authLoading, isAuthenticated } = useAuth();
 
     const [isRenewing, setIsRenewing] = useState(false);
 
@@ -117,7 +117,7 @@ const LeaveEntitlementPage = () => {
     // --- DERIVED VALUES from context ---
     const isEmployee = user?.roles.includes('Employee');
     const isAdmin = user?.roles.includes('Admin');
-    const currentEmployeeId = user?.emp_id;
+    const currentEmployeeId = employee?.data?.id;
 
 
     const fetchData = useCallback(async () => {

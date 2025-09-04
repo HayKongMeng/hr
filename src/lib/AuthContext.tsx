@@ -1,85 +1,92 @@
-'use client';
+"use client";
 
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode'; // Note the import style
+import { jwtDecode, JwtPayload } from 'jwt-decode';
 
-// Define the structure of your decoded token based on your example
-interface DecodedToken {
-    user_id: number;
+// Define the shape of your user and employee objects based on your API response
+interface User {
+    id: number;
+    name: string;
     email: string;
     roles: string[];
-    company_id: number;
-    emp_id: number;
-    exp: number;
-    emp_username: string;
-    emp_profile: string;
 }
 
-// Define the shape of your context
+interface Employee {
+    data: {
+        id: number;
+        name: string;
+        company_id: number;
+        scan_code: string | null;
+        image_url: string | null;
+    };
+}
+
 interface AuthContextType {
-    user: DecodedToken | null;
     isAuthenticated: boolean;
-    loading: boolean;
-    login: (token: string) => void;
+    user: User | null;
+    employee: Employee | null;
+    login: (data: { token: string; user: User; employee: Employee }) => void;
     logout: () => void;
+    loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({
-    user: null,
-    isAuthenticated: false,
-    loading: true,
-    login: () => {},
-    logout: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<DecodedToken | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [employee, setEmployee] = useState<Employee | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // This effect still runs on initial load to check for existing cookies
         const token = Cookies.get('access_token');
-        if (token) {
+        const storedUser = localStorage.getItem('user');
+        const storedEmployee = localStorage.getItem('employee');
+
+        if (token && storedUser && storedEmployee) {
             try {
-                const decoded = jwtDecode<DecodedToken>(token);
-                if (decoded.exp * 1000 > Date.now()) {
-                    setUser(decoded);
-                } else {
-                    Cookies.remove('access_token');
-                }
+                // You can add token validation/decoding here if needed
+                setUser(JSON.parse(storedUser));
+                setEmployee(JSON.parse(storedEmployee));
             } catch (error) {
-                Cookies.remove('access_token');
+                console.error("Failed to parse stored auth data", error);
+                logout();
             }
         }
         setLoading(false);
     }, []);
 
-    const login = (token: string) => {
-        try {
-            const decoded = jwtDecode<DecodedToken>(token);
-            setUser(decoded); // <-- Manually update the user state
-            Cookies.set('access_token', token, { expires: 7, path: '/' }); // Set the cookie
-        } catch (error) {
-            console.error("Failed to decode token on login:", error);
-        }
+    const login = (data: { token: string; user: User; employee: Employee }) => {
+        Cookies.set('access_token', data.token, { expires: 7, path: '/' });
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('employee', JSON.stringify(data.employee));
+        setUser(data.user);
+        setEmployee(data.employee);
     };
 
     const logout = () => {
+        Cookies.remove('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('employee');
         setUser(null);
-        Cookies.remove('access_token', { path: '/' });
-        // Optionally redirect here or let the component handle it
-        window.location.href = '/sign-in';
+        setEmployee(null);
+        // You might want to redirect to login page here
+        window.location.href = '/';
     };
 
     const isAuthenticated = !!user;
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, employee, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-// Custom hook to easily use the context
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};

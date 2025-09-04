@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button, Dropdown, Space, Popconfirm } from 'antd';
-import type { MenuProps } from 'antd';
-import { MdEdit, MdDelete, MdRemoveRedEye, MdMoreVert } from 'react-icons/md';
+import { Button, Tag, Space } from 'antd';
+import { MdEdit, MdDelete, MdLocationOn, MdCheckCircle } from 'react-icons/md';
+import {Employee} from "@/app/dashboard/list/employees/page";
 
-// Re-using the Employee type from your page
-type Employee = { id: number; user_id: number; employee_code: string; name: string; image?: string; position?: { title: string }; email: string; };
+
 
 interface EmployeeCardProps {
     employee: Employee;
@@ -17,61 +16,55 @@ interface EmployeeCardProps {
 }
 
 const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEdit, onDelete }) => {
-
-    // Menu items for the dropdown
-    const menuItems: MenuProps['items'] = [
-        {
-            key: '1',
-            label: 'View Details',
-            icon: <MdRemoveRedEye />,
-            onClick: () => { /* Link handles this */ },
-        },
-        {
-            key: '2',
-            label: 'Edit',
-            icon: <MdEdit />,
-            onClick: () => onEdit(employee),
-        },
-        {
-            key: '3',
-            label: (
-                <Popconfirm
-                    title="Delete Employee?"
-                    description="This action is irreversible."
-                    onConfirm={() => onDelete(employee.id)}
-                    okText="Yes, Delete"
-                    cancelText="No"
-                >
-                    Delete
-                </Popconfirm>
-            ),
-            icon: <MdDelete />,
-            danger: true,
-        },
-    ];
+    // A simple hash function to generate a color from a string (for the position tag)
+    const getColorFromString = (str: string = '') => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const colors = ['magenta', 'red', 'volcano', 'orange', 'gold', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'];
+        return colors[Math.abs(hash) % colors.length];
+    };
 
     return (
-        <div className="bg-light-card border border-light-border rounded-xl shadow-sm p-4 text-center flex flex-col items-center">
-            {/* Dropdown Menu for actions */}
-            <div className="absolute top-2 right-2">
-                <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-                    <Button type="text" shape="circle" icon={<MdMoreVert className="text-text-secondary" />} />
-                </Dropdown>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col transition-shadow hover:shadow-lg">
+            <div className="flex items-center space-x-4 mb-4">
+                <Image
+                    src={employee.image_url || '/avatar.png'} // Fallback to a default avatar
+                    alt={employee.name}
+                    width={64}
+                    height={64}
+                    className="rounded-full object-cover"
+                />
+                <div className="flex-1">
+                    <div className="flex items-center">
+                        <h3 className="text-lg font-semibold text-gray-800">{employee.name}</h3>
+                        <MdCheckCircle className="ml-1 text-green-500" />
+                    </div>
+                    {employee.work_station?.name && (
+                        <p className="text-sm text-gray-500 flex items-center">
+                            <MdLocationOn className="mr-1" />
+                            {employee.work_station.name}
+                        </p>
+                    )}
+                </div>
             </div>
 
-            <Link href={`/dashboard/list/employees/${employee.id}`}>
-                <Image
-                    src={'/avatar.png'}
-                    alt={employee.name}
-                    width={80}
-                    height={80}
-                    className="rounded-full object-cover mb-4 border-2 border-light-border"
-                />
-                <h3 className="font-semibold text-text-primary hover:text-accent-purple transition-colors">{employee.name}</h3>
-            </Link>
+            {employee.position?.title && (
+                <div className="mb-4">
+                    <Tag color={getColorFromString(employee.position.title)}>{employee.position.title}</Tag>
+                </div>
+            )}
 
-            <p className="text-sm text-text-secondary mt-1">{employee.position?.title || 'N/A'}</p>
-            <p className="text-xs text-text-secondary mt-2">{employee.employee_code}</p>
+            <div className="mt-auto flex justify-between items-center">
+                <Link href={`/dashboard/list/employees/${employee.id}`}>
+                    <Button type="text" className="px-0 text-gray-600 hover:text-blue-500">View Profile</Button>
+                </Link>
+                <Space>
+                    <Button onClick={() => onEdit(employee)}>Edit</Button>
+                    <Button danger onClick={() => onDelete(employee.id)}>Delete</Button>
+                </Space>
+            </div>
         </div>
     );
 };

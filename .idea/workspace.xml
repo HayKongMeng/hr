@@ -4,7 +4,32 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="" />
+    <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/components/ui/BoardView.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/useDebounce.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.mjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/attendance/markedattendance/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/attendance/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/companies/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/entitlements/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/entitlements/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/leaves/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/matrial-status/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/marital-status/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Menu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/PrintableQrCode.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrintableQrCode.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/UserDropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/UserDropdown.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/forms/EmployeeForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/EmployeeCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/EmployeeCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/index.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -48,11 +73,11 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\dashboard\list\attendance" />
       <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api\auth" />
       <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api" />
       <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\auth" />
       <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app" />
-      <recent name="C:\Users\Hkong\OneDrive\Documents\DPDC\HR\hrms_front\hrms\src\app\api\auth\route" />
     </key>
   </component>
   <component name="RunManager" selected="npm.Next.js: server-side">
@@ -90,22 +115,11 @@
       <workItem from="1755827011008" duration="22771000" />
       <workItem from="1755878867866" duration="1894000" />
       <workItem from="1756086469146" duration="82807000" />
-      <workItem from="1756440194436" duration="42947000" />
+      <workItem from="1756440194436" duration="82260000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/components/Menu.tsx</url>
-          <line>75</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

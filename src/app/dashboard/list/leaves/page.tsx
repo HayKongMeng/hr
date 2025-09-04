@@ -12,7 +12,8 @@ import { FaFileExcel, FaFilePdf, FaEllipsisV } from "react-icons/fa";
 // --- Ant Design Components ---
 import {
     Card, Button, DatePicker, message, Select, Space, Input, Modal, Form, Table, Tag, Spin, List, Tabs, Descriptions,
-    Collapse, MenuProps, Dropdown
+    Collapse, MenuProps, Dropdown,
+    Radio
 } from "antd";
 import type { TableProps } from 'antd';
 
@@ -37,9 +38,11 @@ import {
 import { Employee, fetchEmployees } from "@/lib/api/employee";
 import Cookies from "js-cookie";
 import {useAuth} from "@/lib/AuthContext";
+import BoardView from "@/components/ui/BoardView";
+import {LuLayoutDashboard, LuList} from "react-icons/lu";
 
 // --- Type Definitions ---
-type Leave = {
+export type Leave = {
     id: number;
     employee_id: number;
     leave_type: { id: number; type_name: string };
@@ -48,7 +51,6 @@ type Leave = {
     end_date: string;
     reason: string;
     applied_on: string;
-    // 'approved' will be populated on-demand when viewing details
     approved?: Approval[];
 };
 
@@ -307,17 +309,48 @@ const MyLeaveView = ({ isMobile, myLeaves, loading, onEdit, onCancel, onView }: 
     );
 };
 
+const LeaveViewContainer = ({
+                                leaves,
+                                employeeMap,
+                                viewType, // 'team' or 'my'
+                                listComponent: ListComponent, // The list component to render
+                                boardComponent: BoardComponent, // The board component to render
+                            }: {
+    leaves: Leave[];
+    employeeMap: { [id: number]: Employee };
+    viewType: 'team' | 'my';
+    listComponent: React.ReactNode;
+    boardComponent: React.ReactNode;
+}) => {
+    const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+
+    return (
+        <div>
+            <div className="flex justify-end mb-4">
+                <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} buttonStyle="solid">
+                    <Radio.Button value="list"><LuList className="inline-block align-middle mr-1" /> List</Radio.Button>
+                    <Radio.Button value="board"><LuLayoutDashboard className="inline-block align-middle mr-1" /> Board</Radio.Button>
+                </Radio.Group>
+            </div>
+            <div className="mt-4">
+                {viewMode === 'list' && ListComponent}
+                {viewMode === 'board' && BoardComponent}
+            </div>
+        </div>
+    );
+};
+
 
 // --- Main Page Component ---
 const LeaveManagementPage = () => {
-    const { user, loading: authLoading, isAuthenticated } = useAuth();
+    const { user, employee, loading: authLoading, isAuthenticated } = useAuth();
     const isMobile = useIsMobile();
     const [form] = Form.useForm();
     const router = useRouter();
 
     const [teamLeaves, setTeamLeaves] = useState<Leave[]>([]);
     const [myLeaves, setMyLeaves] = useState<Leave[]>([]);
-    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [employeesAll, setAllEmployees] = useState<Employee[]>([]);
     const [employeeMap, setEmployeeMap] = useState<{ [id: number]: Employee }>({});
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
 
@@ -333,15 +366,20 @@ const LeaveManagementPage = () => {
 
     const isEmployee = user?.roles.includes('Employee');
     const isAdmin = user?.roles.includes('Admin');
-    const currentEmployeeId = user?.emp_id;
+    const currentEmployeeId = employee?.data?.id;
 
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
+    const [teamViewMode, setTeamViewMode] = useState<'list' | 'board'>('list');
 
     const [activeTabKey, setActiveTabKey] = useState(
         user?.roles.includes('Admin') ? 'team' : 'my'
     );
     const [exporting, setExporting] = useState(false);
+
+    if (employeesAll === null) {
+        message.error('Employee does not exist!');
+    }
 
     const handleExportExcel = (data: Leave[], employeeMap: { [id: number]: Employee }, fileName: string) => {
         const headers = ["Employee", "Leave Type", "Applied On", "Start Date", "End Date", "Days", "Status", "Reason"];
@@ -381,6 +419,11 @@ const LeaveManagementPage = () => {
     };
 
     const handleExport = async (format: 'excel' | 'pdf') => {
+        if (!employee || !employee.data) {
+            message.error("Employee data is not available for export.");
+            return;
+        }
+
         setExporting(true);
         message.loading({ content: `Exporting data...`, key: 'exporting' });
 
@@ -395,12 +438,9 @@ const LeaveManagementPage = () => {
                 return;
             }
 
-            // --- IMPORTANT ---
-            // For team view, we need a complete employee map.
-            // For "My Leave", we only need the current user.
             let exportEmployeeMap = employeeMap;
             if (!isTeamView && user) {
-                exportEmployeeMap = { [user.emp_id]: { id: user.emp_id,  } as Employee };
+                exportEmployeeMap = { [employee.data.id]: { id: employee.data.id,  } as Employee };
             }
 
             const fileName = isTeamView ? "Team_Leave_Report" : "My_Leave_Report";
@@ -477,7 +517,7 @@ const LeaveManagementPage = () => {
                 ]);
 
                 const allEmployees = empRes.data || [];
-                setEmployees(allEmployees);
+                setAllEmployees(allEmployees);
                 const newEmployeeMap: { [id: number]: Employee } = {};
                 allEmployees.forEach((emp: Employee) => { newEmployeeMap[emp.id] = emp; });
                 setEmployeeMap(newEmployeeMap);
@@ -503,8 +543,8 @@ const LeaveManagementPage = () => {
     const handleAddLeave = () => {
         setSelectedLeave(null);
         form.resetFields();
-        if (isEmployee && user) {
-            form.setFieldsValue({ employee_id: user.emp_id });
+        if (isEmployee && employee) {
+            form.setFieldsValue({ employee_id: employee.data.id });
         }
         setIsModalOpen(true);
     };
@@ -525,7 +565,7 @@ const LeaveManagementPage = () => {
 
     const handleCancel = (id: number) => {
         const recordToCancel = myLeaves.find(leave => leave.id === id);
-        if (!recordToCancel || !user?.company_id) {
+        if (!recordToCancel || !employee?.data?.company_id) {
             message.error("Could not find the leave request to cancel.");
             return;
         }
@@ -545,7 +585,7 @@ const LeaveManagementPage = () => {
                     const payload = {
                         id: recordToCancel.id,
                         employee_id: recordToCancel.employee_id,
-                        company_id: user.company_id,
+                        company_id: employee?.data?.company_id,
                         leave_type_id: recordToCancel.leave_type.id,
                         status_id: 4,
                         start_date: recordToCancel.start_date,
@@ -594,7 +634,7 @@ const LeaveManagementPage = () => {
 
     const handleFormSubmit = async (values: any) => {
         setIsSubmitting(true);
-        if (!user?.company_id) {
+        if (!employee?.data?.company_id) {
             message.error("Company ID not found. Please log in again.");
             setIsSubmitting(false);
             return;
@@ -604,7 +644,7 @@ const LeaveManagementPage = () => {
             const endDate = values.date_range ? values.date_range[1] : values.end_date;
             const payload = {
                 ...values,
-                company_id: Number(user?.company_id),
+                company_id: Number(employee?.data?.company_id),
                 start_date: startDate.format("YYYY-MM-DD"),
                 end_date: endDate.format("YYYY-MM-DD")
             };
@@ -642,37 +682,80 @@ const LeaveManagementPage = () => {
         const myLeaveTab = {
             key: 'my',
             label: 'My Leave Requests',
-            children: <MyLeaveView
-                isMobile={isMobile}
-                myLeaves={myLeaves}
-                loading={loading}
-                onView={handleViewDetails}
-                onEdit={handleEditLeave}
-                onCancel={handleCancel}
-            />
+            children: (
+                <LeaveViewContainer
+                    leaves={myLeaves}
+                    employeeMap={employeeMap}
+                    viewType="my"
+                    listComponent={
+                        <MyLeaveView
+                            isMobile={isMobile}
+                            myLeaves={myLeaves}
+                            loading={loading}
+                            onView={handleViewDetails}
+                            onEdit={handleEditLeave}
+                            onCancel={handleCancel}
+                        />
+                    }
+                    boardComponent={
+                        <BoardView
+                            leaves={myLeaves} // <-- Pass myLeaves data
+                            employeeMap={employeeMap}
+                            onView={handleViewDetails}
+                            onEdit={handleEditLeave}
+                            onManage={handleManageLeave}
+                            onDelete={handleCancel}
+                            hideEmployeeName={true}
+                        />
+                    }
+                />
+            )
         };
+
         const teamLeaveTab = {
             key: 'team',
             label: 'Team Leave Requests',
-            children: <TeamLeaveView
-                isMobile={isMobile}
-                leaves={teamLeaves}
-                loading={loading}
-                pagination={teamPagination}
-                employeeMap={employeeMap}
-                onTableChange={handleTableChange}
-                onView={handleViewDetails}
-                onEdit={handleEditLeave}
-                onManage={handleManageLeave}
-                onDelete={handleDelete}
-                isAdmin={!!isAdmin}
-            />
+            children: (
+                <LeaveViewContainer
+                    leaves={teamLeaves}
+                    employeeMap={employeeMap}
+                    viewType="team"
+                    listComponent={
+                        <TeamLeaveView
+                            isMobile={isMobile}
+                            leaves={teamLeaves}
+                            loading={loading}
+                            pagination={teamPagination}
+                            employeeMap={employeeMap}
+                            onTableChange={handleTableChange}
+                            onView={handleViewDetails}
+                            onEdit={handleEditLeave}
+                            onManage={handleManageLeave}
+                            onDelete={handleDelete}
+                            isAdmin={!!isAdmin}
+                        />
+                    }
+                    boardComponent={
+                        <BoardView
+                            leaves={teamLeaves} // <-- Pass teamLeaves data
+                            employeeMap={employeeMap}
+                            onView={handleViewDetails}
+                            onEdit={handleEditLeave}
+                            onManage={handleManageLeave}
+                            onDelete={handleDelete}
+                        />
+                    }
+                />
+            )
         };
+
         if (isAdmin) {
             return [teamLeaveTab, myLeaveTab];
         }
         return [myLeaveTab];
-    }
+    };
+
+
 
     if (authLoading) {
         return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
@@ -742,7 +825,7 @@ const LeaveManagementPage = () => {
 
             {/* Edit/Create Modal */}
             <Modal title={selectedLeave ? "Edit Leave Request" : "New Leave Request"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
-                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employees} leaveTypes={leaveTypes} loading={false} isMobile={isMobile} user={user}/>
+                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employeesAll} leaveTypes={leaveTypes} loading={false} isMobile={isMobile} user={user}/>
             </Modal>
 
             {/* Manage/Approve Modal */}

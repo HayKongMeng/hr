@@ -286,6 +286,7 @@ import Cookies from "js-cookie";
 import {useAuth} from "@/lib/AuthContext";
 
 type Employee = {
+    id: number;
     name: string;
     email: string;
     image_url: string | null;
@@ -309,9 +310,9 @@ type PendingAttendanceData = {
 
 const HomePage = () => {
     // --- STATE MANAGEMENT ---
-    const { user, loading: authLoading, isAuthenticated } = useAuth();
+    const { user, employee, loading: authLoading, isAuthenticated } = useAuth();
     const [loadingProfile, setLoadingProfile] = useState(true);
-    const [employee, setEmployee] = useState<Employee | null>(null);
+    const [byEmployee, setByEmployee] = useState<Employee | null>(null);
     const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [itemsEmployee, setItemsEmployee] = useState<MappedAttendanceItem[]>([]);
     const [todayAttendance, setTodayAttendance] = useState({
@@ -337,7 +338,7 @@ const HomePage = () => {
 
     const isEmployeeRole = user?.roles.includes('Employee');
     const isAdminRole = user?.roles.includes('Admin');
-    const currentEmployeeId = user?.emp_id;
+    const currentEmployeeId = employee?.data?.id;
 
     // --- CONSOLIDATED DATA FETCHING ---
     const fetchData = useCallback(async () => {
@@ -345,19 +346,17 @@ const HomePage = () => {
 
         setLoadingProfile(true);
         try {
-            // --- Fetch data for EVERYONE (personal profile and attendance) ---
             const [employeeRes, personalAttendanceRes] = await Promise.all([
                 getEmployeeById(currentEmployeeId),
                 findEmployeesById(currentEmployeeId)
             ]);
 
-            if (employeeRes.data.result) setEmployee(employeeRes.data.result.data);
+            if (employeeRes.data.result) setByEmployee(employeeRes.data.result.data);
 
             const { mappedItems, todayDetails } = processFullAttendanceData(personalAttendanceRes.data || []);
             setItems(mappedItems);
             setTodayAttendance(todayDetails);
 
-            // --- CONDITIONAL FETCH: Only fetch organization data for Admins ---
             if (isAdminRole) {
                 const orgAttendanceRes = await findEmployees();
                 const { mappedItems: orgMappedItems } = processFullAttendanceData(orgAttendanceRes.data || []);
@@ -605,15 +604,15 @@ const HomePage = () => {
                     ) : (
                         <>
                             <img
-                                src={employee?.image_url || "/avatar.png"}
+                                src={byEmployee?.image_url || "/avatar.png"}
                                 alt="User Avatar"
                                 className="w-16 h-16 rounded-full border-white z-10 object-cover"
                             />
                             <p className="mt-2 text-base font-semibold z-10">
-                                Good morning, {employee?.name || "User"}
+                                Good morning, {byEmployee?.name || "User"}
                             </p>
                             <p className="text-sm opacity-80 z-10">
-                                {employee?.position?.title || "Employee"}
+                                {byEmployee?.position?.title || "Employee"}
                             </p>
                             {currentEmployeeId && (
                                 <p className="text-sm underline mt-2 z-10">
