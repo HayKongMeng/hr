@@ -14,7 +14,7 @@ import {
 } from 'react-icons/lu';
 import { GiPartyFlags } from "react-icons/gi";
 import { FiUserPlus } from "react-icons/fi";
-import { FaUserShield } from "react-icons/fa";
+import {FaRegBuilding, FaUserShield} from "react-icons/fa";
 import { FaBuildingShield } from "react-icons/fa6";
 
 interface NavItem {
@@ -127,10 +127,11 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                 { label: 'Holidays', icon: GiPartyFlags, href: '/dashboard/list/holidays', visible: ["Employee"] },
                 {
                     label: 'Company Setup',
-                    icon: FaBuildingShield,
+                    icon: FaRegBuilding,
                     visible: ['Admin', 'Super Admin'],
                     children: [
                         { label: 'Company', icon: LuLayers, href: '/dashboard/list/companies', visible: ['Admin', 'Super Admin'] },
+                        { label: 'Work Schedule', icon: LuLayers, href: '/dashboard/list/work-schedule', visible: ['Admin', 'Super Admin'] },
                     ],
                 },
             ],
@@ -225,11 +226,11 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                                                         {!collapsed && (
                                                             <div className="flex items-center gap-2">
                                                                 {/* *** CHANGE: Only render badge if count > 0 *** */}
-                                                                {item.badge && Number(item.badge) > 0 && (
-                                                                    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-200 rounded-md">
-                                                                        {item.badge}
-                                                                    </span>
-                                                                )}
+                                                                {/*{item.badge && Number(item.badge) > 0 && (*/}
+                                                                {/*    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-200 rounded-md">*/}
+                                                                {/*        {item.badge}*/}
+                                                                {/*    </span>*/}
+                                                                {/*)}*/}
                                                                 <LuChevronDown size={16} className={`text-gray-500 transition-transform duration-200 ${openSections.includes(item.label) ? 'rotate-180' : ''}`} />
                                                             </div>
                                                         )}

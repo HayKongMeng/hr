@@ -52,7 +52,7 @@ const LoginPage = () => {
 
     return (
         <div
-            className='w-full min-h-screen flex items-center justify-center p-4 bg-cover bg-center'
+            className='w-full min-h-screen flex items-center justify-center p-4 bg-cover bg-center backdrop-blur-xs'
             style={{
                 backgroundImage: "url('https://images.unsplash.com/photo-1535957998253-26ae1ef29506?q=80&w=1920&auto=format&fit=crop')",
             }}
@@ -89,7 +89,7 @@ const LoginPage = () => {
                                     placeholder='Enter your email'
                                     type='email'
                                     name='email'
-                                    className='w-full rounded-md p-2.5 text-gray-800 dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-400 dark:placeholder-gray-400 text-white dark:text-white'
                                     register={register("email", {
                                         required: "Email Address is required!",
                                     })}
@@ -101,10 +101,10 @@ const LoginPage = () => {
                                     <label htmlFor="password" className="block text-sm font-medium text-gray-200">Password</label>
                                 </div>
                                 <Textbox
-                                    placeholder='••••••••'
+                                    placeholder='Enter your password'
                                     type='password'
                                     name='password'
-                                    className='w-full rounded-md p-2.5 text-gray-800 dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-400 dark:placeholder-gray-400 text-white dark:text-white'
                                     register={register("password", {
                                         required: "Password is required!",
                                     })}

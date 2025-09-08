@@ -144,6 +144,8 @@ export type WeeklySummary = {
     };
 };
 
+
+//dashboard overview
 export interface DashboardSummary {
     total_employees: number;
     total_employees_change: number;
@@ -180,6 +182,46 @@ export const fetchDashboardSummary = async (date?: string): Promise<DashboardSum
         return response.data.result;
     } catch (error) {
         console.error("Failed to fetch dashboard summary:", error);
+        throw error;
+    }
+};
+
+
+//work schedule
+export interface WorkSchedulePayload {
+    name: string;
+    work_start_time: string; // "HH:mm" format
+    work_end_time: string;   // "HH:mm" format
+    grace_minutes: number;
+    work_hours_per_day: number;
+    overtime_allowed: boolean;
+}
+
+export const createWorkSchedule = async (payload: WorkSchedulePayload) => {
+    try {
+        const response = await api.post('/api/employee/work-schedules', payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating work schedule:', error);
+        throw error;
+    }
+};
+
+// --- For Assigning a Specific Shift to an Employee ---
+export interface ShiftAssignmentPayload {
+    employee_id: number;
+    work_date: string; // "YYYY-MM-DD"
+    work_start_time: string; // "HH:mm"
+    work_end_time: string; // "HH:mm"
+    work_hours: number;
+}
+
+export const assignShift = async (payload: ShiftAssignmentPayload) => {
+    try {
+        const response = await api.post('/api/employee/shift-assignment', payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error assigning shift:', error);
         throw error;
     }
 };

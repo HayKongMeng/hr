@@ -14,7 +14,7 @@ const protectedRoutes = {
     '/dashboard/list/working-station': ['Admin', 'Super Admin'],
     '/dashboard/list/employment-type': ['Admin', 'Super Admin'],
     '/dashboard/list/nationalities': ['Admin', 'Super Admin'],
-    '/dashboard/list/matrial-status': ['Admin', 'Super Admin'],
+    '/dashboard/list/marital-status': ['Admin', 'Super Admin'],
     '/dashboard/admin': ['Admin', 'Super Admin'],
     '/dashboard/list/users': ['Admin', 'Super Admin'],
     '/dashboard/list/roles': ['Admin', 'Super Admin'],
