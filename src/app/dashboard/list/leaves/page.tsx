@@ -13,7 +13,7 @@ import { FaFileExcel, FaFilePdf, FaEllipsisV } from "react-icons/fa";
 import {
     Card, Button, DatePicker, message, Select, Space, Input, Modal, Form, Table, Tag, Spin, List, Tabs, Descriptions,
     Collapse, MenuProps, Dropdown,
-    Radio
+    Radio, Row, Breadcrumb, Col, Typography, FormInstance
 } from "antd";
 import type { TableProps } from 'antd';
 
@@ -39,8 +39,9 @@ import { Employee, fetchEmployees } from "@/lib/api/employee";
 import Cookies from "js-cookie";
 import {useAuth} from "@/lib/AuthContext";
 import BoardView from "@/components/ui/BoardView";
-import {LuLayoutDashboard, LuList} from "react-icons/lu";
-
+import {LuLayoutDashboard, LuList, LuUser, LuUsers} from "react-icons/lu";
+import {HomeOutlined} from "@ant-design/icons";
+const { Title, Text } = Typography;
 // --- Type Definitions ---
 export type Leave = {
     id: number;
@@ -62,10 +63,8 @@ const useIsMobile = (breakpoint = 768) => {
 };
 
 // --- Reusable Form Component ---
-const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMobile, user }: { form: any, onFinish: (v: any) => void, employees: Employee[], leaveTypes: LeaveType[], loading: boolean, isMobile: boolean, user: any; }) => {
-    const [startDateValue, setStartDateValue] = useState<dayjs.Dayjs | null>(null);
+const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, user }: { form: FormInstance, onFinish: (v: any) => void, employees: Employee[], leaveTypes: LeaveType[], loading: boolean, user: any; }) => {
     const isEmployeeRole = user?.roles.includes('Employee');
-
     const employeeOptions = (isEmployeeRole && user)
         ? [{ label: user.name, value: user.emp_id }]
         : employees.map((e: Employee) => ({ label: e.name, value: e.id }));
@@ -79,51 +78,9 @@ const LeaveRequestForm = ({ form, onFinish, employees, leaveTypes, loading, isMo
                 <Form.Item name="leave_type_id" label="Leave Type" rules={[{ required: true }]}>
                     <Select placeholder="Select leave type" options={leaveTypes.map(t => ({ label: t.type_name, value: t.id }))} />
                 </Form.Item>
-
-                {/* --- CONDITIONAL DATE PICKER --- */}
-                {isMobile ? (
-                    <>
-                        {/* --- ALWAYS use two separate date pickers --- */}
-                        <Form.Item name="start_date" label="Start Date" rules={[{ required: true, message: 'Please select a start date!' }]}>
-                            <DatePicker
-                                className="w-full"
-                                placeholder="Select start date"
-                                disabledDate={(current) => current && current < dayjs().startOf('day')}
-                                onChange={(date) => setStartDateValue(date)}
-                            />
-                        </Form.Item>
-                        <Form.Item
-                            name="end_date"
-                            label="End Date"
-                            dependencies={['start_date']}
-                            rules={[
-                                { required: true, message: 'Please select an end date!' },
-                                ({ getFieldValue }) => ({
-                                    validator(_, value) {
-                                        if (!value || !getFieldValue('start_date')) {
-                                            return Promise.resolve(); // Let the required rule handle it
-                                        }
-                                        if (value.isBefore(getFieldValue('start_date'))) {
-                                            return Promise.reject(new Error('End date cannot be before start date!'));
-                                        }
-                                        return Promise.resolve();
-                                    },
-                                }),
-                            ]}
-                        >
-                            <DatePicker
-                                className="w-full"
-                                // Disable dates before the selected start date for a better UX
-                                disabledDate={(current) => current && (current < dayjs().startOf('day') || (startDateValue ? current < startDateValue : false))}
-                            />
-                        </Form.Item>
-                    </>
-                ) : (
-                    <Form.Item name="date_range" label="Date Range" rules={[{ required: true }]}>
-                        <DatePicker.RangePicker className="w-full" disabledDate={(current) => current && current < dayjs().startOf('day')} />
-                    </Form.Item>
-                )}
-
+                <Form.Item name="date_range" label="Date Range" rules={[{ required: true }]}>
+                    <DatePicker.RangePicker className="w-full" disabledDate={(current) => current && current < dayjs().startOf('day')} />
+                </Form.Item>
                 <Form.Item name="reason" label="Reason" rules={[{ required: true }]}>
                     <Input.TextArea showCount maxLength={200} placeholder="Reason for leave..." rows={4} />
                 </Form.Item>
@@ -353,7 +310,7 @@ const LeaveManagementPage = () => {
     const [employeesAll, setAllEmployees] = useState<Employee[]>([]);
     const [employeeMap, setEmployeeMap] = useState<{ [id: number]: Employee }>({});
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-
+    const [myViewMode, setMyViewMode] = useState<'list' | 'board'>('list');
     const [loading, setLoading] = useState(true);
     const [teamPagination, setTeamPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
@@ -678,131 +635,85 @@ const LeaveManagementPage = () => {
         setTeamPagination(prev => ({...prev, current: pagination.current}));
     }
 
+    const MyLeaveListComponent = (
+        <MyLeaveView isMobile={isMobile} myLeaves={myLeaves} loading={loading} onEdit={handleEditLeave} onCancel={handleCancel} onView={handleViewDetails} />
+    );
+    const MyLeaveBoardComponent = (
+        <BoardView leaves={myLeaves} employeeMap={employeeMap} onView={handleViewDetails} onEdit={handleEditLeave} onManage={handleManageLeave} onDelete={handleCancel} hideEmployeeName={true} />
+    );
+    const TeamLeaveListComponent = (
+        <TeamLeaveView isMobile={isMobile} leaves={teamLeaves} loading={loading} pagination={teamPagination} employeeMap={employeeMap} onTableChange={handleTableChange} onView={handleViewDetails} onEdit={handleEditLeave} onManage={handleManageLeave} onDelete={handleDelete} isAdmin={!!isAdmin} />
+    );
+    const TeamLeaveBoardComponent = (
+        <BoardView leaves={teamLeaves} employeeMap={employeeMap} onView={handleViewDetails} onEdit={handleEditLeave} onManage={handleManageLeave} onDelete={handleDelete} />
+    );
+
     const getTabItems = () => {
         const myLeaveTab = {
             key: 'my',
-            label: 'My Leave Requests',
+            label: <span className="flex items-center gap-2"><LuUser /> My Leave</span>,
             children: (
-                <LeaveViewContainer
-                    leaves={myLeaves}
-                    employeeMap={employeeMap}
-                    viewType="my"
-                    listComponent={
-                        <MyLeaveView
-                            isMobile={isMobile}
-                            myLeaves={myLeaves}
-                            loading={loading}
-                            onView={handleViewDetails}
-                            onEdit={handleEditLeave}
-                            onCancel={handleCancel}
-                        />
-                    }
-                    boardComponent={
-                        <BoardView
-                            leaves={myLeaves} // <-- Pass myLeaves data
-                            employeeMap={employeeMap}
-                            onView={handleViewDetails}
-                            onEdit={handleEditLeave}
-                            onManage={handleManageLeave}
-                            onDelete={handleCancel}
-                            hideEmployeeName={true}
-                        />
-                    }
-                />
+                <Card bordered={false}>
+                    <div className="flex justify-end mb-4">
+                        <Radio.Group value={myViewMode} onChange={(e) => setMyViewMode(e.target.value)} buttonStyle="solid">
+                            <Radio.Button value="list"><LuList className="inline-block align-middle mr-1" /> List</Radio.Button>
+                            <Radio.Button value="board"><LuLayoutDashboard className="inline-block align-middle mr-1" /> Board</Radio.Button>
+                        </Radio.Group>
+                    </div>
+                    {myViewMode === 'list' ? MyLeaveListComponent : MyLeaveBoardComponent}
+                </Card>
             )
         };
-
         const teamLeaveTab = {
             key: 'team',
-            label: 'Team Leave Requests',
+            label: <span className="flex items-center gap-2"><LuUsers /> Team Leave</span>,
             children: (
-                <LeaveViewContainer
-                    leaves={teamLeaves}
-                    employeeMap={employeeMap}
-                    viewType="team"
-                    listComponent={
-                        <TeamLeaveView
-                            isMobile={isMobile}
-                            leaves={teamLeaves}
-                            loading={loading}
-                            pagination={teamPagination}
-                            employeeMap={employeeMap}
-                            onTableChange={handleTableChange}
-                            onView={handleViewDetails}
-                            onEdit={handleEditLeave}
-                            onManage={handleManageLeave}
-                            onDelete={handleDelete}
-                            isAdmin={!!isAdmin}
-                        />
-                    }
-                    boardComponent={
-                        <BoardView
-                            leaves={teamLeaves} // <-- Pass teamLeaves data
-                            employeeMap={employeeMap}
-                            onView={handleViewDetails}
-                            onEdit={handleEditLeave}
-                            onManage={handleManageLeave}
-                            onDelete={handleDelete}
-                        />
-                    }
-                />
+                <Card bordered={false}>
+                    <div className="flex justify-end mb-4">
+                        <Radio.Group value={teamViewMode} onChange={(e) => setTeamViewMode(e.target.value)} buttonStyle="solid">
+                            <Radio.Button value="list"><LuList className="inline-block align-middle mr-1" /> List</Radio.Button>
+                            <Radio.Button value="board"><LuLayoutDashboard className="inline-block align-middle mr-1" /> Board</Radio.Button>
+                        </Radio.Group>
+                    </div>
+                    {teamViewMode === 'list' ? TeamLeaveListComponent : TeamLeaveBoardComponent}
+                </Card>
             )
         };
-
-        if (isAdmin) {
-            return [teamLeaveTab, myLeaveTab];
-        }
+        if (isAdmin) return [teamLeaveTab, myLeaveTab];
         return [myLeaveTab];
     };
 
-
-
-    if (authLoading) {
-        return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
-    }
+    if (authLoading) return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
 
     return (
-        <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h1 className="text-lg font-semibold">Leave Management</h1>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
-                        <MdKeyboardArrowRight />
-                        <span>Leave</span>
-                    </div>
-                </div>
-                <Space className="flex items-center gap-2">
-                    <Dropdown menu={{ items: menuItems }} placement="bottomRight" disabled={exporting}>
-                        <Button>
-                            <Space>
-                                Export
-                                <FaEllipsisV />
-                            </Space>
-                        </Button>
-                    </Dropdown>
-                    <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/leaves/calender")}>Calendar</Button>
-                    <Button type="primary" icon={<MdAdd />} onClick={handleAddLeave}>Request Leave</Button>
-                </Space>
-            </div>
+        <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+            <Row justify="space-between" align="middle" className="mb-4">
+                <Col>
+                    <Title level={2} className="!mb-1">Leave Management</Title>
+                    <Breadcrumb items={[{ href: '/dashboard', title: <Space><HomeOutlined /> Home</Space> }, { title: 'Leave' }]} />
+                </Col>
+                <Col>
+                    <Space wrap>
+                        <Dropdown menu={{ items: menuItems }} placement="bottomRight" disabled={exporting}>
+                            <Button loading={exporting}>Export <FaEllipsisV className="inline-block" /></Button>
+                        </Dropdown>
+                        <Button icon={<BiCalendar />} onClick={() => router.push("/dashboard/list/leaves/calender")}>Calendar View</Button>
+                        <Button type="primary" icon={<MdAdd />} onClick={handleAddLeave}>Request Leave</Button>
+                    </Space>
+                </Col>
+            </Row>
 
-            <Card>
-                <Tabs
-                    key={user?.roles.join('-')}
-                    defaultActiveKey={isEmployee && !isAdmin ? 'my' : 'team'}
-                    items={getTabItems()}
-                    onChange={(key) => setActiveTabKey(key)}
-                />
-            </Card>
+            <Tabs
+                key={user?.roles.join('-')}
+                defaultActiveKey={isAdmin ? 'team' : 'my'}
+                items={getTabItems()}
+                onChange={(key) => setActiveTabKey(key)}
+                type="card"
+                className="modern-tabs"
+            />
 
-            {/* --- NEW VIEW DETAILS MODAL --- */}
-            <Modal
-                title="Leave Request Details"
-                open={isViewModalOpen}
-                onCancel={handleViewModalCancel}
-                footer={[ <Button key="close" onClick={handleViewModalCancel}>Close</Button> ]}
-                width={600}
-            >
+            {/* --- Modals --- */}
+            <Modal title="Leave Request Details" open={isViewModalOpen} onCancel={() => setIsViewModalOpen(false)} footer={[<Button key="close" onClick={() => setIsViewModalOpen(false)}>Close</Button>]} width={600}>
                 <Spin spinning={viewLoading}>
                     {selectedLeave && (
                         <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -814,66 +725,26 @@ const LeaveManagementPage = () => {
                                 <Descriptions.Item label="Dates" span={2}>{moment(selectedLeave.start_date).format("DD MMM YYYY")} to {moment(selectedLeave.end_date).format("DD MMM YYYY")}</Descriptions.Item>
                                 <Descriptions.Item label="Reason" span={2}>{selectedLeave.reason}</Descriptions.Item>
                             </Descriptions>
-
-                            <Card size="small" title="Approval History">
-                                <ApprovalHistory approvals={selectedLeave.approved || []} employeeMap={employeeMap} />
-                            </Card>
+                            <Card size="small" title="Approval History"><ApprovalHistory approvals={selectedLeave.approved || []} employeeMap={employeeMap} /></Card>
                         </Space>
                     )}
                 </Spin>
             </Modal>
-
-            {/* Edit/Create Modal */}
             <Modal title={selectedLeave ? "Edit Leave Request" : "New Leave Request"} open={isModalOpen} onCancel={handleModalCancel} onOk={form.submit} confirmLoading={isSubmitting}>
-                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employeesAll} leaveTypes={leaveTypes} loading={false} isMobile={isMobile} user={user}/>
+                <LeaveRequestForm form={form} onFinish={handleFormSubmit} employees={employeesAll} leaveTypes={leaveTypes} loading={false} user={user} />
             </Modal>
-
-            {/* Manage/Approve Modal */}
-            <Modal
-                title="Manage Leave Request"
-                open={isManageModalOpen}
-                onCancel={handleModalCancel}
-                footer={null}
-            >
+            <Modal title="Manage Leave Request" open={isManageModalOpen} onCancel={handleModalCancel} footer={null}>
                 {selectedLeave && (
-                    <Form
-                        form={approvalForm}
-                        layout="vertical"
-                        onFinish={() => {}} // onFinish is not needed here as buttons have their own handlers
-                    >
-                        <p>Approve or reject the leave request for <strong>{employeeMap[selectedLeave.employee_id]?.name || '...'}</strong>?</p>
-                        <p><strong>Reason Provided:</strong> {selectedLeave.reason}</p>
-
-                        <Form.Item
-                            name="comments"
-                            label="Manager Comments"
-                            rules={[{ required: true, message: 'Please provide a comment for your decision.' }]}
-                        >
-                            <Input.TextArea rows={4} placeholder="e.g., Approved, project timeline allows for it." />
+                    <Form form={approvalForm} layout="vertical" onFinish={() => {}}>
+                        <p>Approve or reject the leave for <strong>{employeeMap[selectedLeave.employee_id]?.name || '...'}</strong>?</p>
+                        <p><strong>Reason:</strong> {selectedLeave.reason}</p>
+                        <Form.Item name="comments" label="Manager Comments" rules={[{ required: true, message: 'Please provide a comment.' }]}>
+                            <Input.TextArea rows={4} />
                         </Form.Item>
-
                         <div className="flex justify-end gap-2 mt-4">
-                            <Button key="back" onClick={handleModalCancel}>
-                                Cancel
-                            </Button>
-                            <Button
-                                key="reject"
-                                danger
-                                loading={isSubmitting}
-                                onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Rejected'))}
-                                icon={<FaTimes />}
-                            >
-                                Reject
-                            </Button>
-                            <Button
-                                key="approve"
-                                type="primary"
-                                loading={isSubmitting}
-                                onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Approved'))}
-                                icon={<FaCheck />}
-                            >
-                                Approve
-                            </Button>
+                            <Button onClick={handleModalCancel}>Cancel</Button>
+                            <Button danger loading={isSubmitting} onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Rejected'))} icon={<FaTimes />}>Reject</Button>
+                            <Button type="primary" loading={isSubmitting} onClick={() => approvalForm.validateFields().then(values => handleApprovalAction(values, 'Approved'))} icon={<FaCheck />}>Approve</Button>
                         </div>
                     </Form>
                 )}

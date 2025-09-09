@@ -59,9 +59,9 @@ interface EmployeeFormProps {
     dropdownData: {
         positions: Position[];
         departments: Department[];
-        workStations: any[];
-        employmentTypes: any[];
-        employees: any[];
+        workStations: WorkStation[];
+        employmentTypes: EmploymentType[];
+        employees: Employee[];
     };
     loading: boolean;
     isEditMode: boolean;
@@ -92,8 +92,51 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ form, onFinish, dropdownDat
                     <Col xs={24} md={12}><Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item></Col>
                     {!isEditMode && (
                         <>
-                            <Col xs={24} md={12}><Form.Item name="password" label="Password" rules={[{ required: true, min: 6 }]}><Input.Password /></Form.Item></Col>
-                            <Col xs={24} md={12}><Form.Item name="confirm_password" label="Confirm Password" dependencies={['password']} hasFeedback rules={[{ required: true }, ({ getFieldValue }) => ({ validator(_, value) { if (!value || getFieldValue('password') === value) return Promise.resolve(); return Promise.reject(new Error('Passwords do not match!')); } })]}><Input.Password /></Form.Item></Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    name="password"
+                                    label="Password"
+                                    hasFeedback
+                                    rules={[
+                                        { required: true, message: 'Please input a password!' },
+                                        {
+                                            validator: (_, value) => {
+                                                if (!value) {
+                                                    return Promise.resolve(); // Let the 'required' rule handle empty values
+                                                }
+                                                const strongPasswordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{12,})");
+                                                if (strongPasswordRegex.test(value)) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error('Password must be at least 12 characters and include an uppercase letter, a lowercase letter, a number, and a special character (!@#$%^&*).'));
+                                            },
+                                        },
+                                    ]}
+                                >
+                                    <Input.Password />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    name="confirm_password"
+                                    label="Confirm Password"
+                                    dependencies={['password']}
+                                    hasFeedback
+                                    rules={[
+                                        { required: true, message: 'Please confirm your password!' },
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                if (!value || getFieldValue('password') === value) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error('The two passwords that you entered do not match!'));
+                                            },
+                                        }),
+                                    ]}
+                                >
+                                    <Input.Password />
+                                </Form.Item>
+                            </Col>
                         </>
                     )}
                 </Row>
@@ -135,7 +178,7 @@ const EmployeeManagementPage = () => {
     const debouncedSearchTerm = useDebounce(searchQuery, 2000);
     const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
     const [dropdownData, setDropdownData] = useState<{
-        positions: any[], departments: any[], workStations: any[], employmentTypes: any[], employees: Employee[]
+        positions: Position[], departments: Department[], workStations: WorkStation[], employmentTypes: EmploymentType[], employees: Employee[]
     }>({ positions: [], departments: [], workStations: [], employmentTypes: [], employees: [] });
 
     const fetchData = useCallback(async (page: number, pageSize: number) => {
@@ -173,6 +216,8 @@ const EmployeeManagementPage = () => {
             const [posRes, depRes, wsRes, etRes, empRes] = await Promise.all([
                 fetchAllPositions(), fetchAllDepartments(), fetchWorkStation(), fetchEmploymentTypes(), fetchAllEmployees()
             ]);
+            console.log("ACTUAL WORK STATIONS FROM API:", wsRes);
+            console.log("ACTUAL EMPLOYMENT TYPES FROM API:", etRes);
             setDropdownData({
                 positions: posRes || [], departments: depRes || [], workStations: wsRes || [],
                 employmentTypes: etRes || [], employees: empRes || []
@@ -289,14 +334,12 @@ const EmployeeManagementPage = () => {
     const handleModalCancel = () => { setIsModalOpen(false); form.resetFields(); setSelectedEmployee(null); };
 
     useEffect(() => {
-        if (isModalOpen && selectedEmployee) {
-            if (dropdownData.employees.length > 0) {
+        if (isModalOpen) {
+            if (selectedEmployee) {
                 const imageFileList: UploadFile[] = selectedEmployee.image_url
                     ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }]
                     : [];
-
                 form.setFieldsValue({
-                    // Personal Info
                     first_name: selectedEmployee.first_name,
                     last_name: selectedEmployee.last_name,
                     employee_code: selectedEmployee.employee_code,
@@ -306,24 +349,21 @@ const EmployeeManagementPage = () => {
                     date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
                     hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
                     image: imageFileList,
-                    // Login Info
                     username: selectedEmployee.username,
                     email: selectedEmployee.email,
-                    // Work Info
                     position_id: selectedEmployee.position?.id,
                     department_id: selectedEmployee.department?.id,
                     work_station_id: selectedEmployee.work_station?.id,
                     employment_type_id: selectedEmployee.employment_type?.id,
-                    // Reporting Lines
                     reporting_line1: selectedEmployee.reporting_line1,
                     reporting_line2: selectedEmployee.reporting_line2,
                     procurement_line: selectedEmployee.procurement_line,
                 });
+            } else {
+                form.resetFields();
             }
-        } else if (isModalOpen && !selectedEmployee) {
-            form.resetFields();
         }
-    }, [isModalOpen, selectedEmployee, dropdownData.employees, form]);
+    }, [isModalOpen, selectedEmployee, form]);
 
     useEffect(() => {
         if (isClient && !authLoading) {
@@ -363,11 +403,11 @@ const EmployeeManagementPage = () => {
                 delete payload.username;
                 delete payload.email;
                 delete payload.password;
-                
+
                 if (!imageFile) {
                     delete payload.image;
                 }
-                
+
                 await updateEmployee(
                     selectedEmployee.id,
                     selectedEmployee.user_id,
@@ -393,8 +433,8 @@ const EmployeeManagementPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };  
-    
+    };
+
     const handleDelete = (id: number) => {
         Modal.confirm({
             title: 'Delete Employee?',
@@ -410,7 +450,7 @@ const EmployeeManagementPage = () => {
             },
         });
     };
-    
+
     const handleTableChange: TableProps<Employee>['onChange'] = (p) => {
         setPagination(prev => ({ ...prev, current: p.current!, pageSize: p.pageSize! }));
     };
@@ -426,38 +466,41 @@ const EmployeeManagementPage = () => {
         { title: 'Designation', dataIndex: ['position', 'title'], key: 'position' },
         { title: 'Joining Date', dataIndex: 'hire_date', key: 'hire_date', render: (date) => dayjs(date).format("DD MMM YYYY") },
         { title: 'Actions', key: 'actions', align: 'right', render: (_, record) => (
-            <Space>
-                <Link href={`/dashboard/list/employees/${record.id}`}><Button icon={<MdRemoveRedEye />} /></Link>
-                <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)} />
-                <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)} />
-            </Space>
-        )}
+                <Space>
+                    <Link href={`/dashboard/list/employees/${record.id}`}><Button icon={<MdRemoveRedEye />} /></Link>
+                    <Button icon={<MdEdit />} onClick={() => handleModalOpen(record)} />
+                    <Button danger icon={<MdDelete />} onClick={() => handleDelete(record.id)} />
+                </Space>
+            )}
     ];
 
     return (
-        <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="p-4 md:p-6">
+            {/* --- RESPONSIVE CHANGE: Header now stacks on mobile --- */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
                 <div>
-                    <h1 className="text-lg font-semibold">Manage Employees</h1>
+                    <h1 className="text-xl font-semibold">Manage Employees</h1>
                     <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span onClick={() => router.push("/dashboard/list/dashboard/admin")} className="hover:underline cursor-pointer text-blue-600">Home</span>
+                        <Link href="/dashboard/list/dashboard/admin" className="hover:underline cursor-pointer text-blue-600">Home</Link>
                         <MdKeyboardArrowRight /><span>Employees</span>
                     </div>
                 </div>
-                <Space>
-                    {/* --- NEW: Export Buttons --- */}
+                {/* --- RESPONSIVE CHANGE: Buttons wrap and align correctly --- */}
+                <Space className="flex-wrap justify-start md:justify-end">
                     <Button icon={<FaFileExcel />} onClick={() => handleExport('excel')}>Export Excel</Button>
                     <Button icon={<FaFilePdf />} onClick={() => handleExport('pdf')}>Export PDF</Button>
                     <Button type="primary" icon={<MdAdd />} onClick={() => handleModalOpen(null)}>Add Employee</Button>
                 </Space>
             </div>
+
             <Card className="mb-4">
-                <div className="flex justify-between items-center">
+                {/* --- RESPONSIVE CHANGE: Search bar and view toggle stack on mobile --- */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                     <Input.Search
                         placeholder="Search by name, email, or ID..."
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        onSearch={(value) => setSearchQuery(value)}
-                        style={{ width: 300 }}
+                        // onSearch is handled by debouncedSearchTerm effect
+                        className="w-full md:w-[300px]"
                         allowClear
                     />
                     <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} buttonStyle="solid">
@@ -467,22 +510,24 @@ const EmployeeManagementPage = () => {
                 </div>
             </Card>
 
-            {/* --- CONDITIONAL VIEW RENDERING --- */}
             <Spin spinning={loading}>
                 {viewMode === 'list' ? (
                     <Card>
                         <Table
                             columns={columns}
-                            dataSource={filteredEmployees}
+                            dataSource={employees}
                             rowKey="id"
                             pagination={pagination}
                             onChange={handleTableChange}
+                            // --- RESPONSIVE CHANGE: Critical for mobile tables ---
+                            scroll={{ x: 'max-content' }}
                         />
                     </Card>
                 ) : (
                     <>
+                        {/* This grid is already responsive, which is great! */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredEmployees.map(employee => (
+                            {employees.map(employee => (
                                 <EmployeeCard
                                     key={employee.id}
                                     employee={employee}
@@ -510,7 +555,8 @@ const EmployeeManagementPage = () => {
                 onCancel={handleModalCancel}
                 onOk={form.submit}
                 confirmLoading={isSubmitting}
-                width={900}
+                // --- RESPONSIVE CHANGE: Modal width adjusts for screen size ---
+                width={isMobile ? '95vw' : 900}
                 destroyOnClose
             >
                 <EmployeeForm

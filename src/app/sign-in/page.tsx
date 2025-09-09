@@ -52,14 +52,15 @@ const LoginPage = () => {
 
     return (
         <div
-            className='w-full min-h-screen flex items-center justify-center p-4 bg-cover bg-center backdrop-blur-xs'
+            className='w-full min-h-screen flex items-center justify-center p-4 bg-cover bg-center backdrop-blur-xs '
             style={{
                 backgroundImage: "url('https://images.unsplash.com/photo-1535957998253-26ae1ef29506?q=80&w=1920&auto=format&fit=crop')",
             }}
         >
-            <div className='w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-20'>
+            <div className="absolute inset-0 bg-black/30" />
+            <div className='w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-20 relative z-10 text-white'>
                 {/* Left Side: Branding and Text */}
-                <div className='text-white text-center lg:text-left'>
+                <div className='text-white text-center lg:text-left '>
                     <div className='flex items-center justify-center lg:justify-start gap-2 mb-4'>
                         <span className='text-2xl font-bold tracking-wider'>Welcome</span>
                         {/* A simple SVG to replicate the plane icon and dashed line */}
@@ -89,7 +90,7 @@ const LoginPage = () => {
                                     placeholder='Enter your email'
                                     type='email'
                                     name='email'
-                                    className='w-full rounded-md p-2.5 placeholder-gray-400 dark:placeholder-gray-400 text-white dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-300 dark:placeholder-gray-300 text-white dark:text-white'
                                     register={register("email", {
                                         required: "Email Address is required!",
                                     })}
@@ -104,7 +105,7 @@ const LoginPage = () => {
                                     placeholder='Enter your password'
                                     type='password'
                                     name='password'
-                                    className='w-full rounded-md p-2.5 placeholder-gray-400 dark:placeholder-gray-400 text-white dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-300 dark:placeholder-gray-300 text-white dark:text-white'
                                     register={register("password", {
                                         required: "Password is required!",
                                     })}

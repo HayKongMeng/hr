@@ -91,9 +91,22 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ open, employe
                 <Form.Item
                     name="password"
                     label="New Password"
+                    hasFeedback
                     rules={[
                         { required: true, message: 'Please enter a new password.' },
-                        { min: 8, message: 'Password must be at least 8 characters.' }
+                        {
+                            validator: (_, value) => {
+                                if (!value) {
+                                    return Promise.resolve();
+                                }
+
+                                const strongPasswordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{12,})");
+                                if (strongPasswordRegex.test(value)) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error('Password must be at least 12 characters and include an uppercase letter, a lowercase letter, a number, and a special character (!@#$%^&*).'));
+                            },
+                        },
                     ]}
                 >
                     <Input.Password size="large" placeholder="Enter new password" />

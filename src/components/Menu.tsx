@@ -16,6 +16,7 @@ import { GiPartyFlags } from "react-icons/gi";
 import { FiUserPlus } from "react-icons/fi";
 import {FaRegBuilding, FaUserShield} from "react-icons/fa";
 import { FaBuildingShield } from "react-icons/fa6";
+import {MdOutlineVerified} from "react-icons/md";
 
 interface NavItem {
     label: string;
@@ -84,6 +85,18 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                             href: `/dashboard/list/employees/${empId}`,
                             visible: ["Admin", "Employee"],
                         },
+                        {
+                            label: 'Leave Report',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/list/report/leave`,
+                            visible: ["Admin"],
+                        },
+                        {
+                            label: 'Monthly Attendance Report',
+                            icon: LuLayoutGrid,
+                            href: `/dashboard/list/report/monthly/attendance`,
+                            visible: ["Admin"],
+                        },
                     ],
                 },
             ],
@@ -92,7 +105,7 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
             title: 'HRMS Setup',
             items: [
                 {
-                    label: 'Employee Create',
+                    label: 'Employee',
                     icon: FiUserPlus,
                     visible: ['Admin', 'Super Admin'],
                     children: [
@@ -102,29 +115,31 @@ const Menu: React.FC<MenuProps> = ({ closeMenu, collapsed }) => {
                     ],
                 },
                 {
-                    label: 'Holidays Setup',
+                    label: 'Holidays',
                     icon: GiPartyFlags,
-                    visible: ['Admin', 'Super Admin'],
+                    visible: ['Admin'],
                     children: [
                         { label: 'Manage Leave', icon: LuLayers, href: '/dashboard/list/leaves', visible: ['Admin', 'Super Admin', 'Employee'] },
-                        { label: 'Entitlement setup', icon: LuLayers, href: '/dashboard/list/entitlements', visible: ["Admin", "Super Admin"] },
-                        { label: 'Nationalities setup', icon: LuLayers, href: '/dashboard/list/nationalities', visible: ["Admin", "Super Admin"] },
-                        { label: 'Working station setup', icon: LuLayers, href: '/dashboard/list/working-station', visible: ["Admin", "Super Admin"] },
-                        { label: 'Marital Status setup', icon: LuLayers, href: '/dashboard/list/marital-status', visible: ["Admin", "Super Admin"] },
-                        { label: 'Leave type', icon: LuLayers, href: '/dashboard/list/leave-type', visible: ["Admin", "Super Admin"] },
-                        { label: 'Designation setup', icon: LuLayers, href: '/dashboard/list/designations', visible: ["Admin", "Super Admin"] },
+                        { label: 'Entitlement setup', icon: LuLayers, href: '/dashboard/list/entitlements', visible: ["Admin", "Super Admin", "Employee"] },
+                        { label: 'Holidays', icon: LuLayers, href: '/dashboard/list/holidays', visible: ["Admin", "Super Admin", "Employee"] },
+
                     ],
                 },
                 {
                     label: 'Employee Field Setup',
                     icon: LuLayers,
-                    visible: ['Admin', 'Super Admin'],
+                    visible: ['Admin'],
                     children: [
-                        // Note: I've corrected this as 'Manage Leave' was duplicated.
-                        { label: 'Holidays', icon: LuLayers, href: '/dashboard/list/holidays', visible: ["Admin"] },
+                        { label: 'Designation setup', icon: LuLayers, href: '/dashboard/list/designations', visible: ["Admin", "Super Admin"] },
+                        { label: 'Leave type', icon: LuLayers, href: '/dashboard/list/leave-type', visible: ["Admin", "Super Admin"] },
+                        { label: 'Marital Status setup', icon: LuLayers, href: '/dashboard/list/marital-status', visible: ["Admin", "Super Admin"] },
+                        { label: 'Working station setup', icon: LuLayers, href: '/dashboard/list/working-station', visible: ["Admin", "Super Admin"] },
+                        { label: 'Nationalities setup', icon: LuLayers, href: '/dashboard/list/nationalities', visible: ["Admin", "Super Admin"] },
+                        { label: 'Employment Type setup', icon: LuLayers, href: '/dashboard/list/employment-type', visible: ["Admin", "Super Admin"] },
                     ],
                 },
                 { label: 'Holidays', icon: GiPartyFlags, href: '/dashboard/list/holidays', visible: ["Employee"] },
+                { label: 'Entitlements', icon: MdOutlineVerified, href: '/dashboard/list/entitlements', visible: ["Employee"] },
                 {
                     label: 'Company Setup',
                     icon: FaRegBuilding,

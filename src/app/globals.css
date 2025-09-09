@@ -6,6 +6,25 @@ html {
   scroll-behavior: smooth;
   font-family: 'Satoshi'
 }
+
+/* In your globals.css or another imported CSS file */
+
+.modern-attendance-table .ant-table-thead > tr > th {
+    @apply bg-gray-100 font-semibold sticky top-0 z-10;
+}
+
+.modern-attendance-table .ant-table-tbody > tr > td {
+    @apply py-3 px-2;
+}
+
+.modern-attendance-table .ant-table-cell-fix-left {
+    @apply bg-white;
+}
+
+.modern-attendance-table .ant-table-tbody > tr:hover > td {
+    @apply bg-blue-50;
+}
+
 @keyframes gradient-animation {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }

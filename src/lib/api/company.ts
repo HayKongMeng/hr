@@ -187,41 +187,141 @@ export const fetchDashboardSummary = async (date?: string): Promise<DashboardSum
 };
 
 
-//work schedule
+// =======================
+// Work Schedule
+// =======================
+export interface WorkScheduleDay {
+    id: number;
+    day_of_week: string;
+    work_start_time: string;
+    work_end_time: string;
+    work_hours: number;
+}
+export interface WorkScheduleDayPayload {
+    day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+    work_start_time: string;
+    work_end_time: string;
+    work_hours: number;
+}
 export interface WorkSchedulePayload {
     name: string;
-    work_start_time: string; // "HH:mm" format
-    work_end_time: string;   // "HH:mm" format
+    work_start_time: string;
+    work_end_time: string;
     grace_minutes: number;
     work_hours_per_day: number;
     overtime_allowed: boolean;
 }
+// This is the type for data received FROM the API, which includes an 'id'
+type WorkSchedule = WorkSchedulePayload & { id: number };
 
-export const createWorkSchedule = async (payload: WorkSchedulePayload) => {
-    try {
-        const response = await api.post('/api/employee/work-schedules', payload);
-        return response.data;
-    } catch (error) {
-        console.error('Error creating work schedule:', error);
-        throw error;
-    }
+// This is the type for the DETAILED view of a schedule
+export type WorkScheduleDetail = WorkSchedule & {
+    work_schedule_days: WorkScheduleDay[];
 };
 
-// --- For Assigning a Specific Shift to an Employee ---
+// CORRECTED: The function now correctly promises to return WorkSchedule[]
+export const fetchScheduleDay = async (): Promise<WorkSchedule[]> => {
+    const response = await api.get(`/api/employee/work-schedules`);
+    return response.data?.result?.data || [];
+};
+
+export const getScheduleDayById = async (id: number): Promise<WorkScheduleDetail> => {
+    const response = await api.get(`/api/employee/work-schedules/${id}`);
+    return response.data.result.data;
+};
+
+export const deleteScheduleDay = async (id: number) => {
+    const response = await api.delete(`/api/employee/work-schedules/${id}`);
+    return response.data; // Changed from 'response' to 'response.data' for consistency
+}
+
+export const updateWorkSchedule = async (id: number, payload: WorkSchedulePayload) => {
+    const response = await api.put(`/api/employee/work-schedules/${id}`, payload);
+    return response.data;
+};
+
+export const createWorkSchedule = async (payload: WorkSchedulePayload) => {
+    const response = await api.post('/api/employee/work-schedules', payload);
+    return response.data;
+};
+
+export const addDayToWorkSchedule = async (scheduleId: number, payload: WorkScheduleDayPayload) => {
+    const response = await api.post(`/api/employee/work-schedules/${scheduleId}/days`, payload);
+    return response.data;
+};
+
+
+// =======================
+// Shift Assignment
+// =======================
 export interface ShiftAssignmentPayload {
+    work_schedule_id: number;
     employee_id: number;
-    work_date: string; // "YYYY-MM-DD"
-    work_start_time: string; // "HH:mm"
-    work_end_time: string; // "HH:mm"
+    work_date: string;
+    work_start_time: string;
+    work_end_time: string;
     work_hours: number;
+}
+// This is the type for a ShiftAssignment object received FROM the API
+type ShiftAssignment = ShiftAssignmentPayload & {
+    id: number;
+    employee?: { name: string };
+    work_schedule?: { name: string };
+};
+
+// CORRECTED: The function now correctly promises to return ShiftAssignment[]
+export const fetchShiftAssign = async (): Promise<ShiftAssignment[]> => {
+    const response = await api.get(`/api/employee/shift-assignment`);
+    return response.data?.result?.data || [];
+};
+
+export const updateShiftAssign = async (id: number, payload: ShiftAssignmentPayload) => {
+    const response = await api.put(`/api/employee/shift-assignment/${id}`, payload);
+    return response.data;
+};
+
+export const deleteShiftAssign = async (id: number) => {
+    const response = await api.delete(`/api/employee/shift-assignment/${id}`);
+    return response.data;
 }
 
 export const assignShift = async (payload: ShiftAssignmentPayload) => {
-    try {
-        const response = await api.post('/api/employee/shift-assignment', payload);
-        return response.data;
-    } catch (error) {
-        console.error('Error assigning shift:', error);
-        throw error;
-    }
+    const response = await api.post('/api/employee/shift-assignment', payload);
+    return response.data;
+};
+
+
+// =======================
+// Attendance Setting
+// =======================
+export interface AttendanceSettingPayload {
+    work_start_time: string;
+    work_end_time: string;
+    grace_minutes: number;
+    work_hours_per_day: number;
+    overtime_allowed: boolean;
+}
+// This is the type for an AttendanceSetting object received FROM the API
+type AttendanceSetting = AttendanceSettingPayload & { id: number };
+
+export const createAttendanceSetting = async (payload: AttendanceSettingPayload) => {
+    const response = await api.post('/api/employee/attendance-settings', payload);
+    return response.data;
+};
+
+// ADDED a standard update function for completeness
+export const updateAttendanceSetting = async (id: number, payload: AttendanceSettingPayload) => {
+    const response = await api.put(`/api/employee/attendance-settings/${id}`, payload);
+    return response.data;
+};
+
+export const deleteAttendanceSetting = async (id: number) => {
+    const response = await api.delete(`/api/employee/attendance-settings/${id}`);
+    return response.data;
+}
+
+// CORRECTED: Promises to return an AttendanceSetting object or null
+export const fetchAttendanceSetting = async (): Promise<AttendanceSetting | null> => {
+    const response = await api.get(`/api/employee/attendance-settings-single-company`);
+    return response.data?.result?.data || null;
 };

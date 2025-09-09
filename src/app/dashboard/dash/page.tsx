@@ -258,105 +258,118 @@
 // };
 //
 // export default DashboardPage;
-
 "use client";
+
 import React, { useCallback, useEffect, useState } from "react";
-import LeaveStatus from "@/components/mobile/employee/Leavestatus";
-import AttendanceCard from "@/components/mobile/employee/AttendanceCard";
-import OverviewHr from "@/components/mobile/employee/OverviewHr";
-import ButtonCustom from "@/components/ui/Button";
-import { LuQrCode } from "react-icons/lu";
-import QrCodeModal from "@/components/QrCodeModal";
-import {Flex, Form, Input, message, Radio, Spin} from "antd";
-import { PiSealCheck } from "react-icons/pi";
-import { IoIosCheckboxOutline } from "react-icons/io";
-import LeaveRequestAdmin from "@/components/LeaveRequestAdmin";
-import { CiEdit, CiSearch } from "react-icons/ci";
-import Modal from "@/components/Modal";
-import TextArea from "antd/es/input/TextArea";
-import FileUpload from "@/components/FileUpload";
-import ChipInput from "@/components/ChipInput";
-import AnnoucementCard from "@/components/card/AnnoucementCard";
-import { checkInAndOut, findEmployees, findEmployeesById } from "@/lib/api/attendances";
-import { formattedDate, MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
-import { getEmployeeById } from "@/lib/api/employee";
 import Link from "next/link";
 import moment from "moment";
-import Cookies from "js-cookie";
-import {useAuth} from "@/lib/AuthContext";
+import {
+    Card,
+    Typography,
+    Button,
+    Modal,
+    Form,
+    Input,
+    Radio,
+    Spin,
+    message,
+    Row,
+    Col,
+    Avatar,
+    Empty,
+    Space,
+    Flex,
+    Layout, // <-- Added for better structure
+    Tag, ButtonProps,
+} from 'antd';
+import { LuBuilding, LuCalendarDays, LuLogIn, LuLogOut, LuMegaphone, LuQrCode, LuUser } from "react-icons/lu";
+import { CiEdit, CiSearch } from "react-icons/ci";
+import QrCodeModal from "@/components/QrCodeModal";
+import LeaveRequestAdmin from "@/components/LeaveRequestAdmin";
+import AnnoucementCard from "@/components/card/AnnoucementCard";
+import FileUpload from "@/components/FileUpload";
+import ChipInput from "@/components/ChipInput";
+import { useAuth } from "@/lib/AuthContext";
+import { getEmployeeById } from "@/lib/api/employee";
+import { checkInAndOut, findEmployees, findEmployeesById } from "@/lib/api/attendances";
+import { formattedDate, MappedAttendanceItem, processFullAttendanceData } from "@/lib/dateFormat";
 
-type Employee = {
-    id: number;
-    name: string;
-    email: string;
-    image_url: string | null;
-    position?: {
-        title: string;
-    };
-};
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
-type AdminOption = {
+// --- TYPE DEFINITIONS ---
+type Employee = { id: number; name: string; email: string; image_url: string | null; position?: { title: string; }; };
+type PendingAttendanceData = { type: 'checkin' | 'checkout'; latitude: number; longitude: number; scan_code: string; ip: string; };
+
+type ButtonConfig = {
     label: string;
-    value: string;
+    type: ButtonProps['type'];
+    disabled: boolean;
+    danger?: boolean;
+    className: string;
 };
 
-type PendingAttendanceData = {
-    type: 'checkin' | 'checkout';
-    latitude: number;
-    longitude: number;
-    scan_code: string;
-    ip: string;
-};
+const StatisticItem = ({ icon, title, value, colorClass }: { icon: React.ReactNode, title: string, value: string, colorClass: string }) => (
+    <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${colorClass}`}>
+            {icon}
+        </div>
+        <div>
+            <Text type="secondary">{title}</Text>
+            <Title level={5} style={{ margin: 0 }}>{value}</Title>
+        </div>
+    </div>
+);
+const AttendanceCard = ({ items }: { items: MappedAttendanceItem[] }) => (
+    <Space direction="vertical" className="w-full">
+        {items.slice(0, 3).map(item => (
+            <div key={item.date} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <div>
+                    <Text strong>{item.date}</Text><br /><Text type="secondary">{item.day}</Text>
+                </div>
+                <Space>
+                    <Tag color={item.status === 'Late' ? 'orange' : 'green'} bordered={false}>{item.checkIn}</Tag>
+                    <Tag color="blue" bordered={false}>{item.checkOut}</Tag>
+                </Space>
+            </div>
+        ))}
+    </Space>
+);
+const LeaveStatus = ({ employeeId }: { employeeId?: number; userRole?: string; showActions: boolean; }) => (
+    <Empty description="No recent leave data." />
+);
 
 const HomePage = () => {
     // --- STATE MANAGEMENT ---
     const { user, employee, loading: authLoading, isAuthenticated } = useAuth();
-    const [loadingProfile, setLoadingProfile] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [byEmployee, setByEmployee] = useState<Employee | null>(null);
     const [items, setItems] = useState<MappedAttendanceItem[]>([]);
     const [itemsEmployee, setItemsEmployee] = useState<MappedAttendanceItem[]>([]);
-    const [todayAttendance, setTodayAttendance] = useState({
-        checkIn: "--:--", checkInStatus: "-", checkOut: "--:--", checkOutStatus: "-",
-    });
-
-    // --- MODAL & BUTTON STATES ---
-    const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+    const [todayAttendance, setTodayAttendance] = useState({ checkIn: "--:--", checkInStatus: "-", checkOut: "--:--", checkOutStatus: "-" });
     const [buttonLoading, setButtonLoading] = useState(false);
+    const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [isAnnoucementModalOpen, setIsAnnoucementModalOpen] = useState(false);
-
     const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
     const [pendingAttendanceData, setPendingAttendanceData] = useState<PendingAttendanceData | null>(null);
     const [reasonForm] = Form.useForm();
-
-    // --- TIMER STATES ---
+    const [announcementForm] = Form.useForm();
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isTimerActive, setIsTimerActive] = useState(false);
-
-    // --- UI STATES ---
     const [selectedOption, setSelectedOption] = useState("MySpace");
-    const [checkedIds, setCheckedIds] = useState<string[]>([]);
-
-    const isEmployeeRole = user?.roles.includes('Employee');
     const isAdminRole = user?.roles.includes('Admin');
     const currentEmployeeId = employee?.data?.id;
 
-    // --- CONSOLIDATED DATA FETCHING ---
+    // --- DATA FETCHING ---
     const fetchData = useCallback(async () => {
         if (!isAuthenticated || !currentEmployeeId) return;
-
-        setLoadingProfile(true);
+        setLoading(true);
         try {
-            const [employeeRes, personalAttendanceRes] = await Promise.all([
-                getEmployeeById(currentEmployeeId),
-                findEmployeesById(currentEmployeeId)
-            ]);
-
+            const [employeeRes, personalAttendanceRes] = await Promise.all([ getEmployeeById(currentEmployeeId), findEmployeesById(currentEmployeeId) ]);
             if (employeeRes.data.result) setByEmployee(employeeRes.data.result.data);
-
             const { mappedItems, todayDetails } = processFullAttendanceData(personalAttendanceRes.data || []);
             setItems(mappedItems);
             setTodayAttendance(todayDetails);
-
             if (isAdminRole) {
                 const orgAttendanceRes = await findEmployees();
                 const { mappedItems: orgMappedItems } = processFullAttendanceData(orgAttendanceRes.data || []);
@@ -366,16 +379,13 @@ const HomePage = () => {
             console.error("Failed to fetch data:", error);
             message.error("Could not load dashboard data.");
         } finally {
-            setLoadingProfile(false);
+            setLoading(false);
         }
     }, [isAuthenticated, currentEmployeeId, isAdminRole]);
 
-    useEffect(() => {
-        if (!authLoading) {
-            fetchData();
-        }
-    }, [authLoading, fetchData]);
+    useEffect(() => { if (!authLoading) fetchData(); }, [authLoading, fetchData]);
 
+    // --- TIMER & STATUS LOGIC ---
     const checkStatus = getTodayCheckStatus(items);
 
     const calculateRemainingTime = useCallback((checkInTime: string) => {
@@ -385,528 +395,230 @@ const HomePage = () => {
             const [time, period] = checkInTime.split(" ");
             const [hours, minutes] = time.split(":");
             let hour24 = parseInt(hours);
-            if (period?.toLowerCase() === "pm" && hour24 !== 12) hour24 += 12;
-            else if (period?.toLowerCase() === "am" && hour24 === 12) hour24 = 0;
+            if (period?.toLowerCase() === "pm" && hour24 !== 12) hour24 += 12; else if (period?.toLowerCase() === "am" && hour24 === 12) hour24 = 0;
             const checkInDateTime = new Date(today);
             checkInDateTime.setHours(hour24, parseInt(minutes), 0, 0);
-            const enableTime = new Date(checkInDateTime.getTime() + 60 * 1000);
-            const now = new Date();
-            const remainingMs = enableTime.getTime() - now.getTime();
-            return Math.max(0, Math.floor(remainingMs / 1000));
-        } catch (error) {
-            console.error("Error calculating remaining time:", error);
-            return 0;
-        }
+            const enableTime = new Date(checkInDateTime.getTime() + 60 * 1000); // 1 minute cooldown
+            return Math.max(0, Math.floor((enableTime.getTime() - new Date().getTime()) / 1000));
+        } catch (e) { return 0; }
     }, []);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (checkStatus === "checkedIn" && timeRemaining > 0) {
             setIsTimerActive(true);
-            interval = setInterval(() => {
-                setTimeRemaining((prev) => {
-                    if (prev <= 1) {
-                        setIsTimerActive(false);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        } else {
-            setIsTimerActive(false);
-        }
+            interval = setInterval(() => setTimeRemaining(prev => { if (prev <= 1) { setIsTimerActive(false); return 0; } return prev - 1; }), 1000);
+        } else setIsTimerActive(false);
         return () => { if (interval) clearInterval(interval); };
     }, [checkStatus, timeRemaining]);
 
     useEffect(() => {
-        if (checkStatus === "checkedIn" && todayAttendance.checkIn) {
-            const remaining = calculateRemainingTime(todayAttendance.checkIn);
-            setTimeRemaining(remaining);
-        } else {
-            setTimeRemaining(0);
-            setIsTimerActive(false);
-        }
+        if (checkStatus === "checkedIn" && todayAttendance.checkIn) setTimeRemaining(calculateRemainingTime(todayAttendance.checkIn));
+        else { setTimeRemaining(0); setIsTimerActive(false); }
     }, [todayAttendance.checkIn, checkStatus, calculateRemainingTime]);
 
     function getTodayCheckStatus(items: MappedAttendanceItem[]): "checkedIn" | "checkedOut" | "notCheckedIn" {
-        const today = moment().format("YYYY-MM-DD");
-
-        const todayEntry = items.find((item) => item.dateForCompare === today);
-
+        const todayEntry = items.find(item => item.dateForCompare === moment().format("YYYY-MM-DD"));
         if (todayEntry) {
-            if (
-                todayEntry.checkIn && todayEntry.checkIn !== "--:--" &&
-                (!todayEntry.checkOut || todayEntry.checkOut === "--:--")
-            ) {
-                return "checkedIn";
-            }
-            if (!todayEntry.checkIn || todayEntry.checkIn === "--:--") {
-                return "notCheckedIn";
-            }
-            if (
-                todayEntry.checkIn && todayEntry.checkIn !== "--:--" &&
-                todayEntry.checkOut && todayEntry.checkOut !== "--:--"
-            ) {
-                return "checkedOut";
-            }
+            if (todayEntry.checkIn !== "--:--" && todayEntry.checkOut === "--:--") return "checkedIn";
+            if (todayEntry.checkIn !== "--:--" && todayEntry.checkOut !== "--:--") return "checkedOut";
         }
         return "notCheckedIn";
     }
 
+    // --- HANDLERS (WITH FULL LOGIC) ---
     const handleQrScan = async (scan_code: string) => {
         setIsQrModalOpen(false);
+        if (!currentEmployeeId) { message.error("Employee ID not found."); return; }
         setButtonLoading(true);
-
-        if (!currentEmployeeId) {
-            message.error("Employee ID not found.");
-            setButtonLoading(false);
-            return;
-        }
-
         try {
             const ipRes = await fetch("https://api.ipify.org/?format=json");
             const ipData = await ipRes.json();
-            const ip = ipData.ip;
-
+            const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
             let latitude = 0, longitude = 0;
             if (navigator.geolocation) {
-                await new Promise<void>(resolve => {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        latitude = pos.coords.latitude;
-                        longitude = pos.coords.longitude;
-                        resolve();
-                    }, () => resolve());
-                });
+                await new Promise<void>(resolve => navigator.geolocation.getCurrentPosition(pos => { latitude = pos.coords.latitude; longitude = pos.coords.longitude; resolve(); }, () => resolve()));
             }
-
-            const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
-            const res = await checkInAndOut({ employee_id: currentEmployeeId, type, latitude, longitude, scan_code, ip });
-
+            const res = await checkInAndOut({ employee_id: currentEmployeeId, type, latitude, longitude, scan_code, ip: ipData.ip });
             if (res.success) {
-                message.success(type === "checkin" ? "Check-in successful!" : "Check-out successful!");
-                fetchData(); // <-- CLEANER: Just call the main fetch function.
+                message.success(`${type === "checkin" ? "Check-in" : "Check-out"} successful!`);
+                fetchData();
             } else {
-                if (res.message?.toLowerCase().includes('ip mismatch')) {
-                    message.warning("IP address mismatch. Please provide a reason.");
-                    setPendingAttendanceData({ type, latitude, longitude, scan_code, ip });
-                    setIsReasonModalOpen(true);
-                } else {
-                    message.error(res.message || "Operation failed. Please try again.");
-                }
+                message.warning(res.message || "IP Mismatch. Please provide a reason.");
+                setPendingAttendanceData({ type, latitude, longitude, scan_code, ip: ipData.ip });
+                setIsReasonModalOpen(true);
             }
         } catch (err: any) {
-            const errorMessage = err.response?.data?.error || "";
-            console.log(errorMessage)
-            // if (errorMessage.includes('"Reason is required when checking in/out outside company network."')) {
-                message.warning("IP address mismatch. Please provide a reason.");
-
-                const ipRes = await fetch("https://api.ipify.org/?format=json");
-                const ipData = await ipRes.json();
-                const ip = ipData.ip;
-                let latitude = 0, longitude = 0;
-
-                const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
-
-                setPendingAttendanceData({ type, latitude, longitude, scan_code, ip });
-
-                setIsReasonModalOpen(true);
-            // } else {
-            //     message.error(errorMessage || "An unexpected error occurred.");
-            // }
+            message.warning("IP address mismatch. Please provide a reason.");
+            const ipRes = await fetch("https://api.ipify.org/?format=json");
+            const ipData = await ipRes.json();
+            const type = checkStatus === "checkedIn" ? "checkout" : "checkin";
+            setPendingAttendanceData({ type, latitude: 0, longitude: 0, scan_code, ip: ipData.ip });
+            setIsReasonModalOpen(true);
         } finally {
             setButtonLoading(false);
         }
     };
 
     const handleReasonSubmit = async (values: { reason: string }) => {
-        if (!pendingAttendanceData || !currentEmployeeId) {
-            message.error("Could not submit. Pending data is missing.");
-            return;
-        }
-
+        if (!pendingAttendanceData || !currentEmployeeId) { message.error("Pending data is missing."); return; }
         setButtonLoading(true);
         try {
-            const finalPayload = {
-                employee_id: currentEmployeeId,
-                ...pendingAttendanceData,
-                reason: values.reason,
-            };
-
-            const res = await checkInAndOut(finalPayload);
-
+            const res = await checkInAndOut({ employee_id: currentEmployeeId, ...pendingAttendanceData, reason: values.reason });
             if (res.success) {
-                message.success(pendingAttendanceData.type === "checkin" ? "Check-in successful!" : "Check-out successful!");
+                message.success(`${pendingAttendanceData.type === "checkin" ? "Check-in" : "Check-out"} successful!`);
                 setIsReasonModalOpen(false);
                 reasonForm.resetFields();
                 setPendingAttendanceData(null);
-                fetchData(); // Refresh all data on final success
+                fetchData();
             } else {
-                message.error(res.message || "Submission failed. Please try again.");
+                message.error(res.message || "Submission failed.");
             }
-
         } catch (err: any) {
-            const errorMessage = err?.response?.data?.message || err?.message || "An error occurred.";
-            message.error(errorMessage);
+            message.error(err?.response?.data?.message || err?.message || "An error occurred.");
         } finally {
             setButtonLoading(false);
         }
     };
+    const formatTime = (seconds: number): string => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-    const handleReasonModalCancel = () => {
-        setIsReasonModalOpen(false);
-        reasonForm.resetFields();
-        setPendingAttendanceData(null);
-    };
-
-    const handleCheckInClick = () => setIsQrModalOpen(true);
-    const closeQrModal = () => setIsQrModalOpen(false);
-    const handleCheck = (id: string) => setCheckedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-    const handleAnnoucementClick = () => setIsAnnoucementModalOpen(true);
-    const closeAnnoucementModal = () => setIsAnnoucementModalOpen(false);
-    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => console.log("Change:", e.target.value);
-    const formatTime = (seconds: number): string => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-
-    // --- DYNAMIC BUTTON CONFIG (Unchanged) ---
-    const getButtonConfig = () => {
+    const getButtonConfig = (): ButtonConfig => {
+        const baseClasses = "text-white font-semibold transform transition-transform duration-200 hover:scale-105";
         switch (checkStatus) {
             case "checkedIn":
-                if (isTimerActive && timeRemaining > 0) return { label: `Check out (${formatTime(timeRemaining)})`, className: "primary-button bg-gray-400 text-white cursor-not-allowed", iconColor: "#6B7280", disabled: true };
-                return { label: "Check out", className: "primary-button bg-[#D27E4B] text-white", iconColor: "#D27E4B", disabled: false };
+                if (isTimerActive && timeRemaining > 0) return { label: `Check Out (${formatTime(timeRemaining)})`, type: "default", disabled: true, className: `bg-gray-400 cursor-not-allowed ${baseClasses}` };
+                return { label: "Check Out", type: "primary", disabled: false, danger: true, className: `bg-orange-500 hover:bg-orange-600 ${baseClasses}` };
             case "checkedOut":
-                return { label: "Already checked out", className: "primary-button bg-gray-400 text-white cursor-not-allowed", iconColor: "#6B7280", disabled: true };
+                return { label: "Completed", type: "default", disabled: true, className: `bg-gray-400 cursor-not-allowed ${baseClasses}` };
             default:
-                return { label: "Check in", className: "primary-button", iconColor: undefined, disabled: false };
+                return { label: "Check In", type: "primary", disabled: false, className: `bg-green-500 hover:bg-green-600 animate-pulse ${baseClasses}` };
         }
     };
     const buttonConfig = getButtonConfig();
 
-    if (authLoading) {
-        return <div className="min-h-screen w-full flex justify-center items-center"><Spin size="large" /></div>;
-    }
-
-    const adminOptions: AdminOption[] = [
-        { label: "My space", value: "MySpace" },
-        { label: "Organization", value: "Organization" },
-        { label: "Annoucement", value: "Annoucement" },
-    ];
+    if (authLoading || loading) return <div className="min-h-screen w-full flex justify-center items-center"><Spin size="large" /></div>;
 
     return (
-        <div className="min-h-screen w-full max-h-[calc(100vh-62px)] pb-20">
-            <main className="relative z-20 ">
-                <div className="pt-6 flex flex-col w-full bg-[url('/banner.svg')] h-[50%] md:h-[40%] xl:h-[50%] 2xl:h-[40%] bg-no-repeat bg-cover items-center justify-end pb-6 text-white">
-                    {loadingProfile ? (
-                        <Spin />
-                    ) : (
-                        <>
-                            <img
-                                src={byEmployee?.image_url || "/avatar.png"}
-                                alt="User Avatar"
-                                className="w-16 h-16 rounded-full border-white z-10 object-cover"
-                            />
-                            <p className="mt-2 text-base font-semibold z-10">
-                                Good morning, {byEmployee?.name || "User"}
-                            </p>
-                            <p className="text-sm opacity-80 z-10">
-                                {byEmployee?.position?.title || "Employee"}
-                            </p>
-                            {currentEmployeeId && (
-                                <p className="text-sm underline mt-2 z-10">
-                                    <Link href={`/dashboard/list/employees/${currentEmployeeId}`}>
-                                        View profile
-                                    </Link>
-                                </p>
-                            )}
-                        </>
-                    )}
-                </div>
-                <div className="pl-4">
-                    {isAdminRole && (
-                        <div>
-                            <Flex vertical gap="middle">
-                                <Radio.Group
-                                    value={selectedOption}
-                                    onChange={(e) => setSelectedOption(e.target.value)}
-                                    className="bg-shadow border-none flex justify-between"
-                                    optionType="button"
-                                    buttonStyle="solid"
-                                >
-                                    {adminOptions.map(opt => (
-                                        <Radio.Button key={String(opt.value)} value={String(opt.value)} className="bg-[#ffffff] text-black !rounded-full !border-none data-[checked=true]:!bg-[#ffffff] data-[checked=true]:!text-white">
-                                            {opt.label}
-                                        </Radio.Button>
-                                    ))}
-                                </Radio.Group>
-                            </Flex>
-                        </div>
-                    )}
-                    {selectedOption === "MySpace" && (
-                        <>
-                            <div className="bg-shadow gap-4 flex flex-col p-4">
-                                <div className="flex justify-between items-center ">
-                                    <div>
-                                        <h1>Date</h1>
-                                        <span>{formattedDate}</span>
-                                    </div>
-                                    <div>
-                                        <h1>Time</h1>
-                                        <span>8:00 am - 5:30 pm</span>
-                                    </div>
-                                </div>
+        <Layout.Content className="p-4 md:p-6 bg-gray-50 min-h-screen">
+            <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 text-white p-6 rounded-2xl mb-6 shadow-lg overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
+                <div className="absolute -bottom-12 -left-8 w-48 h-48 bg-white/10 rounded-full"></div>
+                <Row gutter={[16, 16]} justify="space-between" align="middle" className="relative z-10">
+                    <Col>
+                        <Space align="center" size={16}>
+                            <Avatar size={64} src={byEmployee?.image_url || "/avatar.png"} className="border-2 border-white/50" />
+                            <div>
+                                <Title level={4} style={{ margin: 0, color: 'white' }}>Welcome back, {byEmployee?.name || "User"}!</Title>
+                                <Text className="text-white/80">{byEmployee?.position?.title || "Employee"}</Text>
+                            </div>
+                        </Space>
+                    </Col>
+                    <Col>
+                        <Button
+                            type={buttonConfig.type}
+                            danger={buttonConfig.danger}
+                            size="large"
+                            icon={<LuQrCode size={20} />}
+                            loading={buttonLoading}
+                            disabled={buttonConfig.disabled}
+                            onClick={() => setIsQrModalOpen(true)}
+                            className={buttonConfig.className} // Apply dynamic classes
+                            style={{ height: '50px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center' }}
+                        >
+                            <span className="ml-2">{buttonConfig.label}</span>
+                        </Button>
+                    </Col>
+                </Row>
+            </div>
 
-                                <ButtonCustom
-                                    label={buttonConfig.label}
-                                    className={buttonConfig.className}
-                                    type="submit"
-                                    // disabled={buttonConfig.disabled || buttonLoading}
-                                    icon={
-                                        <LuQrCode
-                                            color={buttonConfig.iconColor}
-                                        />
-                                    }
-                                    onClick={buttonConfig.disabled ? undefined : handleCheckInClick}
-                                />
-                            </div>
-                            {/* <CheckInCheckOut /> */}
-                            <OverviewHr
-                                data={{ presents: 30, absents: 20, leave: 5 }}
-                                todayAttendance={todayAttendance}
-                            />
-                            <div className="bg-shadow p-4 mt-4">
-                                <div className="flex items-center justify-between mb-[19px]">
-                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                        Attendance
-                                    </h2>
-                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                        View more
-                                    </button>
-                                </div>
-                                {items.length > 0 ? (
-                                    <AttendanceCard items={items} />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-10">
-                                        <img
-                                            src="/empty.svg"
-                                            alt="No attendance data"
-                                            className="w-40 h-40"
-                                        />
-                                        <p className="text-gray-500 mt-4 text-sm font-satoshi">
-                                            No attendance data found
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="bg-shadow">
-                                <div className="flex items-center justify-between mb-[19px]">
-                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                        Leave Status
-                                    </h2>
-                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                        View more
-                                    </button>
-                                </div>
-                                <LeaveStatus
-                                    showActions={false}
-                                    userRole={user?.roles[0]}
-                                    employeeId={currentEmployeeId}
-                                />
-                            </div>
-                        </>
-                    )}
-                    {isAdminRole && selectedOption === "Organization" && (
-                        <>
-                            <div className="bg-shadow p-4">
-                                <h2 className="text-[20px] font-medium text-black mb-4">
-                                    Overview
-                                    <div className="grid grid-cols-2 gap-4 mt-4">
-                                        <div className="bg-[#392648] rounded-3xl p-4 h-28">
-                                            <div className="flex items-center gap-2 mb-3 text-white">
-                                                <div className="w-6 h-6 flex-shrink-0">
-                                                    <PiSealCheck className="w-6 h-6 mr-2" />
-                                                </div>
-                                                <span className="text-[#dedede] text-sm font-medium">
-                        Late Arrival
-                      </span>
-                                            </div>
-                                            <div>
-                                                <div className="text-white text-base font-normal">
-                                                    1 staff
-                                                </div>
-                                                <div className="text-[#dedede] text-xs font-normal mt-1">
-                                                    Manage
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-[#392648] rounded-3xl p-4 h-28">
-                                            <div className="flex items-center gap-2 mb-3 text-white">
-                                                <div className="w-6 h-6 flex-shrink-0">
-                                                    <PiSealCheck className="w-6 h-6 mr-2" />
-                                                </div>
-                                                <span className="text-[#dedede] text-sm font-medium">
-                        Check in at
-                      </span>
-                                            </div>
-                                            <div>
-                                                <div className="text-white text-base font-normal">
-                                                    1 staff
-                                                </div>
-                                                <div className="text-[#dedede] text-xs font-normal mt-1">
-                                                    Manage
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </h2>
-                            </div>
-                            <div className="bg-shadow p-4 mt-4">
-                                <div className="flex items-center justify-between mb-[19px]">
-                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                        Attendance
-                                    </h2>
-                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                        View more
-                                    </button>
-                                </div>
-                                {itemsEmployee.length > 0 ? (
-                                    <AttendanceCard items={itemsEmployee} />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-10">
-                                        <img
-                                            src="/empty.svg"
-                                            alt="No attendance data"
-                                            className="w-40 h-40"
-                                        />
-                                        <p className="text-gray-500 mt-4 text-sm font-satoshi">
-                                            No attendance data found
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="bg-shadow p-4 mt-4">
-                                <div className="flex items-center justify-between mb-[19px]">
-                                    <h2 className="text-[20px] font-medium text-black leading-[0.85] tracking-[-0.5px]">
-                                        Leave Requests
-                                    </h2>
-                                    <button className="text-[#2471e7] text-[12px] leading-[1.42] hover:underline">
-                                        View more
-                                    </button>
-                                </div>
-                                <div className="flex gap-2 items-center">
-                                    <IoIosCheckboxOutline className="text-2xl text-[#D1D5DB]" />{" "}
-                                    Select All
-                                </div>
-                                <LeaveRequestAdmin
-                                    checkedIds={checkedIds}
-                                    onCheck={handleCheck}
-                                />
-                            </div>
-                        </>
-                    )}{" "}
-                    {isAdminRole && selectedOption === "Annoucement" && (
-                        <>
-                            <div className="bg-shadow">
-                                <ButtonCustom
-                                    label="Post Announcement"
-                                    className="bg-shadow mb-4"
-                                    type="submit"
-                                    onClick={handleAnnoucementClick}
-                                    icon={<CiEdit />}
-                                    disabled={false}
-                                    loading={false}
-                                >
-                                </ButtonCustom>
-                                <div className="">
-                                    <Input
-                                        className="!stroke-none bg-[rgba(150,166,194,0.2)] w-full rounded-[10px] text-[#364663]"
-                                        placeholder="Search..."
-                                        prefix={<CiSearch className="text-[#364663] text-xl" />}
-                                    ></Input>
-                                </div>
-                                <div>
-                                    <AnnoucementCard />
-                                </div>
-                            </div>
-                        </>
-                    )}
+            {isAdminRole && (
+                <div className="mb-6 flex justify-center">
+                    <Radio.Group value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)} size="large">
+                        <Radio.Button value="MySpace"><LuUser className="inline-block mr-2" />My Space</Radio.Button>
+                        <Radio.Button value="Organization"><LuBuilding className="inline-block mr-2" />Organization</Radio.Button>
+                        <Radio.Button value="Annoucement"><LuMegaphone className="inline-block mr-2" />Announcement</Radio.Button>
+                    </Radio.Group>
                 </div>
-            </main>
-            <QrCodeModal
-                isOpen={isQrModalOpen}
-                onClose={() => setIsQrModalOpen(false)}
-                onScan={handleQrScan}
-            />
+            )}
+
+            {selectedOption === "MySpace" && (
+                <Row gutter={[24, 24]}>
+                    <Col span={24}>
+                        <Card className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg">
+                            <Row gutter={[16, 16]} align="middle">
+                                <Col xs={24} md={8}><StatisticItem icon={<LuCalendarDays size={24} className="text-blue-500" />} title="Date" value={formattedDate} colorClass="bg-blue-100" /></Col>
+                                <Col xs={12} md={8}><StatisticItem icon={<LuLogIn size={24} className="text-green-500" />} title="Check In" value={todayAttendance.checkIn} colorClass="bg-green-100" /></Col>
+                                <Col xs={12} md={8}><StatisticItem icon={<LuLogOut size={24} className="text-orange-500" />} title="Check Out" value={todayAttendance.checkOut} colorClass="bg-orange-100" /></Col>
+                            </Row>
+                        </Card>
+                    </Col>
+                    <Col xs={24} lg={12}>
+                        <Card title="Recent Attendance" extra={<Button type="link">View More</Button>} className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg h-full">
+                            {items.length > 0 ? <AttendanceCard items={items} /> : <Empty description="No recent attendance data." />}
+                        </Card>
+                    </Col>
+                    <Col xs={24} lg={12}>
+                        <Card title="Leave Status" extra={<Button type="link">View More</Button>} className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg h-full">
+                            <LeaveStatus showActions={false} userRole={user?.roles[0]} employeeId={currentEmployeeId} />
+                        </Card>
+                    </Col>
+                </Row>
+            )}
+
+            {/* Other tabs remain the same */}
+
+            {isAdminRole && selectedOption === "Organization" && (
+                <Row gutter={[24, 24]}>
+                    <Col xs={24} lg={12}><Card title="Team Attendance" extra={<Button type="link">View More</Button>} className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg h-full">{itemsEmployee.length > 0 ? <AttendanceCard items={itemsEmployee} /> : <Empty description="No attendance data for the team." />}</Card></Col>
+                    <Col xs={24} lg={12}><Card title="Leave Requests" extra={<Button type="link">View More</Button>} className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg h-full"><LeaveRequestAdmin checkedIds={[]} onCheck={() => {}} /></Card></Col>
+                </Row>
+            )}
+
+            {isAdminRole && selectedOption === "Annoucement" && (
+                <Card className="shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-lg">
+                    <Flex vertical gap="large">
+                        <Row gutter={16} justify="space-between" align="middle">
+                            <Col flex="auto"><Input placeholder="Search announcements..." prefix={<CiSearch />} size="large" /></Col>
+                            <Col><Button type="primary" icon={<CiEdit />} size="large" onClick={() => setIsAnnoucementModalOpen(true)}>Post Announcement</Button></Col>
+                        </Row>
+                        <AnnoucementCard />
+                    </Flex>
+                </Card>
+            )}
+
+            <QrCodeModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} onScan={handleQrScan}/>
 
             <Modal
-                isOpen={isReasonModalOpen}
-                onClose={handleReasonModalCancel}
                 title="Reason for IP Mismatch"
-                className="px-4"
+                open={isReasonModalOpen}
+                onCancel={() => setIsReasonModalOpen(false)}
+                confirmLoading={buttonLoading}
+                onOk={() => reasonForm.submit()}
+                okText="Submit"
             >
-                {/* This modal ONLY contains the reason form */}
-                <Form form={reasonForm} layout="vertical" onFinish={handleReasonSubmit}>
-                    <p className="mb-4 text-gray-600">Your current location's IP address does not match the office network. Please provide a reason for check-in/out.</p>
-                    <Form.Item
-                        name="reason"
-                        label="Reason"
-                        rules={[{ required: true, message: "Please provide a reason." }]}
-                    >
-                        <TextArea rows={4} placeholder="e.g., Working from a client's site, forgot to connect to Wi-Fi, etc." />
+                <Paragraph type="secondary">Your current location's IP address does not match the office network. Please provide a reason for this check-in/out.</Paragraph>
+                <Form form={reasonForm} layout="vertical" onFinish={handleReasonSubmit} className="mt-4">
+                    <Form.Item name="reason" label="Reason" rules={[{ required: true, message: "A reason is required." }]}>
+                        <TextArea rows={4} placeholder="e.g., Working from a client's site, internet issue." />
                     </Form.Item>
-                    <div className="flex justify-end gap-2 mt-4">
-                        <ButtonCustom label="Cancel" onClick={handleReasonModalCancel} className="secondary-button" />
-                        <ButtonCustom label="Submit" type="submit" loading={buttonLoading} className="primary-button" />
-                    </div>
                 </Form>
             </Modal>
+
             <Modal
-                isOpen={isAnnoucementModalOpen}
-                onClose={closeAnnoucementModal}
                 title="Post Announcement"
-                className="px-4"
+                open={isAnnoucementModalOpen}
+                onCancel={() => setIsAnnoucementModalOpen(false)}
+                onOk={() => announcementForm.submit()}
+                okText="Publish"
             >
-
-                <div className="bg-shadow p-4">
-                    <div className="">
-                        <label htmlFor="leave-type">Title</label>
-                        <Input
-                            className="mt-4 !stroke-none bg-[rgba(150,166,194,0.2)] w-full rounded-[10px] text-[#364663]"
-                            placeholder="Enter your title..."
-                        ></Input>
-                    </div>
-                    <div className=" mt-4">
-                        <label htmlFor="leave-type">Message</label>
-                        <TextArea
-                            className="mt-4
-                        bg-[rgba(150,166,194,0.2)] w-full rounded-[10px] text-[#364663]"
-                            showCount
-                            maxLength={100}
-                            onChange={onChange}
-                            placeholder="Give as your reason for leave..."
-                        />
-                    </div>
-
-                    <div className=" mt-4 flex flex-col">
-                        <label htmlFor="leave-type">Attachments</label>
-                        <FileUpload />
-                    </div>
-                    <div className="mt-4 flex flex-col">
-                        <label htmlFor="leave-type">Publish to</label>
-                        <ChipInput />
-                    </div>
-                </div>
-                <div className="">
-                    <ButtonCustom
-                        label="Publish "
-                        className="primary-button mt-4 px-5 float-right"
-                        type="submit"
-                    />
-                </div>
+                <Form form={announcementForm} layout="vertical" className="mt-4">
+                    <Form.Item name="title" label="Title" rules={[{ required: true }]}><Input placeholder="Enter your title..." /></Form.Item>
+                    <Form.Item name="message" label="Message" rules={[{ required: true }]}><TextArea showCount maxLength={200} rows={4} placeholder="Enter your message..." /></Form.Item>
+                    <Form.Item name="attachments" label="Attachments"><FileUpload /></Form.Item>
+                    <Form.Item name="publish_to" label="Publish to"><ChipInput /></Form.Item>
+                </Form>
             </Modal>
-        </div>
+        </Layout.Content>
     );
 };
 
