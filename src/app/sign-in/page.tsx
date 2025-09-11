@@ -90,7 +90,7 @@ const LoginPage = () => {
                                     placeholder='Enter your email'
                                     type='email'
                                     name='email'
-                                    className='w-full rounded-md p-2.5 placeholder-gray-300 dark:placeholder-gray-300 text-white dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-200 dark:placeholder-gray-200 text-white dark:text-white'
                                     register={register("email", {
                                         required: "Email Address is required!",
                                     })}
@@ -105,7 +105,7 @@ const LoginPage = () => {
                                     placeholder='Enter your password'
                                     type='password'
                                     name='password'
-                                    className='w-full rounded-md p-2.5 placeholder-gray-300 dark:placeholder-gray-300 text-white dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-200 dark:placeholder-gray-200 text-white dark:text-white'
                                     register={register("password", {
                                         required: "Password is required!",
                                     })}
