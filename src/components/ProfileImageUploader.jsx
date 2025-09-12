@@ -16,9 +16,9 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
     const fileInputRef = useRef(null);
 
     useEffect(() => {
-        // This logic now assumes `initialFile` is a full, absolute URL from your API (e.g., the `image_url` property)
         if (typeof initialFile === 'string' && initialFile) {
-            setImagePreviewUrl("/"+initialFile);
+            // CORRECTED: Use the absolute URL directly without prepending a slash
+            setImagePreviewUrl(initialFile);
             setSelectedFile(initialFile);
             setIsImageUploaded(true);
         } else if (initialFile instanceof File) {
@@ -31,7 +31,6 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
     }, [initialFile]);
 
     const resetImage = () => {
-        // BEST PRACTICE: Clean up object URL to prevent memory leaks
         if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
             URL.revokeObjectURL(imagePreviewUrl);
         }
@@ -51,7 +50,6 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
             return;
         }
 
-        // Validation logic
         if (!file.type.startsWith('image/')) {
             alert('Please select a valid image file.');
             resetImage();
@@ -63,7 +61,6 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
             return;
         }
 
-        // BEST PRACTICE: Clean up previous blob URL before creating a new one
         if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
             URL.revokeObjectURL(imagePreviewUrl);
         }
@@ -71,7 +68,7 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
         const previewUrl = URL.createObjectURL(file);
         setImagePreviewUrl(previewUrl);
         setSelectedFile(file);
-        setIsImageUploaded(false); // This is a new, unsaved file
+        setIsImageUploaded(false);
         onFileChange?.(file);
     };
 
@@ -83,7 +80,7 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
                 accept="image/*"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                className="hidden"
+                className="!hidden"
             />
 
             <div className="flex items-center w-full">
@@ -104,14 +101,12 @@ const ProfileImageUploader = ({ initialFile = null, onFileChange }) => {
                     <h3 className="text-sm font-semibold text-gray-800 mb-1">Upload Profile Image</h3>
                     <p className="text-xs text-gray-600 mb-4">Image should be below 4 MB (JPG, PNG)</p>
                     <div className="flex gap-x-3">
-                        {/* This label now correctly triggers the hidden input via htmlFor */}
                         <label
                             htmlFor="profile-image-input"
                             className="bg-orange-500 hover:bg-orange-600 text-white py-1.5 px-3 rounded-md cursor-pointer text-xs font-medium inline-block text-center transition-colors duration-200"
                         >
                             Upload
                         </label>
-
 
                         {(selectedFile || isImageUploaded) && (
                             <button
