@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import axios from "axios";
+import { encryptData } from '@/lib/crypto';
 
 type LoginFormData = {
     email: string;
@@ -24,7 +25,14 @@ const LoginPage = () => {
     const handleLogin = async (data: LoginFormData) => {
         setIsLoading(true);
         try {
-            const response = await axios.post('/api/auth/login', data);
+            // <-- 2. ENCRYPT THE PASSWORD
+            const payload = {
+                email: data.email,
+                password: encryptData(data.password), // Encrypt here!
+            };
+
+            // Send the payload with the encrypted password
+            const response = await axios.post('/api/auth/login', payload);
 
             const { token, user, employee } = response.data;
 
@@ -129,8 +137,6 @@ const LoginPage = () => {
                             <span className="text-gray-400 text-sm">or</span>
                             <hr className="w-full border-gray-500" />
                         </div>
-
-
 
                         <p className="text-center text-sm text-gray-300">
                             Are you new?{" "} Please contact your supervisor.
