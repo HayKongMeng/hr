@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type {Metadata, Viewport} from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -12,6 +12,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
     title: "Human Resource Management System",
     description: "A Human Resource Management System (HRMS) is a software solution designed to manage and automate HR processes, from employee recruitment and payroll to performance management and compliance. It helps HR teams streamline administrative tasks, improve efficiency, and ensure compliance with labor laws.",
+    manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+    themeColor: "#0066FF",
 };
 
 export default function RootLayout({

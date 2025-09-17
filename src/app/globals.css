@@ -8,6 +8,30 @@ html {
 }
 
 /* In your globals.css or another imported CSS file */
+/* Custom styles for a modern FullCalendar appearance */
+.modern-calendar .fc-button {
+    background-color: #f0f2f5 !important; /* Ant Design's default gray */
+    color: #333 !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: none !important;
+    text-transform: capitalize !important;
+}
+
+.modern-calendar .fc-button-primary:not(:disabled).fc-button-active,
+.modern-calendar .fc-button-primary:not(:disabled):active {
+    background-color: #1677ff !important; /* Ant Design's primary blue */
+    border-color: #1677ff !important;
+    color: white !important;
+}
+
+.modern-calendar .fc-toolbar-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.modern-calendar .fc-daygrid-day.fc-day-today {
+    background-color: #e6f4ff !important; /* Ant Design's light blue */
+}
 
 .modern-attendance-table .ant-table-thead > tr > th {
     @apply bg-gray-100 font-semibold sticky top-0 z-10;

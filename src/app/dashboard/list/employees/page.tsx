@@ -31,6 +31,9 @@ import {toast} from "sonner";
 import React from "react";
 import {useDebounce} from "@/lib/useDebounce";
 import {LuLayoutGrid, LuList} from "react-icons/lu";
+import {IoReload} from "react-icons/io5";
+import {IoMdAdd} from "react-icons/io";
+import {encryptData} from "@/lib/crypto";
 
 // --- Type Definitions ---
 type Position = { id: number; title: string };
@@ -166,6 +169,8 @@ const EmployeeManagementPage = () => {
     const router = useRouter();
 
     const [employees, setEmployees] = useState<Employee[]>([]);
+    const [allEmployeesForExport, setAllEmployeesForExport] = useState<Employee[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -253,71 +258,132 @@ const EmployeeManagementPage = () => {
         }
     }, [isClient, authLoading, userRole]);
 
-    const handleExportExcel = (data: Employee[]) => {
-        const headers = ["Employee ID", "Name", "Email", "Department", "Designation", "Joining Date"];
+    const getEmployeeNameById = (id: number | null | undefined, employeeList: Employee[]): string => {
+        if (!id) return 'N/A';
+        const found = employeeList.find(e => e.id === id);
+        return found ? found.name : `ID: ${id}`;
+    };
+    const calculateAge = (dob: string | null | undefined): string => {
+        if (!dob) return 'N/A';
+        return dayjs().diff(dayjs(dob), 'year').toString();
+    };
 
-        const body = data.map(employee => [
+    const calculateLengthOfService = (hireDate: string | null | undefined): string => {
+        if (!hireDate) return 'N/A';
+        const years = dayjs().diff(dayjs(hireDate), 'year');
+        const months = dayjs().diff(dayjs(hireDate), 'month') % 12;
+        return `${years}y ${months}m`;
+    };
+
+    const handleExportExcel = (data: Employee[], fullEmployeeList: Employee[]) => {
+        const headers = [
+            // From Page 1-2
+            "No.", "Status", "NSSF's #", "Emp. ID No.", "Name (English)", "Name (Khmer)", "Sex", "Nationality", "Date of Birth", "Age", "Employee Level", "Hiring Date", "End probation", "Length of Service", "Position (English)", "Position (Khmer)", "Department (English)", "Department (Khmer)",
+            // From Page 3-4
+            "Reporting to: Manager", "Reporting to: HOD", "Bank", "Account",
+            // From Page 5-6
+            "Personal Phone #", "Email Address"
+        ];
+
+        const body = data.map((employee, index) => [
+            // Page 1-2 Data
+            index + 1,
+            'Active', // Assuming status, not in JSON
+            'N/A', // NSSF's # not in JSON
             employee.employee_code,
             employee.name,
-            employee.email,
-            employee.department?.name || 'N/A',
+            'N/A', // Khmer name not in JSON
+            employee.gender,
+            'N/A', // Nationality not in JSON
+            dayjs(employee.date_of_birth).format("DD-MMM-YYYY"),
+            calculateAge(employee.date_of_birth),
+            'N/A', // Employee Level not in JSON
+            dayjs(employee.hire_date).format("DD-MMM-YYYY"),
+            dayjs(employee.hire_date).add(3, 'month').format("DD-MMM-YYYY"), // Assuming 3-month probation
+            calculateLengthOfService(employee.hire_date),
             employee.position?.title || 'N/A',
-            dayjs(employee.hire_date).format("DD MMM YYYY")
+            'N/A', // Khmer position not in JSON
+            employee.department?.name || 'N/A',
+            'N/A', // Khmer department not in JSON
+            // Page 3-4 Data
+            getEmployeeNameById(employee.reporting_line1, fullEmployeeList),
+            getEmployeeNameById(employee.reporting_line2, fullEmployeeList), // Assuming line 2 is HOD
+            'N/A', // Bank not in JSON
+            'N/A', // Account # not in JSON
+            // Page 5-6 Data
+            employee.phone,
+            employee.email
         ]);
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Staff Master List");
 
-        XLSX.writeFile(workbook, "Employee_List.xlsx");
+        XLSX.writeFile(workbook, "Staff_Master_List.xlsx");
         message.success("Exported to Excel successfully!");
     };
 
-    const handleExportPdf = (data: Employee[]) => {
-        const doc = new jsPDF();
+    const handleExportPdf = (data: Employee[], fullEmployeeList: Employee[]) => {
+        const doc = new jsPDF({ orientation: 'landscape' }); // Use landscape for wide tables
 
-        const tableHead = [["Employee ID", "Name", "Email", "Department", "Designation", "Joining Date"]];
-        const tableBody = data.map(employee => [
+        const tableHead = [
+            "No.", "Emp. ID", "Name", "Sex", "DOB", "Age", "Hiring Date", "Service", "Position", "Department", "Manager"
+        ]; // A simplified header for PDF to fit the page
+
+        const tableBody = data.map((employee, index) => [
+            index + 1,
             employee.employee_code,
             employee.name,
-            employee.email,
-            employee.department?.name || 'N/A',
+            employee.gender,
+            dayjs(employee.date_of_birth).format("DD-MMM-YY"),
+            calculateAge(employee.date_of_birth),
+            dayjs(employee.hire_date).format("DD-MMM-YY"),
+            calculateLengthOfService(employee.hire_date),
             employee.position?.title || 'N/A',
-            dayjs(employee.hire_date).format("DD MMM YYYY")
+            employee.department?.name || 'N/A',
+            getEmployeeNameById(employee.reporting_line1, fullEmployeeList)
         ]);
 
-        doc.text("Employee List", 14, 15);
+        doc.text("Staff Master List", 14, 15);
 
         autoTable(doc, {
-            head: tableHead,
+            head: [tableHead],
             body: tableBody,
             startY: 20,
             theme: 'grid',
-            styles: { fontSize: 8 },
+            styles: { fontSize: 7, cellPadding: 2 }, // Smaller font size for more data
             headStyles: { fillColor: [22, 160, 133] }
         });
 
-        doc.save('Employee_List.pdf');
+        doc.save('Staff_Master_List.pdf');
         message.success("Exported to PDF successfully!");
     };
 
+
     const handleExport = async (format: 'excel' | 'pdf') => {
-        message.loading({ content: `Exporting all employees to ${format.toUpperCase()}...`, key: 'export' });
+        message.loading({ content: `Fetching all employee data for export...`, key: 'export' });
         try {
-            const allEmployees = await fetchEmployees(1,100000);
-            if (!allEmployees || allEmployees.length === 0) {
+            // Ensure we have the full list of employees for lookups (e.g., manager names)
+            let allEmployeesData = allEmployeesForExport;
+            if (allEmployeesForExport.length === 0) {
+                const res = await fetchAllEmployees();
+                allEmployeesData = res || [];
+                setAllEmployeesForExport(allEmployeesData); // Cache the result
+            }
+
+            if (allEmployeesData.length === 0) {
                 message.warning({ content: "No employee data to export.", key: 'export' });
                 return;
             }
 
-            if (format === 'excel') {
-                handleExportExcel(allEmployees);
-            } else if (format === 'pdf') {
-                handleExportPdf(allEmployees);
-            }
+            message.loading({ content: `Generating ${format.toUpperCase()} file...`, key: 'export' });
 
-            // Clear the loading message on success
-            message.destroy('export');
+            if (format === 'excel') {
+                // Pass both the data to export and the full list for lookups
+                handleExportExcel(allEmployeesData, allEmployeesData);
+            } else if (format === 'pdf') {
+                handleExportPdf(allEmployeesData, allEmployeesData);
+            }
 
         } catch (error) {
             console.error(`Failed to export to ${format}:`, error);
@@ -416,11 +482,10 @@ const EmployeeManagementPage = () => {
                 );
                 message.success({ content: "Employee updated successfully!", key, duration: 2 });
             } else {
-                const createPayload = {
-                    ...payload,
-                    username: payload.username,
-                };
-                await createEmployee(createPayload);
+                if (payload.password) {
+                    payload.password = encryptData(payload.password);
+                }
+                await createEmployee(payload);
                 message.success({ content: "Employee created successfully!", key, duration: 2 });
             }
 
@@ -555,7 +620,6 @@ const EmployeeManagementPage = () => {
                 onCancel={handleModalCancel}
                 onOk={form.submit}
                 confirmLoading={isSubmitting}
-                // --- RESPONSIVE CHANGE: Modal width adjusts for screen size ---
                 width={isMobile ? '95vw' : 900}
                 destroyOnClose
             >

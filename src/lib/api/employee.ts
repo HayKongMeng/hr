@@ -1,5 +1,6 @@
 
 import api from './index';
+import axios from "axios";
 
 export const fetchEmployees = async (page: number = 1, limit: number = 10) => {
     const response = await api.get(`api/employee/employees?page=${page}&limit=${limit}`);
@@ -77,13 +78,13 @@ export const createEmployee = async (payload: {
     try {
         const posted_by = Number(localStorage.getItem('user_id'));
         const posted_by_name = localStorage.getItem('user_name');
-
-        const authResponse = await api.post('/api/auth/register-employee', {
+        console.log("This is backend respon");
+        const authResponse = await axios.post('/api/auth/register', {
             name: payload.username,
             email: payload.email,
             password: payload.password,
         });
-
+        console.log("This is backend respon"+ authResponse);
         const { id: user_id, name, email } = authResponse.data.result.data;
     
         // Prepare FormData for employee-service

@@ -1,39 +1,65 @@
-import { CiWarning } from "react-icons/ci"
+import { Modal, Button, Flex, Typography, Avatar } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
 
-const LogoutModal = ({
-  onCancel,
-  onLogout,
-}: {
-  onCancel?: () => void;
-  onLogout?: () => void;
-}) => {
-    return (
-        <div className="flex flex-col justify-between items-center gap-4 pt-0 p-4 sm:p-6 w-[90vw] max-w-[400px] h-[260px] sm:h-[300px] bg-white rounded-[16px] sm:rounded-[20px] shadow-lg">
-            <div className="h-1 w-full bg-red-500" />
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#FF1515] rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
-                <CiWarning className="text-white text-3xl sm:text-4xl font-bold" />
-            </div>
-            <h1 className="text-[#1A1A2E] text-xl sm:text-2xl font-bold">Logout</h1>
-            <span className="text-center text-sm sm:text-base">Are you sure you want to log out?</span>
+const { Title, Text } = Typography;
 
-            <div className="flex flex-row justify-between items-center gap-3 sm:gap-4 w-full">
-                <button className="box-border flex flex-row justify-center items-center px-4 sm:px-5 py-2.5 sm:py-3.5 gap-2.5
-                         h-10 sm:h-12
-                bg-[#EAEDF3] border border-[#F5F6F7] rounded-full
-                flex-none flex-grow text-sm sm:text-base"
-                onClick={onCancel}
-                >Cancel</button>
-                <button className="box-border flex flex-row justify-center items-center px-4 sm:px-5 py-2.5 sm:py-3.5 gap-2.5
-                  h-10 sm:h-12
-                bg-[#FF1515] rounded-full
-                flex-none flex-grow text-white text-sm sm:text-base"
-                onClick={onLogout}
-                >
-                    Logout
-                </button>
-            </div>
-        </div>
-    )
+interface LogoutModalProps {
+    open: boolean; // Use 'open' to align with Ant Design's API
+    onCancel: () => void;
+    onLogout: () => void;
 }
 
-export default LogoutModal
+const LogoutModal = ({ open, onCancel, onLogout }: LogoutModalProps) => {
+    return (
+        <Modal
+            open={open}
+            onCancel={onCancel}
+            centered // Vertically centers the modal
+            footer={null} // We will create a custom footer inside the modal body
+            width={400}
+            closable={false} // Prevents closing with the 'x' button, forcing a choice
+        >
+            <Flex vertical align="center" gap="middle" className="py-6">
+
+                {/* Icon mimicking the original design */}
+                <Avatar
+                    size={72}
+                    icon={<ExclamationCircleFilled />}
+                    style={{
+                        backgroundColor: '#fff1f0', // Ant Design's red-1
+                        color: '#ff4d4f', // Ant Design's red-6
+                        fontSize: '36px'
+                    }}
+                />
+
+                {/* Title and Text */}
+                <Flex vertical align="center" gap={4}>
+                    <Title level={4} style={{ margin: 0 }}>Logout</Title>
+                    <Text type="secondary">Are you sure you want to log out?</Text>
+                </Flex>
+
+                {/* Custom Footer Buttons */}
+                <Flex justify="center" gap="middle" className="w-full mt-4">
+                    <Button
+                        size="large"
+                        onClick={onCancel}
+                        style={{ flex: 1 }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="primary"
+                        danger // This makes the primary button red for destructive actions
+                        size="large"
+                        onClick={onLogout}
+                        style={{ flex: 1 }}
+                    >
+                        Logout
+                    </Button>
+                </Flex>
+            </Flex>
+        </Modal>
+    );
+};
+
+export default LogoutModal;

@@ -27,9 +27,9 @@ const CalenderListPage = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 self-end m-4 mb-0">
-                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-kungkeaYellow">
-                        <BsSortDown className="text-white font-semibold" />
-                    </button>
+                    {/*<button className="w-8 h-8 flex items-center justify-center rounded-full bg-kungkeaYellow">*/}
+                    {/*    <BsSortDown className="text-white font-semibold" />*/}
+                    {/*</button>*/}
                     {/* <FormModal
                         table="Holiday"
                         type="create"

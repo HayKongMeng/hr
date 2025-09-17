@@ -31,31 +31,25 @@ api.interceptors.response.use(
             if (!isSessionExpiredModalVisible) {
                 isSessionExpiredModalVisible = true;
 
-                // 3. Show the Ant Design error modal
                 Modal.error({
                     title: 'Session Expired',
                     content: 'Your session has expired. Please log in again to continue.',
-                    okText: 'Logout', // Customize the button text
-                    maskClosable: false, // Prevent closing by clicking the background
-                    keyboard: false, // Prevent closing with the Esc key
+                    okText: 'Logout',
+                    maskClosable: false,
+                    keyboard: false,
                     onOk: () => {
-                        // 4. Define what happens when the user clicks "Logout"
                         Cookies.remove('access_token');
 
-                        // Optional: Clear other user data from localStorage if you store any
-                        // localStorage.removeItem('user_info');
 
-                        // Redirect to the sign-in page and reload the application
                         window.location.href = '/sign-in';
 
-                        // Reset the flag after the modal is handled
                         isSessionExpiredModalVisible = false;
                     },
                 });
             }
+            return new Promise(() => {});
         }
 
-        // For all other errors, just pass them along
         return Promise.reject(error);
     }
 );

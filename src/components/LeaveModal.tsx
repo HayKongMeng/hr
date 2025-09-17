@@ -1,15 +1,15 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
-import { HiXMark } from "react-icons/hi2";
+import { Modal, Button, Descriptions, Tag, Spin, Input, Typography } from "antd"; // ==> 1. Import Input and Typography
 import { toast } from "sonner";
-import { IoCheckmarkDone } from "react-icons/io5";
-import { MdOutlineKeyboardDoubleArrowLeft } from "react-icons/md";
 import moment from "moment";
-import { createApprove } from "@/lib/api/leave";
+import { ApproveLeave } from "@/lib/api/leave"; // ==> 2. Import the new API function
 import { getEmployeeName } from "@/lib/api/employee";
-import Loading from "./ui/Loading";
-import Button from "./ui/Button";
-import { useRouter } from "next/navigation";
+import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
+import { useAuth } from "@/lib/AuthContext";
+
+const { Text } = Typography;
 
 interface EventData {
     id: any;
@@ -24,174 +24,154 @@ interface EventData {
 
 interface LeaveModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (shouldRefetch?: boolean) => void;
     data: EventData | null;
 }
 
 const LeaveModal: React.FC<LeaveModalProps> = ({ isOpen, onClose, data }) => {
-    if (!isOpen || !data) return null;
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
+    const { user, loading: authLoading } = useAuth();
+
+    const [loadingAction, setLoadingAction] = useState(false);
+    const [loadingEmployeeName, setLoadingEmployeeName] = useState(true);
     const [employeeName, setEmployeeName] = useState<string>("");
-    const isoString = new Date().toISOString();
-    const mysqlDatetime = isoString.replace('T', ' ').replace('Z', '');
-    const [companyId, setCompanyId] = useState<number | null>(null);
-    useEffect(() => {
-        const storedCompanyId = localStorage.getItem('company_id');
-        if (storedCompanyId) {
-            setCompanyId(Number(storedCompanyId));
-        }
-    }, []);
+    const [comments, setComments] = useState<string>(""); // ==> 3. Add state for comments
 
-    const handleApprove = async () => {
-        setLoading(true);
-
-        try {
-            const res = await createApprove({
-                leave_id: data.id,
-                status_id: 2,
-                company_id: Number(companyId),
-                approved_at: mysqlDatetime,
-            });
-            toast.success("Leave approved successfully!");
-            window.location.reload();
-        } catch (err) {
-            setLoading(false);
-            toast.error("Approval failed!");
-        }
-    };
-    const handleReject = async () => {
-        setLoading(true);
-        try {
-            const res = await createApprove({
-                leave_id: data.id,
-                status_id: 3,
-                company_id: Number(companyId),
-                approved_at: mysqlDatetime,
-            });
-            toast.success("Leave rejected successfully!");
-            window.location.reload();
-        } catch (err) {
-            setLoading(false);
-            toast.error("Rejection failed!");
-        }
-    };
 
     useEffect(() => {
-        const loadData = async () => {
-            const name = await getEmployeeName(data.employee);
-            setEmployeeName(name); 
-        };
+        if (!isOpen) {
+            setComments("");
+        }
+    }, [isOpen]);
 
-        loadData();
-    }, [data.employee]);
-    
+    useEffect(() => {
+        if (data?.employee) {
+            setLoadingEmployeeName(true);
+            const loadEmployeeName = async () => {
+                try {
+                    const name = await getEmployeeName(data.employee);
+                    setEmployeeName(name);
+                } catch (error) {
+                    console.error("Failed to fetch employee name", error);
+                    setEmployeeName("N/A");
+                } finally {
+                    setLoadingEmployeeName(false);
+                }
+            };
+            loadEmployeeName();
+        } else {
+            setEmployeeName("");
+            setLoadingEmployeeName(false);
+        }
+    }, [data]);
+
+    // ==> 4. REWRITE the handleAction function
+    const handleAction = async (action: 'approved' | 'rejected') => {
+        if (!data) {
+            toast.error("Leave data is missing.");
+            return;
+        }
+        setLoadingAction(true);
+        const actionText = action === 'approved' ? "approving" : "rejecting";
+
+        try {
+            await ApproveLeave({
+                leave_id: data.id,
+                action: action,
+                comments: comments, // Pass the comments from state
+            });
+
+            toast.success(`Leave ${action} successfully!`);
+            onClose(true); // Close modal and signal a refetch
+        } catch (err) {
+            toast.error(`Failed ${actionText} leave. Please try again.`);
+        } finally {
+            setLoadingAction(false);
+        }
+    };
+
+    const getStatusTag = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'approved': return <Tag color="success">Approved</Tag>;
+            case 'pending': return <Tag color="warning">Pending</Tag>;
+            case 'rejected': return <Tag color="error">Rejected</Tag>;
+            default: return <Tag>{status}</Tag>;
+        }
+    };
+
+    const renderFooter = () => {
+        const userRole = user?.roles?.[0];
+        const canTakeAction = (userRole === 'Admin' || userRole === 'Super Admin') && data?.status === "Pending";
+
+        return [
+            <Button key="cancel" onClick={() => onClose()}>
+                Close
+            </Button>,
+            ...(canTakeAction ? [
+                <Button
+                    key="reject"
+                    danger
+                    icon={<CloseOutlined />}
+                    onClick={() => handleAction('rejected')}
+                    loading={loadingAction}
+                >
+                    Reject
+                </Button>,
+                <Button
+                    key="approve"
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    onClick={() => handleAction('approved')}
+                    loading={loadingAction}
+                >
+                    Approve
+                </Button>
+            ] : [])
+        ];
+    };
+
+    const userRole = user?.roles?.[0];
+    const canTakeAction = (userRole === 'Admin' || userRole === 'Super Admin') && data?.status === "Pending";
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 overflow-auto">
-            <div className="relative w-full max-w-4xl mx-4 sm:mx-6 bg-white rounded-[24px] border shadow-lg transition-all duration-300 transform animate-modal-popin max-h-[90vh] overflow-y-auto">
-                <form className="bg-white rounded-[24px] shadow-sm">
-                    <div className="flex items-center justify-between pb-4 border-b p-6">
-                        <h1 className="text-lg font-bold text-gray-900">
-                            {data.type}
-                        </h1>
-                        <button
-                            type="button"
-                            aria-label="Close"
-                            onClick={onClose}
-                            className="p-0.5 rounded-full bg-gray-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                        >
-                            <HiXMark size={15} className="text-white" />
-                        </button>
-                    </div>
-                    <div className="pr-6 pl-6 pt-6 space-y-6">
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Employee</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {employeeName}
-                            </div>
+        <Modal
+            title={<span className="font-semibold text-lg">{data?.type || 'Leave Details'}</span>}
+            open={isOpen}
+            onCancel={() => onClose()}
+            footer={renderFooter()}
+            width={600}
+        >
+            {data ? (
+                <Spin spinning={loadingEmployeeName || authLoading}>
+                    <Descriptions bordered column={1} size="middle">
+                        <Descriptions.Item label="Employee">{employeeName || "Loading..."}</Descriptions.Item>
+                        <Descriptions.Item label="Leave Type">{data.type}</Descriptions.Item>
+                        <Descriptions.Item label="Applied On">{moment(data.applied_on).format("DD MMM, YYYY")}</Descriptions.Item>
+                        <Descriptions.Item label="Duration">
+                            {moment(data.start).format("DD MMM, YYYY")} to {moment(data.end).format("DD MMM, YYYY")}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Reason">{data.reason || "-"}</Descriptions.Item>
+                        <Descriptions.Item label="Status">{getStatusTag(data.status)}</Descriptions.Item>
+                    </Descriptions>
+
+                    {canTakeAction && (
+                        <div className="mt-6">
+                            <Text strong>Comments (Optional)</Text>
+                            <Input.TextArea
+                                rows={3}
+                                value={comments}
+                                onChange={(e) => setComments(e.target.value)}
+                                placeholder="Add comments for your decision..."
+                                className="mt-2"
+                            />
                         </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Leave Type</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {data.type}
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Appplied On</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {moment(data.applied_on).format("MMM DD, YYYY")}
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Start Date</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {moment(data.start).format("MMM DD, YYYY")}
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>End Date</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {moment(data.end).format("MMM DD, YYYY")}
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Leave Reason</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {data.reason ? data.reason : "-"}
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-1/2 border-b pb-3">
-                                <b>Status</b>
-                            </div>
-                            <div className="w-1/2 text-start border-b pb-3">
-                                {data.status}
-                            </div>
-                        </div>
-                    </div>
-                    {loading ? ( 
-                        <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 pb-4 pr-6 pl-6 border-t"> 
-                            <Loading /> 
-                        </div> 
-                    ) : ( 
-                        <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 pb-4 pr-6 pl-6 border-t"> 
-                            <Button type="button" onClick={onClose} className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-[24px]" icon={<HiXMark size={18} />} label="Cancel" /> 
-                            {data?.status === "Pending" && (
-                                <>
-                                    <Button
-                                        type="button"
-                                        onClick={handleApprove}
-                                        className="inline-flex items-center px-4 py-2 bg-[#6fd943] border border-[#6fd943] text-sm font-semibold text-white hover:bg-[#48a522] rounded-[24px]"
-                                        icon={<IoCheckmarkDone size={18} />}
-                                        label="Approved"
-                                    /> 
-                                    <Button
-                                        type="button"
-                                        onClick={handleReject}
-                                        className="inline-flex items-center px-4 py-2 bg-[#ff3a6e] border border-[#ff3a6e] text-sm font-semibold text-white hover:bg-[#db1e50] rounded-[24px]"
-                                        icon={<MdOutlineKeyboardDoubleArrowLeft size={18} />}
-                                        label="Reject"
-                                    />
-                                </>
-                            )}
-                        </div> 
                     )}
-                </form>
-            </div>
-        </div>
+                </Spin>
+            ) : (
+                <div className="flex justify-center items-center h-48">
+                    <Spin tip="Loading details..." />
+                </div>
+            )}
+        </Modal>
     );
 };
 

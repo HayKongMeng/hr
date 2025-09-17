@@ -385,7 +385,7 @@ const ProfilePage = () => {
                                 <FaMapMarkerAlt className="text-red-500" />
                                 Address:
                             </p>
-                            <p className="text-black">1861 Bayonne Ave, Manchester, NJ, 08759</p>
+                            <p className="text-black">{allEmployee?.address}</p>
                         </div>
                     </div>
 

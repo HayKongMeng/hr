@@ -91,24 +91,26 @@ const AdminPage = () => {
             {/* Main content area */}
             <div className='flex gap-6 flex-col lg:flex-row'>
                 {/* Left Column */}
-                <div className='w-full lg:w-2/3 flex flex-col gap-6'>
+                <div className='w-full lg:w-3/2 flex flex-col gap-6'>
                     <div className='flex gap-6 flex-col md:flex-row'>
                         <div className='w-full md:w-1/3 h-[450px]'>
                             <CountChart genderData={summaryData.employee_gender} totalEmployees={summaryData.total_employees} />
                         </div>
-                        <div className='w-full md:w-2/3 h-[450px]'>
-                            <AttendanceChart weeklyData={summaryData.weekly_summary} />
+                        <div className="w-full lg:w-2/3 flex flex-col gap-6">
+                            <EventCalendar birthdays={summaryData.upcoming_birthdays} />
+                            {/*<Announcements />*/}
                         </div>
+
                     </div>
-                    <div className='w-full h-[500px]'>
-                        <FinanceChart />
+                    {/*<div className='w-full h-[500px]'>*/}
+                    {/*    <FinanceChart />*/}
+                    {/*</div>*/}
+                    <div className='w-full md:w-2/3 h-[450px]'>
+                        <AttendanceChart weeklyData={summaryData.weekly_summary} />
                     </div>
                 </div>
 
-                <div className="w-full lg:w-1/3 flex flex-col gap-6">
-                    <EventCalendar birthdays={summaryData.upcoming_birthdays} />
-                    {/*<Announcements />*/}
-                </div>
+
             </div>
         </div>
     )

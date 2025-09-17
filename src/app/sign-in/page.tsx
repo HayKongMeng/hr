@@ -28,7 +28,7 @@ const LoginPage = () => {
             // <-- 2. ENCRYPT THE PASSWORD
             const payload = {
                 email: data.email,
-                password: encryptData(data.password), // Encrypt here!
+                password: encryptData(data.password),
             };
 
             // Send the payload with the encrypted password
@@ -98,7 +98,7 @@ const LoginPage = () => {
                                     placeholder='Enter your email'
                                     type='email'
                                     name='email'
-                                    className='w-full rounded-md p-2.5 placeholder-gray-200 dark:placeholder-gray-200 text-white dark:text-white'
+                                    className='w-full rounded-md p-2.5 placeholder-gray-200  text-white dark:text-white'
                                     register={register("email", {
                                         required: "Email Address is required!",
                                     })}

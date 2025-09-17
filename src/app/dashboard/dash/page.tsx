@@ -280,7 +280,7 @@ import {
     Space,
     Flex,
     Layout, // <-- Added for better structure
-    Tag, ButtonProps,
+    Tag, ButtonProps, ConfigProvider,
 } from 'antd';
 import { LuBuilding, LuCalendarDays, LuLogIn, LuLogOut, LuMegaphone, LuQrCode, LuUser } from "react-icons/lu";
 import { CiEdit, CiSearch } from "react-icons/ci";
@@ -533,11 +533,36 @@ const HomePage = () => {
 
             {isAdminRole && (
                 <div className="mb-6 flex justify-center">
-                    <Radio.Group value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)} size="large">
-                        <Radio.Button value="MySpace"><LuUser className="inline-block mr-2" />My Space</Radio.Button>
-                        <Radio.Button value="Organization"><LuBuilding className="inline-block mr-2" />Organization</Radio.Button>
-                        <Radio.Button value="Annoucement"><LuMegaphone className="inline-block mr-2" />Announcement</Radio.Button>
-                    </Radio.Group>
+                    <ConfigProvider
+                        theme={{
+                            components: {
+                                Radio: {
+                                    colorPrimary: '#1677ff',
+                                    colorPrimaryHover: '#0958d9',
+                                    // colorBgContainerHover: '#e6f4ff',
+                                },
+                            },
+                        }}
+                    >
+                        <Radio.Group
+                            value={selectedOption}
+                            onChange={(e) => setSelectedOption(e.target.value)}
+                            size="large"
+                        >
+                            <Radio.Button value="MySpace">
+                                <LuUser className="inline-block mr-2" />
+                                My Space
+                            </Radio.Button>
+                            <Radio.Button value="Organization">
+                                <LuBuilding className="inline-block mr-2" />
+                                Organization
+                            </Radio.Button>
+                            <Radio.Button value="Annoucement">
+                                <LuMegaphone className="inline-block mr-2" />
+                                Announcement
+                            </Radio.Button>
+                        </Radio.Group>
+                    </ConfigProvider>
                 </div>
             )}
 

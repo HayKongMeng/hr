@@ -5,14 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69286321-39e1-4f18-b2bd-50a53eea7c07" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/lib/crypto.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/manifest.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/auth/register/route.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/admin/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/dash/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/employees/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/list/leaves/calender/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/list/leaves/calender/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/LeaveCalendar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LeaveCalendar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/LeaveModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LeaveModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/LogoutModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LogoutModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Menu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Navbar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/UserDropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/UserDropdown.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mobile/employee/EmpMobileMenu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/employee.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/employee.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/crypto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/crypto.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -104,7 +121,8 @@
       <workItem from="1757468736378" duration="1775000" />
       <workItem from="1757573537027" duration="2439000" />
       <workItem from="1757641190359" duration="3205000" />
-      <workItem from="1757991927273" duration="2970000" />
+      <workItem from="1757991927273" duration="18404000" />
+      <workItem from="1758031494041" duration="29734000" />
     </task>
     <servers />
   </component>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -9,6 +9,10 @@ import { BiCalendar } from "react-icons/bi";
 import moment from "moment";
 import { fetchLeaves } from "@/lib/api/leave";
 import LeaveModal from "./LeaveModal";
+import {Card, List, message, Spin, Tag, Typography} from "antd";
+
+
+const { Title, Text } = Typography;
 
 type Leave = {
     id: number;
@@ -55,23 +59,30 @@ interface EventData {
 
 const LeaveCalendar = () => {
     const calendarRef = useRef<FullCalendar | null>(null);
-    const [calendarType, setCalendarType] = useState("");
     const [events, setEvents] = useState<Event[]>([]);
-    const [data, setData] = useState<EventData | null>(null);
-    const [type, setType] = useState<string>("");
-    const [open, setOpen] = useState<boolean>(false);
+    const [loading, setLoading] = useState(true);
+    const [selectedEventData, setSelectedEventData] = useState<EventData | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        const loadLeaves = async () => {
+        const loadLeaves = useCallback(async () => {
+            setLoading(true);
             try {
                 const result = await fetchLeaves();
                 const leaves: Leave[] = result.data;
+
+                const statusColorMap: { [key: string]: string } = {
+                    'Approved': 'green',
+                    'Pending': 'gold',
+                    'Rejected': 'red',
+                };
+
                 const mappedEvents: Event[] = leaves.map((leave) => ({
-                title: `${leave.leave_type.type_name}`,
-                start: leave.start_date,
-                end: moment(leave.end_date).add(1, "day").format("YYYY-MM-DD"),
+                    title: `${leave.leave_type.type_name}`,
+                    start: leave.start_date,
+                    end: moment(leave.end_date).add(1, "day").format("YYYY-MM-DD"), // FullCalendar's end is exclusive
+                    color: statusColorMap[leave.status?.status_name] || 'blue', // Default color
                     extendedProps: {
-                        id: leave.id, 
+                        id: leave.id,
                         employee: leave.employee_id,
                         type: leave.leave_type?.type_name,
                         status: leave.status?.status_name,
@@ -85,113 +96,99 @@ const LeaveCalendar = () => {
                 setEvents(mappedEvents);
             } catch (error) {
                 console.error("Failed to fetch leaves:", error);
+                message.error("Failed to fetch leaves data.");
+            } finally {
+                setLoading(false);
             }
-        };
+        }, []);
 
-        loadLeaves();
-    }, []);
+        useEffect(() => {
+            loadLeaves();
+        }, [loadLeaves]);
 
-    const goToDayView = (dateStr: string) => {
-        const calendarApi = calendarRef.current?.getApi();
-        if (calendarApi && calendarApi.view.type !== "timeGridDay") {
-            calendarApi.changeView("timeGridDay", dateStr);
+    const handleModalClose = (shouldRefetch = false) => {
+        setIsModalOpen(false);
+        setSelectedEventData(null); // Clear data
+        if (shouldRefetch) {
+            loadLeaves();
         }
     };
-
-    const handleDateClick = (info: { dateStr: string }) => {
-        goToDayView(info.dateStr);
-    };
-
     const handleEventClick = (info: any) => {
         const { id, employee, type, status, reason, applied_on, start, end } = info.event.extendedProps;
-        const eventData = {
-            id,
-            employee,
-            type,
-            status,
-            reason,
-            applied_on,
-            start,
-            end,
-        };
-        setData(eventData);
-        setType("manageLeave");
-        setOpen(true);
+        setSelectedEventData({ id, employee, type, status, reason, applied_on, start, end });
+        setIsModalOpen(true);
     };
 
     return (
+        // === UI REFACTOR STARTS HERE ===
         <>
-            <div className="flex flex-col lg:flex-row">
-                {/* Calendar Section */}
-                <div className="w-full lg:w-3/4 bg-white rounded-2xl m-4 mt-0 pb-5 card-table">
-                    <div className="flex items-center justify-between mt-5 mb-5 border-b">
-                        <div className="border-l-[3px] border-[#6FD943] px-4 py-1">
-                            <h2 className="text-lg font-semibold">Calendar</h2>
-                        </div>
-                        <div className="px-4 py-1 mb-5">
-                            <select
-                                value={calendarType}
-                                onChange={(e) => setCalendarType(e.target.value)}
-                                className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                {["Google Calendar", "Local Calendar"].map((item) => (
-                                    <option key={item} value={item}>
-                                        {item}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                <div className="px-4 py-1">
-                    <FullCalendar
-                    ref={calendarRef}
-                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                        initialView="dayGridMonth"
-                        headerToolbar={{
-                            left: "prev,next today",
-                            center: "title",
-                            right: "dayGridMonth,timeGridWeek,timeGridDay",
-                        }}
-                        events={events}
-                        dateClick={handleDateClick}
-                        eventClick={handleEventClick}
-                        height="auto"
-                    />
-                </div>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 m-4 mt-0">
+
+                {/* 1. Main Calendar Section */}
+                <div className="xl:col-span-9">
+                    <Card bordered={false} className="shadow-lg rounded-xl h-full">
+                        <Spin spinning={loading} tip="Loading Calendar...">
+                            <FullCalendar
+                                ref={calendarRef}
+                                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                initialView="dayGridMonth"
+                                headerToolbar={{
+                                    left: "prev,next today",
+                                    center: "title",
+                                    right: "dayGridMonth,timeGridWeek,timeGridDay",
+                                }}
+                                events={events}
+                                eventClick={handleEventClick}
+                                height="auto" // Let the container control the height
+                                dayMaxEvents={true} // For cleaner month view
+                                // className="modern-calendar" // For custom CSS
+                            />
+                        </Spin>
+                    </Card>
                 </div>
 
-                {/* Leaves Summary Section */}
-                <div className="w-full lg:w-1/4 bg-white rounded-2xl m-4 mt-0 card-table">
-                    <div className="flex items-center justify-between mt-5">
-                        <div className="border-l-[3px] border-[#6FD943] px-4 py-1">
-                            <h2 className="text-lg font-semibold">Leaves</h2>
-                        </div>
-                    </div>
-                    <div className="space-y-4 px-4 py-1 text-gray-600 text-sm mt-4 mb-4">
-                        {events.map((event, index) => (
-                            <div
-                                key={index}
-                                className="flex items-start bg-white rounded-xl p-4 card-table"
-                                style={{ borderColor: event.color }}
-                            >
-                                <div className="p-2 bg-[#6FD943] rounded-lg text-white">
-                                    <BiCalendar size={24} />
-                                </div>
-                                <div className="ml-4">
-                                    <div className="text-sm font-semibold text-[#6FD943]">
-                                        {event.extendedProps?.type}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                        {moment(event.start).format("DD MMM YYYY, hh:mm A")} to{" "}
-                                        {moment(event.end).subtract(1, "day").format("DD MMM YYYY, hh:mm A")}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                {/* 2. Upcoming Leaves Summary Section */}
+                <div className="xl:col-span-3">
+                    <Card bordered={false} className="shadow-lg rounded-xl h-full">
+                        <Title level={4} className="!mb-4">Upcoming Leaves</Title>
+                        <Spin spinning={loading}>
+                            {events.length > 0 ? (
+                                <List
+                                    itemLayout="horizontal"
+                                    dataSource={events.slice(0, 5)} // Show first 5 upcoming
+                                    renderItem={(item) => (
+                                        <List.Item>
+                                            <List.Item.Meta
+                                                avatar={
+                                                    <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
+                                                        <BiCalendar size={20} />
+                                                    </div>
+                                                }
+                                                title={<Text strong>{item.title}</Text>}
+                                                description={
+                                                    <Text type="secondary">
+                                                        {moment(item.start).format("DD MMM")} - {moment(item.extendedProps?.end).format("DD MMM")}
+                                                    </Text>
+                                                }
+                                            />
+                                            <Tag color={item.color}>{item.extendedProps?.status}</Tag>
+                                        </List.Item>
+                                    )}
+                                />
+                            ) : (
+                                <Text type="secondary">No upcoming leaves.</Text>
+                            )}
+                        </Spin>
+                    </Card>
                 </div>
             </div>
-            <LeaveModal isOpen={open} onClose={() => setOpen(false)} data={data} />
+
+            {/* 3. Modal Integration */}
+            <LeaveModal
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                data={selectedEventData}
+            />
         </>
     );
 };

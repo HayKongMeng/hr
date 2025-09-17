@@ -5,11 +5,11 @@ import { HiOutlineCalendarDays } from "react-icons/hi2";
 import { LiaUserCircle } from "react-icons/lia";
 import { TbReportAnalytics } from "react-icons/tb";
 import Cookies from "js-cookie";
+import {useAuth} from "@/lib/AuthContext";
 
 
 const EmpMobileMenu = () => {
-
-    const employeeId = Cookies.get("employee_id");
+    const { employee } = useAuth();
 
     return (
         <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-100 z-50">
@@ -26,7 +26,7 @@ const EmpMobileMenu = () => {
                     <TbReportAnalytics className="w-6 h-6" />
                     <span className="text-xs mt-1">Leave</span>
                 </Link>
-                <Link href={`/dashboard/list/employees/${employeeId}`} className="flex flex-col items-center text-gray-500 hover:text-teal-600">
+                <Link href={`/dashboard/list/employees/${employee?.data?.id}`} className="flex flex-col items-center text-gray-500 hover:text-teal-600">
                     <LiaUserCircle className="w-6 h-6" />
                     <span className="text-xs mt-1">Profile</span>
                 </Link>
