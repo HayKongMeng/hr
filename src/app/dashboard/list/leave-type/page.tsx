@@ -36,7 +36,7 @@ const LeaveTypeDetail = ({ leaveType }: { leaveType: LeaveType | null }) => {
         { key: '1', label: 'Type Name', children: leaveType.type_name },
         { key: '2', label: 'Prefix', children: leaveType.prefix },
         { key: '3', label: 'Max Days / Year', children: `${leaveType.max_days} days` },
-        { key: '4', label: 'Description', children: leaveType.description || 'N/A', span: 3 },
+        { key: '4', label: 'Description', children: leaveType.description || 'Not provided', span: 3 },
         { key: '5', label: 'Date Created', children: moment(leaveType.created_at).format("DD MMMM, YYYY") },
     ];
 

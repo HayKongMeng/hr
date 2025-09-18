@@ -2,7 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, Button, Spin, Row, Col, Divider, message } from "antd";
-import { EmergencyContactPayload, createEmergencyContacts, getEmergencyContactsByEmployeeId } from "@/lib/api/employee"; // Assuming you have a get function
+import {
+    EmergencyContactPayload,
+    createEmergencyContacts,
+    getEmergencyContactsByEmployeeId,
+    updateEmergencyContacts
+} from "@/lib/api/employee"; // Assuming you have a get function
 import { EmergencyContactFormSchema, emergencyContactSchema } from "@/lib/validationSchema";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +34,7 @@ const EmergencyContactForm: React.FC<EmergencyContactAntFormProps> = ({ open, on
 
     const [submitLoading, setSubmitLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(false);
+    const [existingContactIds, setExistingContactIds] = useState<{ primary?: number; secondary?: number }>({});
 
     // Fetch existing contacts when the modal opens
     useEffect(() => {
@@ -38,8 +44,15 @@ const EmergencyContactForm: React.FC<EmergencyContactAntFormProps> = ({ open, on
                 try {
                     const response = await getEmergencyContactsByEmployeeId(employeeId);
                     const contacts = response.data.result.data || [];
-                    const primary = contacts.find((c: any) => c.contact_type === 'primary');
-                    const secondary = contacts.find((c: any) => c.contact_type === 'secondary');
+                    const sortedContacts = [...contacts].sort((a, b) => b.id - a.id);
+
+                    const primary = sortedContacts.find((c: any) => c.contact_type === 'primary');
+                    const secondary = sortedContacts.find((c: any) => c.contact_type === 'secondary');
+
+                    setExistingContactIds({
+                        primary: primary?.id,
+                        secondary: secondary?.id,
+                    });
 
                     reset({
                         primaryContact: {
@@ -65,17 +78,54 @@ const EmergencyContactForm: React.FC<EmergencyContactAntFormProps> = ({ open, on
             loadContacts();
         } else {
             reset(); // Reset form when modal is closed
+            setExistingContactIds({});
         }
     }, [open, employeeId, reset]);
 
+    // Inside EmergencyContactForm.tsx
+
     const handleFormSubmit = async (formData: EmergencyContactFormSchema) => {
         setSubmitLoading(true);
+
+        const { primaryContact, secondaryContact } = formData;
+        const { primary: primaryId, secondary: secondaryId } = existingContactIds;
+
+        const contactsToUpdate: EmergencyContactPayload[] = [];
+        const contactsToCreate: EmergencyContactPayload[] = [];
+
+        // Process Primary Contact
+        if (primaryContact.name && primaryContact.phone1) {
+            const payload = { ...primaryContact, employee_id: employeeId, contact_type: "primary" as const };
+            if (primaryId) {
+                contactsToUpdate.push({ ...payload, id: primaryId });
+            } else {
+                contactsToCreate.push(payload);
+            }
+        }
+
+        // Process Secondary Contact
+        if (secondaryContact.name && secondaryContact.phone1) {
+            const payload = { ...secondaryContact, employee_id: employeeId, contact_type: "secondary" as const };
+            if (secondaryId) {
+                contactsToUpdate.push({ ...payload, id: secondaryId });
+            } else {
+                contactsToCreate.push(payload);
+            }
+        }
+
         try {
-            const payload: EmergencyContactPayload[] = [
-                { ...formData.primaryContact, employee_id: employeeId, contact_type: "primary" },
-                { ...formData.secondaryContact, employee_id: employeeId, contact_type: "secondary" },
-            ];
-            await createEmergencyContacts(payload); // This API should handle both create and update
+            const promises = [];
+
+            if (contactsToUpdate.length > 0) {
+                promises.push(updateEmergencyContacts(contactsToUpdate));
+            }
+
+            if (contactsToCreate.length > 0) {
+                promises.push(createEmergencyContacts(contactsToCreate));
+            }
+
+            await Promise.all(promises);
+
             message.success("Emergency contacts saved successfully.");
             onSaved();
             onClose();

@@ -250,6 +250,7 @@ export const getEmergencyContactsByEmployeeId = (employeeId: number) => api.get(
 
 
 export type EmergencyContactPayload = {
+    id?: number;
     name: string;
     relationship?: string; 
     phone1: string;
@@ -276,3 +277,18 @@ export const createEmergencyContacts = async (
 };
 
 
+export const updateEmergencyContacts = async (
+    payload: EmergencyContactPayload[]
+) => {
+    try {
+        const response = await api.put("/api/employee/emergency-contacts/bulk-update", payload, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating emergency contacts:", error);
+        throw error;
+    }
+};

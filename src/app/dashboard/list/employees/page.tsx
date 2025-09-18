@@ -31,8 +31,6 @@ import {toast} from "sonner";
 import React from "react";
 import {useDebounce} from "@/lib/useDebounce";
 import {LuLayoutGrid, LuList} from "react-icons/lu";
-import {IoReload} from "react-icons/io5";
-import {IoMdAdd} from "react-icons/io";
 import {encryptData} from "@/lib/crypto";
 
 // --- Type Definitions ---
@@ -40,7 +38,10 @@ type Position = { id: number; title: string };
 type Department = { id: number; name: string };
 type WorkStation = { id: number; name: string };
 type EmploymentType = { id: number; status_name: string };
-export type Employee = { id: number; user_id: number; employee_code: string; name: string; first_name: string; last_name: string; username: string; email: string; phone: string; address: string; date_of_birth: string; hire_date: string; gender: 'Male' | 'Female' | 'Other'; image_url?: string; position?: Position; department?: Department; work_station?: WorkStation; employment_type?: EmploymentType; created_at: string;reporting_line1?: number | null; reporting_line2?: number | null; procurement_line?: number | null; };
+export type Employee = { id: number; user_id: number; employee_code: string; name: string; first_name: string; last_name: string; username: string; email: string; phone: string; address: string; date_of_birth: string; hire_date: string; gender: 'Male' | 'Female' | 'Other'; image_url?: string; position?: Position; department?: Department; work_station?: WorkStation; employment_type?: EmploymentType; created_at: string;reporting_line1?: number | null; reporting_line2?: number | null; procurement_line?: number | null; position_id?: number | null;
+    department_id?: number | null;
+    work_station_id?: number | null;
+    employment_type_id?: number | null;};
 
 // --- Responsive Hook ---
 const useIsMobile = (breakpoint = 768) => {
@@ -91,7 +92,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ form, onFinish, dropdownDat
 
                 <h3 className="text-lg font-semibold border-b pb-2 my-4">Login Credentials</h3>
                 <Row gutter={16}>
-                    <Col xs={24} md={12}><Form.Item name="username" label="Username" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                    <Col xs={24} md={12}><Form.Item name="name" label="Username" rules={[{ required: true }]}><Input /></Form.Item></Col>
                     <Col xs={24} md={12}><Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item></Col>
                     {!isEditMode && (
                         <>
@@ -231,27 +232,68 @@ const EmployeeManagementPage = () => {
         finally { setDropdownLoading(false); }
     }, [dropdownData.positions.length]);
 
-    useEffect(() => {
-        if (selectedEmployee && isModalOpen) {
-            if (dropdownData.employees.length > 0) {
-                const imageFileList: UploadFile[] = selectedEmployee.image_url ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }] : [];
-
-                form.setFieldsValue({
-                    ...selectedEmployee,
-                    date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
-                    hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
-                    position_id: selectedEmployee.position?.id,
-                    department_id: selectedEmployee.department?.id,
-                    work_station_id: selectedEmployee.work_station?.id,
-                    employment_type_id: selectedEmployee.employment_type?.id,
-                    image: imageFileList,
-                });
-            }
-        }
-    }, [selectedEmployee, isModalOpen, dropdownData.employees, form]);
+    // useEffect(() => {
+    //     if (selectedEmployee && isModalOpen) {
+    //         if (dropdownData.employees.length > 0) {
+    //             const imageFileList: UploadFile[] = selectedEmployee.image_url ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }] : [];
+    //
+    //             form.setFieldsValue({
+    //                 ...selectedEmployee,
+    //                 date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
+    //                 hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
+    //                 position_id: selectedEmployee.position?.id,
+    //                 department_id: selectedEmployee.department?.id,
+    //                 work_station_id: selectedEmployee.work_station?.id,
+    //                 employment_type_id: selectedEmployee.employment_type?.id,
+    //                 image: imageFileList,
+    //             });
+    //         }
+    //     }
+    // }, [selectedEmployee, isModalOpen, dropdownData.employees, form]);
 
     useEffect(() => { setIsClient(true); }, []);
+    useEffect(() => {
+        // Only proceed if the modal is open.
+        if (!isModalOpen) {
+            return;
+        }
 
+        // If no employee is selected (i.e., 'Add' mode), reset the form.
+        if (!selectedEmployee) {
+            form.resetFields();
+            return;
+        }
+
+        // IMPORTANT: If we have an employee but the dropdowns aren't loaded yet,
+        // wait for the next render. This prevents the race condition.
+        // We check `positions` as a proxy for all dropdowns being loaded.
+        if (dropdownData.positions.length === 0) {
+            return;
+        }
+
+        console.log("Populating form with employee name:", selectedEmployee);
+
+        // If we reach here, it's safe to populate the form.
+        const imageFileList: UploadFile[] = selectedEmployee.image_url
+            ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }]
+            : [];
+
+        form.setFieldsValue({
+            // Spread the employee data first
+            ...selectedEmployee,
+            name: selectedEmployee.name,
+
+            date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
+            hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
+
+            position_id: selectedEmployee.position_id,
+            department_id: selectedEmployee.department_id,
+            work_station_id: selectedEmployee.work_station_id,
+            employment_type_id: selectedEmployee.employment_type_id,
+            image: imageFileList,
+        });
+
+    }, [isModalOpen, selectedEmployee, dropdownData, form]);
     useEffect(() => {
         if (isClient && !authLoading && !userRole) {
             toast.error("No role found! Please log in again.");
@@ -259,17 +301,17 @@ const EmployeeManagementPage = () => {
     }, [isClient, authLoading, userRole]);
 
     const getEmployeeNameById = (id: number | null | undefined, employeeList: Employee[]): string => {
-        if (!id) return 'N/A';
+        if (!id) return 'Not provided';
         const found = employeeList.find(e => e.id === id);
         return found ? found.name : `ID: ${id}`;
     };
     const calculateAge = (dob: string | null | undefined): string => {
-        if (!dob) return 'N/A';
+        if (!dob) return 'Not provided';
         return dayjs().diff(dayjs(dob), 'year').toString();
     };
 
     const calculateLengthOfService = (hireDate: string | null | undefined): string => {
-        if (!hireDate) return 'N/A';
+        if (!hireDate) return 'Not provided';
         const years = dayjs().diff(dayjs(hireDate), 'year');
         const months = dayjs().diff(dayjs(hireDate), 'month') % 12;
         return `${years}y ${months}m`;
@@ -289,27 +331,27 @@ const EmployeeManagementPage = () => {
             // Page 1-2 Data
             index + 1,
             'Active', // Assuming status, not in JSON
-            'N/A', // NSSF's # not in JSON
+            'Not provided', // NSSF's # not in JSON
             employee.employee_code,
             employee.name,
-            'N/A', // Khmer name not in JSON
+            'Not provided', // Khmer name not in JSON
             employee.gender,
-            'N/A', // Nationality not in JSON
+            'Not provided', // Nationality not in JSON
             dayjs(employee.date_of_birth).format("DD-MMM-YYYY"),
             calculateAge(employee.date_of_birth),
-            'N/A', // Employee Level not in JSON
+            'Not provided', // Employee Level not in JSON
             dayjs(employee.hire_date).format("DD-MMM-YYYY"),
             dayjs(employee.hire_date).add(3, 'month').format("DD-MMM-YYYY"), // Assuming 3-month probation
             calculateLengthOfService(employee.hire_date),
-            employee.position?.title || 'N/A',
-            'N/A', // Khmer position not in JSON
-            employee.department?.name || 'N/A',
-            'N/A', // Khmer department not in JSON
+            employee.position?.title || 'Not provided',
+            'Not provided', // Khmer position not in JSON
+            employee.department?.name || 'Not provided',
+            'Not provided', // Khmer department not in JSON
             // Page 3-4 Data
             getEmployeeNameById(employee.reporting_line1, fullEmployeeList),
             getEmployeeNameById(employee.reporting_line2, fullEmployeeList), // Assuming line 2 is HOD
-            'N/A', // Bank not in JSON
-            'N/A', // Account # not in JSON
+            'Not provided', // Bank not in JSON
+            'Not provided', // Account # not in JSON
             // Page 5-6 Data
             employee.phone,
             employee.email
@@ -339,8 +381,8 @@ const EmployeeManagementPage = () => {
             calculateAge(employee.date_of_birth),
             dayjs(employee.hire_date).format("DD-MMM-YY"),
             calculateLengthOfService(employee.hire_date),
-            employee.position?.title || 'N/A',
-            employee.department?.name || 'N/A',
+            employee.position?.title || 'Not provided',
+            employee.department?.name || 'Not provided',
             getEmployeeNameById(employee.reporting_line1, fullEmployeeList)
         ]);
 
@@ -399,37 +441,37 @@ const EmployeeManagementPage = () => {
 
     const handleModalCancel = () => { setIsModalOpen(false); form.resetFields(); setSelectedEmployee(null); };
 
-    useEffect(() => {
-        if (isModalOpen) {
-            if (selectedEmployee) {
-                const imageFileList: UploadFile[] = selectedEmployee.image_url
-                    ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }]
-                    : [];
-                form.setFieldsValue({
-                    first_name: selectedEmployee.first_name,
-                    last_name: selectedEmployee.last_name,
-                    employee_code: selectedEmployee.employee_code,
-                    phone: selectedEmployee.phone,
-                    address: selectedEmployee.address,
-                    gender: selectedEmployee.gender,
-                    date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
-                    hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
-                    image: imageFileList,
-                    username: selectedEmployee.username,
-                    email: selectedEmployee.email,
-                    position_id: selectedEmployee.position?.id,
-                    department_id: selectedEmployee.department?.id,
-                    work_station_id: selectedEmployee.work_station?.id,
-                    employment_type_id: selectedEmployee.employment_type?.id,
-                    reporting_line1: selectedEmployee.reporting_line1,
-                    reporting_line2: selectedEmployee.reporting_line2,
-                    procurement_line: selectedEmployee.procurement_line,
-                });
-            } else {
-                form.resetFields();
-            }
-        }
-    }, [isModalOpen, selectedEmployee, form]);
+    // useEffect(() => {
+    //     if (isModalOpen) {
+    //         if (selectedEmployee) {
+    //             const imageFileList: UploadFile[] = selectedEmployee.image_url
+    //                 ? [{ uid: '-1', name: 'profile.png', status: 'done', url: selectedEmployee.image_url }]
+    //                 : [];
+    //             form.setFieldsValue({
+    //                 first_name: selectedEmployee.first_name,
+    //                 last_name: selectedEmployee.last_name,
+    //                 employee_code: selectedEmployee.employee_code,
+    //                 phone: selectedEmployee.phone,
+    //                 address: selectedEmployee.address,
+    //                 gender: selectedEmployee.gender,
+    //                 date_of_birth: selectedEmployee.date_of_birth ? dayjs(selectedEmployee.date_of_birth) : null,
+    //                 hire_date: selectedEmployee.hire_date ? dayjs(selectedEmployee.hire_date) : null,
+    //                 image: imageFileList,
+    //                 username: selectedEmployee.username,
+    //                 email: selectedEmployee.email,
+    //                 position_id: selectedEmployee.position?.id,
+    //                 department_id: selectedEmployee.department?.id,
+    //                 work_station_id: selectedEmployee.work_station?.id,
+    //                 employment_type_id: selectedEmployee.employment_type?.id,
+    //                 reporting_line1: selectedEmployee.reporting_line1,
+    //                 reporting_line2: selectedEmployee.reporting_line2,
+    //                 procurement_line: selectedEmployee.procurement_line,
+    //             });
+    //         } else {
+    //             form.resetFields();
+    //         }
+    //     }
+    // }, [isModalOpen, selectedEmployee, form]);
 
     useEffect(() => {
         if (isClient && !authLoading) {
@@ -462,11 +504,11 @@ const EmployeeManagementPage = () => {
 
             if (selectedEmployee) {
                 const authPayload = {
-                    username: payload.username,
+                    username: payload.name,
                     email: payload.email,
                     password: payload.password,
                 };
-                delete payload.username;
+                delete payload.name;
                 delete payload.email;
                 delete payload.password;
 

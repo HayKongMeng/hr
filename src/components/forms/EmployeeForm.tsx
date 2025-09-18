@@ -30,6 +30,7 @@ interface EmployeeFormProps {
 }
 
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCancel }) => {
+
     const {
         register,
         handleSubmit,
@@ -38,7 +39,11 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
         reset,
     } = useForm<CreateEmployeeFormSchema>({
         resolver: zodResolver(createEmployeeSchema),
-        defaultValues: {},
+        defaultValues: {
+            first_name: '',
+            last_name: '',
+            email: '',
+        },
     });
 
     const [loading, setLoading] = useState(false);
@@ -58,6 +63,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
 
     // --- YOUR EXISTING DATA LOADING LOGIC - UNCHANGED (with dayjs conversion for reset) ---
     useEffect(() => {
+        console.log("[EmployeeForm] Received data prop:", data);
         setDropdownLoading(true);
         const loadData = async () => {
             try {
@@ -70,12 +76,12 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
                 setEmploymentTypeList(employmentTypes);
 
                 if (type === "update" && data) {
-                    reset({
+                    const transformedData = {
                         ...data,
-                        name: data.username,
                         date_of_birth: data.date_of_birth ? dayjs(data.date_of_birth) : undefined,
                         hire_date: data.hire_date ? dayjs(data.hire_date) : undefined,
-                    });
+                    };
+                    reset(transformedData);
                     setSelectedGender(data.gender || "Male");
                     setSelectedPosition(positions.find(p => p.id === data?.position?.id) || null);
                     setSelectedDepartment(department.find(d => d.id === data?.department?.id) || null);
@@ -172,21 +178,19 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
                     <Divider orientation="left">Personal Information</Divider>
                     <Row gutter={16}>
                         <Col span={24} className="mb-4"><ProfileImageUploader onFileChange={setProfileImage} initialFile={type === 'update' ? data?.image_url : null} /></Col>
-                        <Col span={12}><Form.Item label="First Name *" help={errors.first_name?.message} validateStatus={errors.first_name ? 'error' : ''}><Input {...register("first_name")} value={data?.first_name}/></Form.Item></Col>
-                        <Col span={12}><Form.Item label="Last Name *" help={errors.last_name?.message} validateStatus={errors.last_name ? 'error' : ''}><Input {...register("last_name")} value={data?.last_name}/></Form.Item></Col>
-                        <Col span={8}><Form.Item label="Employee ID *" help={errors.employee_code?.message} validateStatus={errors.employee_code ? 'error' : ''}><Input {...register("employee_code")} value={data?.employee_code} /></Form.Item></Col>
+                        <Col span={12}><Controller name="first_name" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="First Name *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
+                        <Col span={12}><Controller name="last_name" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Last Name *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
+                        <Col span={12}><Controller name="employee_code" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Employee ID *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
                         <Col span={8}><Controller name="date_of_birth" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Date of Birth *" help={error?.message} validateStatus={error ? 'error' : ''}><DatePicker {...field} style={{ width: '100%' }} format="YYYY-MM-DD"/></Form.Item>)}/></Col>
                         <Col span={8}><Controller name="hire_date" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Joining Date *" help={error?.message} validateStatus={error ? 'error' : ''}><DatePicker {...field} style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item>)}/></Col>
-                        <Col span={12}><Form.Item label="Phone *" help={errors.phone?.message} validateStatus={errors.phone ? 'error' : ''}><Input {...register("phone")} value={data.phone}/></Form.Item></Col>
+                        <Col span={12}><Controller name="phone" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Phone *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
                         <Col span={12}><Form.Item label="Gender *"><Radio.Group value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)}><Radio value="Male">Male</Radio><Radio value="Female">Female</Radio><Radio value="Other">Other</Radio></Radio.Group></Form.Item></Col>
                     </Row>
 
                     <Divider orientation="left">Login Credentials</Divider>
                     <Row gutter={16}>
-                        <Col span={12}><Controller name="name" control={control} render={({ field, fieldState: { error } }) => (
-                            <Form.Item label="Username *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} value={data?.name}/></Form.Item>
-                        )} /></Col>
-                        <Col span={12}><Form.Item label="Email *" help={errors.email?.message} validateStatus={errors.email ? 'error' : ''}><Input {...register("email")} value={data?.email}/></Form.Item></Col>
+                        <Col span={12}><Controller name="name" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Username *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
+                        <Col span={12}><Controller name="email" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Email *" help={error?.message} validateStatus={error ? 'error' : ''}><Input {...field} /></Form.Item>)}/></Col>
                         {type === 'create' && (
                             <>
                                 <Col span={12}><Form.Item label="Password *" help={errors.password?.message} validateStatus={errors.password ? 'error' : ''}><Input.Password {...register("password")} /></Form.Item></Col>
@@ -209,7 +213,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ type, data, onSuccess, onCa
                         <Col span={12}><Form.Item label="Employment Status *">
                             <AntSelect loading={dropdownLoading} value={selectedEmploymentType?.id} onChange={val => setSelectedEmploymentType(employmentTypeList.find(e => e.id === val) || null)} options={employmentTypeList.map(e => ({ value: e.id, label: e.status_name }))} />
                         </Form.Item></Col>
-                        <Col span={24}><Form.Item label="Address" help={errors.address?.message} validateStatus={errors.address ? 'error' : ''}><Input.TextArea {...register("address")} rows={3} value={data?.address} /></Form.Item></Col>
+                        <Col span={24}><Controller name="address" control={control} render={({ field, fieldState: { error } }) => (<Form.Item label="Address" help={error?.message} validateStatus={error ? 'error' : ''}><Input.TextArea {...field} value={field.value ?? ""} rows={3} /></Form.Item>)}/></Col>
                     </Row>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 px-6 border-t pb-4">

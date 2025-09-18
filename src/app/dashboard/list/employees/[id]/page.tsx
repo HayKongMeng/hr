@@ -28,7 +28,7 @@ import {
     FaChild, FaLock
 } from "react-icons/fa";
 import { MdKeyboardArrowRight } from 'react-icons/md';
-import EmergencyContactForm from '@/components/forms/EmergencyContactFrom';
+import EmergencyContactForm from '@/components/forms/EmergencyContactForm';
 import { useEffect, useState } from 'react';
 import FormModal from '@/components/FormModal';
 import LoadingRollerSpinner from '@/components/ui/LoadingRollerSpinner';
@@ -79,6 +79,16 @@ type Experience = {
     is_current: boolean
 };
 
+
+interface FamilyInformation {
+    id: number;
+    employee_id: number;
+    name: string;
+    relationship: string;
+    passport_expiry_date: string | null;
+    phone: string | null;
+}
+
 const ProfilePage = () => {
     const router = useRouter();
     const { id } = useParams();
@@ -92,7 +102,7 @@ const ProfilePage = () => {
     const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
     const [personalInformation, setPersonalInformation] = useState<any>(null);
     const [bankInformation, setBankInformation] = useState<any>(null);
-    const [familyInformation, setFamilyInformation] = useState<any>(null);
+    const [familyInformation, setFamilyInformation] = useState<FamilyInformation[]>([]);
     const [educationDetail, setEducationDetail] = useState<EducationDetail[]>([]);
     const [experience, setExperience] = useState<Experience[]>([]);
     const [loading, setLoading] = useState(true);
@@ -270,14 +280,14 @@ const ProfilePage = () => {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6 p-0  overflow-hidden relative bg-light-card border border-light-border rounded-xl">
-                    <div className=" shadow-sm p-6 text-center bg-gradient-to-r h-24 from-[#392648] to-[#4A3AFF] rounded-b-xl">
+                    <div className=" shadow-sm p-6 text-center bg-gradient-to-r h-36 from-[#392648] to-[#4A3AFF] rounded-b-xl">
                         <Image
                             src={imgSrc}
                             alt="Avatar"
-                            width={80}
-                            height={80}
+                            width={100}
+                            height={100}
                             unoptimized
-                            className="rounded-full border object-cover absolute top-0 left-1/2 translate-x-[-50%] translate-y-[62%]"
+                            className="rounded-full border object-cover absolute top-0 left-1/2 translate-x-[-50%] translate-y-[22%]"
                             onError={() => setImgSrc( allEmployee?.image_url || '/avatar.png')}
                         />
                     </div>
@@ -327,7 +337,7 @@ const ProfilePage = () => {
                             <button
                                 onClick={() => setIsChangePasswordModalOpen(true)}
                                 className="w-full bg-orange-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
-                                <FaLock className="text-gray-500"/>
+                                <FaLock className="text-white"/>
                                 Change password
                             </button>
                         </div>
@@ -412,7 +422,7 @@ const ProfilePage = () => {
                                 <FaPassport className="text-blue-600" />
                                 Passport No:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.passport_no || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.passport_no || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -420,7 +430,7 @@ const ProfilePage = () => {
                                 <FaCalendarTimes className="text-red-500" />
                                 Expiry Date:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.passport_expiry_date || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.passport_expiry_date || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -428,7 +438,7 @@ const ProfilePage = () => {
                                 <FaFlag className="text-green-600" />
                                 Nationality:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.nationality?.country_name || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.nationality?.country_name || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -436,7 +446,7 @@ const ProfilePage = () => {
                                 <FaPrayingHands className="text-purple-600" />
                                 Religion:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.religion || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.religion || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -444,7 +454,7 @@ const ProfilePage = () => {
                                 <FaRing className="text-yellow-500" />
                                 Marital Status:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.marital_status?.status_name || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.marital_status?.status_name || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -452,7 +462,7 @@ const ProfilePage = () => {
                                 <FaUserTimes className="text-gray-600" />
                                 Spouse Employed:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.employment_spouse || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.employment_spouse || 'Not provided'}</p>
                         </div>
 
                         <div className="flex justify-between gap-2 text-xs">
@@ -460,7 +470,7 @@ const ProfilePage = () => {
                                 <FaChild className="text-pink-500" />
                                 No. of Children:
                             </p>
-                            <p className="text-black">{personalInformation?.[0]?.number_of_children || 'N/A'}</p>
+                            <p className="text-black">{personalInformation?.[0]?.number_of_children || 'Not provided'}</p>
                         </div>
                     </div>
 
@@ -468,16 +478,16 @@ const ProfilePage = () => {
                         <div className='mb-4 flex items-center justify-between'>
                             <p className="font-semibold text-sm text-black">Emergency Contact Number</p>
                             {canEdit && (
-                            <button
-                                onClick={() => {
-                                    if (allEmployee?.id !== undefined) {
-                                        handleOpenEmergencyContact(allEmployee.id);
-                                    }
-                                }}
-                                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
-                            >
-                                <RiEdit2Line size={16} />
-                            </button>
+                                <button
+                                    onClick={() => {
+                                        if (allEmployee?.id !== undefined) {
+                                            handleOpenEmergencyContact(allEmployee.id);
+                                        }
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full text-gray-600 hover:text-blue-600 hover:bg-gray-200"
+                                >
+                                    <RiEdit2Line size={16} />
+                                </button>
                                 )}
                         </div>
                         {primaryContacts.length > 0 ? (
@@ -613,20 +623,20 @@ const ProfilePage = () => {
                                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
                                             <div className="">
                                                 <div className="text-gray-500 text-xs mb-1">Bank Name</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.bank_details || 'N/A'}</div>
+                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.bank_details || 'Not provided'}</div>
                                             </div>
 
                                             <div className="">
                                                 <div className="text-gray-600 text-xs mb-1">Bank account no</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.bank_account_no || 'N/A'}</div>
+                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.bank_account_no || 'Not provided'}</div>
                                             </div>
                                             <div className="">
                                                 <div className="text-gray-600 text-xs mb-1">IFSC Code</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.ifsc_code || 'N/A'}</div>
+                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.ifsc_code || 'Not provided'}</div>
                                             </div>
                                             <div className="">
                                                 <div className="text-gray-600 text-xs mb-1">Branch</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.branch_address || 'N/A'}</div>
+                                                <div className="text-gray-900 text-xs font-semibold">{bankInformation?.[0]?.branch_address || 'Not provided'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -671,25 +681,42 @@ const ProfilePage = () => {
                                     className={`disclosure-panel ${open ? 'open' : ''} mt-2 text-sm text-gray-700`}
                                 >
                                     <div className='border-t'>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-                                            <div className="">
-                                                <div className="text-gray-500 text-xs mb-1">Name</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{familyInformation?.[0]?.name || 'N/A'}</div>
-                                            </div>
+                                        {familyInformation.length > 0 ? (
+                                            familyInformation.map(item => {
+                                                return (
+                                                    <>
+                                                        <div
+                                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
+                                                            <div className="">
+                                                                <div className="text-gray-500 text-xs mb-1">Name</div>
+                                                                <div
+                                                                    className="text-gray-900 text-xs font-semibold">{item?.name || 'Not provided'}</div>
+                                                            </div>
 
-                                            <div className="">
-                                                <div className="text-gray-600 text-xs mb-1">Relationship</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{familyInformation?.[0]?.relationship || 'N/A'}</div>
-                                            </div>
-                                            <div className="">
-                                                <div className="text-gray-600 text-xs mb-1">Date of birth</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{familyInformation?.[0]?.passport_expiry_date || 'N/A'}</div>
-                                            </div>
-                                            <div className="">
-                                                <div className="text-gray-600 text-xs mb-1">Phone</div>
-                                                <div className="text-gray-900 text-xs font-semibold">{familyInformation?.[0]?.phone || 'N/A'}</div>
-                                            </div>
-                                        </div>
+                                                            <div className="">
+                                                                <div className="text-gray-600 text-xs mb-1">Relationship</div>
+                                                                <div
+                                                                    className="text-gray-900 text-xs font-semibold">{item?.relationship || 'Not provided'}</div>
+                                                            </div>
+                                                            <div className="">
+                                                                <div className="text-gray-600 text-xs mb-1">Date of birth</div>
+                                                                <div
+                                                                    className="text-gray-900 text-xs font-semibold">{item?.passport_expiry_date || 'Not provided'}</div>
+                                                            </div>
+                                                            <div className="">
+                                                                <div className="text-gray-600 text-xs mb-1">Phone</div>
+                                                                <div
+                                                                    className="text-gray-900 text-xs font-semibold">{item?.phone || 'Not provided'}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className='border-t mt-4'></div>
+                                                    </>
+                                                )
+                                            })
+                                        ) : (
+                                            <div className='pt-4'></div>
+                                        )}
+
                                     </div>
                                 </Disclosure.Panel>
                             </div>

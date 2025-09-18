@@ -52,7 +52,7 @@ const LeaveModal: React.FC<LeaveModalProps> = ({ isOpen, onClose, data }) => {
                     setEmployeeName(name);
                 } catch (error) {
                     console.error("Failed to fetch employee name", error);
-                    setEmployeeName("N/A");
+                    setEmployeeName("Not provided");
                 } finally {
                     setLoadingEmployeeName(false);
                 }

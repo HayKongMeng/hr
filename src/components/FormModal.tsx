@@ -120,6 +120,10 @@ const FormModal = ({
     };
 
     const Form = () => {
+        if (type === "create" || type === "update") {
+            console.log(`[FormModal] Rendering form for table: "${table}"`);
+            console.log("[FormModal] Data received:", data);
+        }
         const handleDelete = async (e: React.FormEvent) => {
             e.preventDefault();
 

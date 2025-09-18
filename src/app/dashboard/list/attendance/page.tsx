@@ -321,7 +321,7 @@ const TeamAttendanceView = ({ isMobile }: { isMobile: boolean }) => {
         { title: "Status", dataIndex: ['attendance_data', 'status'], key: 'status', render: getStatusTag },
         { title: "Check In", dataIndex: ['attendance_data', 'clock_in'], key: 'check_in', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
         { title: "Check Out", dataIndex: ['attendance_data', 'clock_out'], key: 'check_out', render: (time) => time ? moment(time, "HH:mm:ss").format("h:mm A") : '--:--' },
-        { title: "Reason", dataIndex: 'reason', key: 'reason', ellipsis: true, render: (reason) => reason || <Text type="secondary">N/A</Text> },
+        { title: "Reason", dataIndex: 'reason', key: 'reason', ellipsis: true, render: (reason) => reason || <Text type="secondary">Not provided</Text> },
     ];
 
     const cardTitle = (
